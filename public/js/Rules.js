@@ -134,7 +134,6 @@ function handleRules(isPresenter) {
         //BUTTONS.consumerVideo.muteAudioButton = false;
         //BUTTONS.consumerVideo.muteVideoButton = false;
         BUTTONS.whiteboard.whiteboardLockButton = false;
-
         //...
     } else {
         // ##################################

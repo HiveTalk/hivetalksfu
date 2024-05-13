@@ -498,7 +498,6 @@ function startServer() {
                     }
 
                     const { username, password, presenter } = checkXSS(decodeToken(token));
-
                     peerUsername = username;
                     peerPassword = password;
                     isPeerValid = await isAuthPeer(username, password);
