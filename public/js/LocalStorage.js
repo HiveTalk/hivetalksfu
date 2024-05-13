@@ -38,7 +38,7 @@ class LocalStorage {
             mic_latency: 50, // ms
             mic_volume: 100, // %
             video_fps: 0, // default 1280x768 30fps
-            screen_fps: 3, // default 1920x1080 15fps
+            screen_fps: 0, // default 30fps
             broadcasting: false, // default false (one to many a/v streaming)
             lobby: false, // default false
             pitch_bar: true, // volume indicator
@@ -53,6 +53,7 @@ class LocalStorage {
             theme_custom: false, // keep custom theme
             buttons_bar: 0, // vertical
             pin_grid: 0, // vertical
+            keep_buttons_visible: false,
         };
 
         this.DEVICES_COUNT = {

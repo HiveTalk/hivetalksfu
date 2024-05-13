@@ -1,8 +1,8 @@
 swagger: '2.0'
 
 info:
-    title: MiroTalk SFU API
-    description: API description for external applications that integrate with MiroTalk SFU.
+    title: HiveTalk SFU API
+    description: API description for external applications that integrate with HiveTalk SFU.
     version: 1.0.1
 
 basePath: /api/v1
@@ -12,6 +12,23 @@ schemes:
     - http
 
 paths:
+    /meetinfo:
+        get:
+            tags:
+                - 'meeting info'
+            summary: 'Get meeting info'
+            description: 'Get meeting info'
+            produces:
+                - 'application/json'
+            security:
+                - secretApiKey: []
+            responses:
+                '200':
+                    description: 'Get Meeting info'
+                    schema:
+                        $ref: '#/definitions/MeetingResponse'
+                '403':
+                    description: 'Unauthorized!'
     /meetings:
         get:
             tags:
@@ -35,6 +52,12 @@ paths:
                 - 'meeting'
             summary: 'Create meeting'
             description: 'Create meeting'
+            parameters:
+                - in: body
+                  name: Meeting
+                  description: Custom Meeting URL.
+                  schema:
+                      $ref: '#/definitions/MeetingRequest'
             consumes:
                 - 'application/json'
             produces:
@@ -118,7 +141,17 @@ definitions:
         type: 'object'
         properties:
             meeting:
+                type: array
+                items:
+                    $ref: '#/definitions/Meetinfo'
+
+    MeetingRequest:
+        type: object
+        properties:
+            name:
                 type: string
+                default: 'hivetalksfu'
+                $ref: '#/definitions/MeetingRequest'
     JoinRequest:
         type: object
         properties:
@@ -130,7 +163,7 @@ definitions:
                 default: false
             name:
                 type: string
-                default: 'mirotalksfu'
+                default: 'hivetalksfu'
             audio:
                 type: boolean
                 default: false
@@ -180,19 +213,12 @@ definitions:
                 type: string
             presenter:
                 type: boolean
-            video:
-                type: boolean
-            audio:
-                type: boolean
-            screen:
-                type: boolean
-            hand:
-                type: boolean
-            os:
+            npub:
                 type: string
-            browser:
+            pubkey:
                 type: string
-
+            lnaddress:
+                type: string
     Meeting:
         type: object
         properties:
@@ -202,3 +228,10 @@ definitions:
                 type: array
                 items:
                     $ref: '#/definitions/Peer'
+    Meetinfo:
+        type: object
+        properties:
+            roomId:
+                type: string
+            peers:
+                type: string

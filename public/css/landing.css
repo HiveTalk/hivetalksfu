@@ -1,3 +1,26 @@
+/* public/styles/main.css or public/css/landing.css */
+
+@font-face {
+    font-family: 'IBM Plex Sans';
+    src: url('/fonts/IBM_Plex_Sans/IBMPlexSans-Regular.ttf') format('truetype');
+    font-weight: 400;
+    font-style: normal;
+    font-display: swap;
+}
+
+@font-face {
+    font-family: 'IBM Plex Sans';
+    src: url('/fonts/IBM_Plex_Sans/IBMPlexSans-SemiBold.ttf') format('truetype');
+    font-weight: 600;
+    font-style: normal;
+    font-display: swap;
+}
+
+/* Other global styles */
+body {
+    font-family: 'IBM Plex Sans', sans-serif;
+}
+
 html {
     line-height: 1.15;
     -ms-text-size-adjust: 100%;
@@ -1195,14 +1218,15 @@ label {
     left: -1.3%;
     width: 152.84%;
     height: 178.78%;
-    background-image: url('../images/hero-back-illustration.svg');
+    background-image: url('../images/bgimg8.png');
+    /*    background-image: url('../images/hero-back-illustration.svg');*/
 }
 .hero-figure::after {
     top: -35.6%;
     left: 99.6%;
     width: 57.2%;
     height: 87.88%;
-    background-image: url('../images/hero-top-illustration.svg');
+    /* background-image: url('../images/hero-top-illustration.svg');*/
 }
 .hero-figure-box {
     position: absolute;
@@ -1408,6 +1432,11 @@ label {
     margin-right: -32px;
     margin-left: -32px;
 }
+#meetingsContainer {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+}
 .features-wrap:first-of-type {
     margin-top: -16px;
 }
@@ -1428,7 +1457,14 @@ label {
     justify-content: center;
     padding: 1rem;
     border-radius: 1rem;
-    background: radial-gradient(circle at bottom, #539ce2 0%, #1870d7 50%, #1d2026 100%);
+    background: radial-gradient(circle at bottom, #539ce2 0%, #702792 50%, #1d2026 100%);
+}
+.feature-icon2 {
+    display: flex;
+    justify-content: center;
+    height: 150px;
+    padding: 1rem;
+    border-radius: 1rem;
 }
 @media (min-width: 641px) {
     .features-wrap:first-of-type {
@@ -1549,7 +1585,7 @@ label {
 }
 .cta-inner {
     position: relative;
-    background: #15181d;
+    background: #1cd4f0;
     overflow: hidden;
 }
 .cta-inner::before {
@@ -2094,15 +2130,37 @@ main {
     width: 400px;
 }
 
-.c-pointer {
-    border-radius: 10px;
+/*--------------------------------------------------------------
+# button box for active rooms
+--------------------------------------------------------------*/
+
+.button-like {
+    border: 1px solid #ccc;
+    border-radius: 8px;
+    padding: 10px 20px;
+    margin: 10px;
+    display: inline-block;
     cursor: pointer;
+    background-color: #dd18a9;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    text-decoration: none; /* Ensure no underline */
+    color: inherit; /* Ensure text color inherits from parent */
+    /* New properties for text wrapping */
+    max-width: calc(100% - 20px); /* Account for left and right margin */
+    white-space: normal;
+    word-wrap: break-word;
+    overflow-wrap: break-word;
 }
 
-.c-pointer:hover {
-    box-shadow: 0px 8px 16px 0px rgba(0, 0, 0, 1);
+.button-donate {
+    /*    border: 1px solid #fff;*/
+    border-radius: 8px;
+    padding: 10px 20px;
+    margin: 10px;
+    display: inline-block;
+    cursor: pointer;
+    background-color: #dd18a9;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    text-decoration: bold; /* Ensure no underline */
+    color: #fff; /* Ensure text color inherits from parent */
 }
-
-/* #roomName {
-    text-align: left;
-} */

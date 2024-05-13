@@ -1,8 +1,8 @@
 <?php
 
-$API_KEY_SECRET = "mirotalksfu_default_secret";
-$MIROTALK_URL = "https://sfu.mirotalk.com/api/v1/meetings";
-//$MIROTALK_URL = "http://localhost:3010/api/v1/meetings";
+$API_KEY_SECRET = "mirotalksfu_default_secret_234234";
+//$MIROTALK_URL = "https://sfu.mirotalk.com/api/v1/meetings";
+$MIROTALK_URL = "http://localhost:3010/api/v1/meetings";
 
 $ch = curl_init();
 curl_setopt($ch, CURLOPT_URL, $MIROTALK_URL);

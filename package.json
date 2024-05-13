@@ -1,5 +1,5 @@
 {
-    "name": "mirotalksfu",
+    "name": "hivetalksfu",
     "version": "1.5.67",
     "description": "WebRTC SFU browser-based video calls",
     "main": "Server.js",
@@ -10,7 +10,7 @@
         "debug": "DEBUG='mediasoup*' node app/src/Server.js",
         "compile": "npx browserify public/sfu/MediasoupClientCompile.js -o public/sfu/MediasoupClient.js",
         "lint": "npx prettier --write .",
-        "docker-build": "docker build --tag mirotalk/sfu:latest .",
+        "docker-build": "docker build --tag hivetalk/sfu:latest .",
         "docker-rmi": "docker images |grep '<none>' |awk '{print $3}' |xargs docker rmi",
         "docker-push": "docker push mirotalk/sfu:latest",
         "docker-pull": "docker pull mirotalk/sfu:latest",
@@ -31,7 +31,7 @@
     },
     "repository": {
         "type": "git",
-        "url": "git+https://github.com/miroslavpejic85/mirotalksfu"
+        "url": "git+https://github.com/hivetalk/hivetalksfu"
     },
     "keywords": [
         "webrtc",
@@ -51,7 +51,7 @@
         "streaming",
         "realtime"
     ],
-    "author": "Miroslav Pejic",
+    "author": "Hivetalk Group, Miroslav Pejic",
     "license": "AGPL-3.0",
     "engines": {
         "node": ">=18"
@@ -79,6 +79,7 @@
         "nodemailer": "^6.9.15",
         "openai": "^4.58.1",
         "qs": "6.13.0",
+        "nostr-tools": "^2.5.2",
         "socket.io": "4.7.5",
         "swagger-ui-express": "5.0.1",
         "uuid": "10.0.0"

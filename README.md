@@ -1,36 +1,16 @@
-<h1 align="center">MiroTalk SFU</h1>
+<h1 align="center">HiveTalk </h1>
 
-<br />
+## HiveTalk is a Fork of MiroTalk SFU, with **Nostr** and **Bitcoin Lightning** Enhancements.
 
-<div align="center">
+### See [HiveTalk Roadmap](https://github.com/HiveTalk/Roadmap)
 
-<a href="">[![Author](https://img.shields.io/badge/Author-miroslav-brightgreen.svg)](https://www.linkedin.com/in/miroslav-pejic-976a07101/)</a>
-<a href="">![License: AGPLv3](https://img.shields.io/badge/License-AGPLv3-blue.svg)</a>
-<a href="">[![Community](https://img.shields.io/badge/Community-forum-pink.svg)](https://discord.gg/rgGYfeYW3N)</a>
+---
 
-</div>
+Free WebRTC - SFU - Simple, Secure, Scalable Real-Time Video Conferences with support for up to 4k resolution. It's compatible with all major browsers and platforms
 
-<p align="center">Free WebRTC - SFU - Simple, Secure, Scalable Real-Time Video Conferences with support for up to 8k resolution and 60fps. It's compatible with all major browsers and platforms</p>
+<img width="934" alt="Screenshot 2024-05-14 at 5 49 39 PM" src="https://github.com/bitkarrot/hivetalksfu/assets/73979971/20889dec-9a64-4baf-8496-3df6fa071ac8">
 
-<hr />
-
-<p align="center">
-    <a href="https://sfu.mirotalk.com/">Explore MiroTalk SFU</a>
-</p>
-
-<hr />
-
-<p align="center">
-    <a href="https://sfu.mirotalk.com/">
-        <img src="public/images/mirotalksfu-header.gif">
-    </a>
-</p>
-
-<hr />
-
-<p align="center">
-    Join our community for questions, discussions, and support on <a href="https://discord.gg/rgGYfeYW3N">Discord</a>
-</p>
+<a href="https://hivetalk.org/">Explore HiveTalk</a>
 
 <hr />
 
@@ -85,22 +65,12 @@
 </details>
 
 <details>
-<summary>About</summary>
-
-<br>
-
--   [Presentation](https://www.canva.com/design/DAE693uLOIU/view)
--   [Video Overview](https://www.youtube.com/watch?v=_IVn2aINYww)
-
-</details>
-
-<details>
 <summary>Direct Join</summary>
 
 <br/>
 
 -   You can `directly join a room` by using link like:
--   https://sfu.mirotalk.com/join?room=test&roomPassword=0&name=mirotalksfu&audio=0&video=0&screen=0&notify=0
+-   https://hivetalk.org/join?room=test&roomPassword=0&name=hivetalksfu&audio=0&video=0&screen=0&notify=0
 
     | Params       | Type           | Description     |
     | ------------ | -------------- | --------------- |
@@ -160,8 +130,8 @@ To embed a meeting within `your service or app` using an iframe, you can use the
 
 ```html
 <iframe
-    allow="camera; microphone; display-capture; fullscreen; clipboard-read; clipboard-write; web-share; autoplay"
-    src="https://sfu.mirotalk.com/newroom"
+    allow="camera; microphone; display-capture; fullscreen; clipboard-read; clipboard-write; autoplay"
+    src="https://hivetalk.org/newroom"
     style="height: 100vh; width: 100vw; border: 0px;"
 ></iframe>
 ```
@@ -173,7 +143,7 @@ To embed a meeting within `your service or app` using an iframe, you can use the
 
 <br/>
 
--   Before running MiroTalk SFU, ensure you have `Node.js` and all [requirements](https://mediasoup.org/documentation/v3/mediasoup/installation/#requirements) installed. This project has been tested with Node version [18.X](https://nodejs.org/en/download).
+-   Before running HiveTalk SFU, ensure you have `Node.js` and all [requirements](https://mediasoup.org/documentation/v3/mediasoup/installation/#requirements) installed. This project has been tested with Node version [18.X](https://nodejs.org/en/download).
 
 -   Requirements install example for `Ubuntu 24.04 LTS`
 
@@ -201,9 +171,9 @@ Install `NodeJS 18.X` and `npm` using [Node Version Manager](https://docs.mirota
 
 ```bash
 # Clone this repo
-$ git clone https://github.com/miroslavpejic85/mirotalksfu.git
-# Go to to dir mirotalksfu
-$ cd mirotalksfu
+$ git clone https://github.com/HiveTalk/hivetalksfu.git
+# Go to to dir hivetalksfu
+$ cd hivetalksfu
 # Copy app/src/config.template.js in app/src/config.js and edit it if needed
 $ cp app/src/config.template.js app/src/config.js
 # Install dependencies - be patient, the first time will take a few minutes, in the meantime have a good coffee ;)
@@ -220,11 +190,11 @@ $ PORT=3011 npm start
 
 > \[!NOTE]
 >
-> To run `MiroTalk SFU` on a `Windows operating system`, you can follow the instructions provided in [this documentation](https://github.com/miroslavpejic85/mirotalksfu/issues/99#issuecomment-1586073853).
+> To run `HiveTalk SFU` on a `Windows operating system`, you can follow the instructions provided in [this documentation](https://github.com/hivetalk/hivetalksfu/issues/99#issuecomment-1586073853).
 
 </details>
 
-<details open>
+<details>
 <summary>Docker</summary>
 
 <br/>
@@ -258,9 +228,9 @@ $ docker-compose down
 
 -   `Ngrok/HTTPS:` You can start a video conference directly from your local PC and make it accessible from any device outside your network by following [these instructions](docs/ngrok.md), or expose it directly on [HTTPS](app/ssl/README.md).
 
--   `Self-hosting:` For `self-hosting MiroTalk SFU` on your own dedicated server, please refer to [this comprehensive guide](docs/self-hosting.md). It will provide you with all the necessary instructions to get your MiroTalk SFU instance up and running smoothly.
+-   `Self-hosting:` For `self-hosting HiveTalk SFU` on your own dedicated server, please refer to [this comprehensive guide](docs/self-hosting.md). It will provide you with all the necessary instructions to get your HiveTalk SFU instance up and running smoothly.
 
--   `Rest API:` The [API documentation](https://docs.mirotalk.com/mirotalk-sfu/api/) uses [swagger](https://swagger.io/) at https://localhost:3010/api/v1/docs or check it on live [here](https://sfu.mirotalk.com/api/v1/docs).
+-   `Rest API:` The [API documentation](https://docs.mirotalk.com/mirotalk-sfu/api/) uses [swagger](https://swagger.io/) at https://localhost:3010/api/v1/docs or check it on live [here](https://hivetalk.org/api/v1/docs).
 
 ```bash
 # The response will give you the active meetings (default disabled).
@@ -279,55 +249,6 @@ $ curl -X POST "https://sfu.mirotalk.com/api/v1/join" -H "authorization: mirotal
 $ curl -X POST "http://localhost:3010/api/v1/token" -H "authorization: mirotalksfu_default_secret" -H "Content-Type: application/json" --data '{"username":"username","password":"password","presenter":"true", "expire":"1h"}'
 $ curl -X POST "https://sfu.mirotalk.com/api/v1/token" -H "authorization: mirotalksfu_default_secret" -H "Content-Type: application/json" --data '{"username":"username","password":"password","presenter":"true", "expire":"1h"}'
 ```
-
-</details>
-
-<details open>
-<summary>Hetzner & Contabo</summary>
-
-<br/>
-
-[![Hetzner](public/sponsors/Hetzner.png)](https://hetzner.cloud/?ref=XdRifCzCK3bn)
-
-This application is running for `demonstration purposes` on [Hetzner](https://www.hetzner.com/), one of `the best` [cloud providers](https://www.hetzner.com/cloud) and [dedicated root servers](https://www.hetzner.com/dedicated-rootserver).
-
----
-
-Use [my personal link](https://hetzner.cloud/?ref=XdRifCzCK3bn) to receive `€⁠20 IN CLOUD CREDITS`.
-
----
-
-[![Contabo](public/advertisers/ContaboLogo.png)](https://www.dpbolvw.net/click-101027391-14462707)
-
-Experience also top-tier German web hosting – dedicated servers, VPS, and web hosting at `unbeatable prices`. Reliable, secure, and backed by 24/7 support. [Explore now here](https://www.dpbolvw.net/click-101027391-14462707)
-
----
-
-To set up your own instance of `MiroTalk SFU` on a dedicated cloud server, please refer to our comprehensive [self-hosting documentation](https://docs.mirotalk.com/mirotalk-sfu/self-hosting/). This guide will walk you through the process step by step, ensuring a smooth and successful deployment.
-
-</details>
-
-<details>
-<summary>DigitalOcean</summary>
-
-<br/>
-
-[![DigitalOcean Referral Badge](https://web-platforms.sfo2.cdn.digitaloceanspaces.com/WWW/Badge%201.svg)](https://www.digitalocean.com/?refcode=1070207afbb1&utm_campaign=Referral_Invite&utm_medium=Referral_Program&utm_source=badge)
-
-For personal use, you can start with a single $5 a month cloud server and scale up as needed. You can use [this link](https://m.do.co/c/1070207afbb1) to get a `$100 credit for the first 60 days`.
-
-</details>
-
-<details>
-<summary>Live Demo</summary>
-
-<br/>
-
-<a target="_blank" href="https://hetzner.cloud/?ref=XdRifCzCK3bn"><img src="public/sponsors/Hetzner.png" style="width: 220px;"></a>
-
-https://sfu.mirotalk.com
-
-[![mirotalksfu-qr](public/images/mirotalksfu-qr.png)](https://sfu.mirotalk.com/)
 
 </details>
 
@@ -359,76 +280,15 @@ https://sfu.mirotalk.com
 
 [![AGPLv3](public/images/AGPLv3.png)](LICENSE)
 
-MiroTalk SFU is free and open-source under the terms of AGPLv3 (GNU Affero General Public License v3.0). Please `respect the license conditions`, In particular `modifications need to be free as well and made available to the public`. Get a quick overview of the license at [Choose an open source license](https://choosealicense.com/licenses/agpl-3.0/).
-
-To obtain a [MiroTalk SFU license](https://docs.mirotalk.com/license/licensing-options/) with terms different from the AGPLv3, you can conveniently make your [purchase on CodeCanyon](https://codecanyon.net/item/mirotalk-sfu-webrtc-realtime-video-conferences/40769970). This allows you to tailor the licensing conditions to better suit your specific requirements.
+HiveTalk SFU is free and open-source under the terms of AGPLv3 (GNU Affero General Public License v3.0). Please `respect the license conditions`, In particular `modifications need to be free as well and made available to the public`. Get a quick overview of the license at [Choose an open source license](https://choosealicense.com/licenses/agpl-3.0/).
 
 </details>
 
-<details open>
-<summary>Support the project</summary>
+## Contributors
 
-<br/>
-
-Do you find MiroTalk SFU indispensable for your needs? Join us in supporting this transformative project by [becoming a backer or sponsor](https://github.com/sponsors/miroslavpejic85). By doing so, not only will your logo prominently feature here, but you'll also drive the growth and sustainability of MiroTalk SFU. Your support is vital in ensuring that this valuable platform continues to thrive and remain accessible for all. Make an impact – back MiroTalk SFU today and be part of this exciting journey!
-
-|                                                                                   |                                                                                        |
-| --------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------- |
-| [![BroadcastX](public/sponsors/BroadcastX.png)](https://broadcastx.de/)           | [![Hetzner](public/sponsors/HetznerLogo.png)](https://hetzner.cloud/?ref=XdRifCzCK3bn) |
-| [![LuvLounge](public/sponsors/LuvLounge.png)](https://luvlounge.ca)               | [![QuestionPro](public/sponsors/QuestionPro.png)](https://www.questionpro.com)         |
-| [![BrowserStack](public/sponsors/BrowserStack.png)](https://www.browserstack.com) | [![CrystalSound](public/sponsors/CrystalSound.png)](https://crystalsound.ai)           |
-| [![Cloudron](public/sponsors/Cloudron.png)](https://cloudron.io)                  | [![Kiquix](public/sponsors/KiquixLogo.png)](https://kiquix.com)                        |
-
-</details>
-
-<details open>
-<summary>Advertisers</summary>
-
----
-
-[![Contabo](public/advertisers/ContaboLogo.png)](https://www.dpbolvw.net/click-101027391-14462707)
-
----
-
-</details>
-
-## Diving into Additional MiroTalk Projects:
-
-<details>
-<summary>MiroTalk P2P</summary>
-
-<br/>
-
-Try also [MiroTalk P2P](https://github.com/miroslavpejic85/mirotalk) `peer to peer` real-time video conferences, optimized for small groups. `Unlimited time, unlimited concurrent rooms` each having 5-8 participants.
-
-</details>
-
-<details>
-<summary>MiroTalk C2C</summary>
-
-<br>
-
-Try also [MiroTalk C2C](https://github.com/miroslavpejic85/mirotalkc2c) `peer to peer` real-time video conferences, optimized for cam 2 cam. `Unlimited time, unlimited concurrent rooms` each having 2 participants.
-
-</details>
-
-<details>
-<summary>MiroTalk BRO</summary>
-
-<br>
-
-Try also [MiroTalk BRO](https://github.com/miroslavpejic85/mirotalkbro) `Live broadcast` (peer to peer) live video, audio and screen stream to all connected users (viewers). `Unlimited time, unlimited concurrent rooms` each having a broadcast and many viewers.
-
-</details>
-
-<details>
-<summary>MiroTalk WEB</summary>
-
-<br>
-
-Try also [MiroTalk WEB](https://github.com/miroslavpejic85/mirotalkwebrtc) a platform that allows for the management of an `unlimited number of users`. Each user must register with their email, username, and password, after which they gain access to their `personal dashboard`. Within the dashboard, users can `manage their rooms and schedule meetings` using the desired version of MiroTalk on a specified date and time. Invitations to these meetings can be sent via email, shared through the web browser, or sent via SMS.
-
-</details>
+<a href="https://github.com/hivetalk/hivetalksfu/graphs/contributors">
+  <img src="https://contrib.rocks/image?repo=hivetalk/hivetalksfu" />
+</a>
 
 ---
 

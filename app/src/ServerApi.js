@@ -28,24 +28,20 @@ module.exports = class ServerApi {
                     peer_info: {
                         peer_name,
                         peer_presenter,
-                        peer_video,
-                        peer_audio,
-                        peer_screen,
-                        peer_hand,
-                        os_name,
-                        os_version,
-                        browser_name,
-                        browser_version,
+                        peer_npub,
+                        peer_pubkey,
+                        peer_lnaddress,
+                        // peer_video,
+                        // peer_audio,
+                        // peer_screen,
+                        // peer_hand,
                     },
                 }) => ({
                     name: peer_name,
                     presenter: peer_presenter,
-                    video: peer_video,
-                    audio: peer_audio,
-                    screen: peer_screen,
-                    hand: peer_hand,
-                    os: os_name ? `${os_name} ${os_version}` : '',
-                    browser: browser_name ? `${browser_name} ${browser_version}` : '',
+                    npub: peer_npub,
+                    pubkey: peer_pubkey,
+                    lnaddress: peer_lnaddress,
                 }),
             );
             return {
@@ -56,7 +52,10 @@ module.exports = class ServerApi {
         return meetings;
     }
 
-    getMeetingURL() {
+    getMeetingURL(name) {
+        if (name) {
+            return 'https://' + this._host + '/join/' + encodeURIComponent(name); // name;
+        }
         return 'https://' + this._host + '/join/' + uuidV4();
     }
 

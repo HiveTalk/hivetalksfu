@@ -16,6 +16,10 @@ module.exports = class Peer {
             peer_video_privacy,
             peer_recording,
             peer_hand,
+            peer_url,
+            peer_pubkey,
+            peer_npub,
+            peer_lnaddress,
         } = peer_info;
 
         this.id = socket_id;
@@ -28,6 +32,10 @@ module.exports = class Peer {
         this.peer_video_privacy = peer_video_privacy;
         this.peer_recording = peer_recording;
         this.peer_hand = peer_hand;
+        this.peer_url = peer_url;
+        this.peer_pubkey = peer_pubkey;
+        this.peer_npub = peer_npub;
+        this.peer_lnaddress = peer_lnaddress;
 
         this.transports = new Map();
         this.consumers = new Map();
@@ -39,7 +47,8 @@ module.exports = class Peer {
     // ####################################################
 
     updatePeerInfo(data) {
-        log.debug('Update peer info', data);
+        // don't log  peer data
+        // log.debug('Update peer info', data);
         switch (data.type) {
             case 'audio':
             case 'audioType':

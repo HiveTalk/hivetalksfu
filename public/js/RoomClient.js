@@ -26,6 +26,8 @@ const html = {
     videoOn: 'fas fa-video',
     videoOff: 'fas fa-video-slash',
     userName: 'username',
+    nostrIcon: 'nostr-image-button',
+    zapIcon: 'zap-image-button',
     userHand: 'fas fa-hand-paper pulsate',
     pip: 'fas fa-images',
     fullScreen: 'fas fa-expand',
@@ -72,8 +74,10 @@ const icons = {
 };
 
 const image = {
-    about: '../images/mirotalk-logo.gif',
-    avatar: '../images/mirotalksfu-logo.png',
+    //about: '../images/hivelogo50x200.svg',
+    // avatar: '../images/mirotalksfu-logo.png',
+    about: '',
+    avatar: '',
     audio: '../images/audio.gif',
     poster: '../images/loader.gif',
     rec: '../images/rec.png',
@@ -176,6 +180,103 @@ const VideoAI = {
 // Recording
 let recordedBlobs = [];
 
+// HANDLE LIGHTNING
+
+function handleLightning(zp) {
+    zp.addEventListener('click', function () {
+        let id = this.id;
+        let extractedIdentifier = id.split('__')[0];
+        Swal.fire({
+            background: swalBackground,
+            title: `Zap ${extractedIdentifier}`,
+            html: `
+                <label for="amount" style="font-size: 1.2em;">Amount (sats): </label>
+                <input type="number" id="amount" class="swal2-input" placeholder="Enter amount" value="21">
+                <button id="preset-21" class="swal2-confirm swal2-styled" style="margin-right: 10px;">21</button>
+                <button id="preset-100" class="swal2-confirm swal2-styled" style="margin-right: 10px;">100</button>
+                <button id="preset-500" class="swal2-confirm swal2-styled" style="margin-right: 10px;">500</button>
+                <button id="preset-1000" class="swal2-confirm swal2-styled">1000</button>
+            `,
+            showCancelButton: true,
+            reverseButtons: true,
+            confirmButtonText: 'OK',
+            confirmButtonColor: 'green',
+            cancelButtonColor: 'red',
+            preConfirm: () => {
+                const amount = document.getElementById('amount').value;
+                // adjust amount to ln address specified range
+                if (!amount || amount <= 0) {
+                    Swal.showValidationMessage('Please enter a valid amount');
+                    return false;
+                }
+                return amount;
+            },
+        }).then((result) => {
+            if (result.isConfirmed) {
+                let amt = result.value;
+                console.log('Amount:', amt);
+                console.log('lightning address:', extractedIdentifier);
+
+                window.moduleFunctions
+                    .handleDonation(peer_name, extractedIdentifier, amt)
+                    .then((result) => {
+                        console.log('handleDonationResult:', result);
+                        // send zap msg to chat emoji pop up
+                        boltEmoji(extractedIdentifier + ' ' + amt + ' sats');
+                        // send zap message to chatroom if open
+                        rc.broadcastMessage(result);
+                    })
+                    .catch((error) => {
+                        console.log('Error:', error);
+                    });
+            }
+        });
+        document.getElementById('preset-21').addEventListener('click', function () {
+            document.getElementById('amount').value = 21;
+        });
+        document.getElementById('preset-100').addEventListener('click', function () {
+            document.getElementById('amount').value = 100;
+        });
+        document.getElementById('preset-500').addEventListener('click', function () {
+            document.getElementById('amount').value = 500;
+        });
+        document.getElementById('preset-1000').addEventListener('click', function () {
+            document.getElementById('amount').value = 1000;
+        });
+    });
+}
+
+// ####################################################
+// HANDLE NOSTR
+// ####################################################
+
+// Define the getProfile for Nostr - temporarily get it from njump.me
+function getProfile(eventParam) {
+    var host = 'https://njump.me';
+
+    var width = '100%'; // Set default width
+    var height = '100%'; // Set default height
+    var iframe = document.createElement('iframe');
+    iframe.src = host + '/' + eventParam + '?embed=yes';
+    //iframe.src = host + '/' + eventParam;
+    iframe.style.width = width;
+    iframe.style.height = 800 + 'px';
+    iframe.style.border = 'none'; // Remove the border
+
+    // Add a class to easily permit overwriting the styles
+    iframe.classList.add('nostr-embedded');
+
+    // Listen for messages from the iframe
+    window.addEventListener('message', function (event) {
+        console.log('Message received:', event.data);
+        iframe.onload = function () {
+            // This code will execute when the iframe content has loaded
+            iframe.contentWindow.postMessage({ setDarkMode: true }, '*');
+        };
+    });
+    return iframe;
+}
+
 class RoomClient {
     constructor(
         localAudioEl,
@@ -216,7 +317,7 @@ class RoomClient {
         this._moderator = {
             video_start_privacy: false,
             audio_start_muted: false,
-            video_start_hidden: false,
+            video_start_hidden: true,
             audio_cant_unmute: false,
             video_cant_unhide: false,
             screen_cant_share: false,
@@ -349,6 +450,12 @@ class RoomClient {
 
         this.debug = false;
         this.debug ? window.localStorage.setItem('debug', 'mediasoup*') : window.localStorage.removeItem('debug');
+
+        // VideoMenuBar Behavior
+        if (this.isMobileDevice) {
+            this.addLowLatencySwipeListener();
+        }
+    
 
         console.log('06 ----> Load MediaSoup Client v', mediasoupClient.version);
         console.log('06.1 ----> PEER_ID', this.peer_id);
@@ -611,6 +718,7 @@ class RoomClient {
 
         // notify && participantsCount == 1 ? shareRoom() : sound('joined');
         if (notify && participantsCount == 1) {
+            console.log('share room pop dialog on initial join');
             shareRoom();
         } else {
             if (this.isScreenAllowed) {
@@ -1946,10 +2054,74 @@ class RoomClient {
                 d.appendChild(elem);
                 d.appendChild(pm);
                 d.appendChild(i);
+
+                // add lightning address or lnurl for zaps
+                if (peer_lnaddress) {
+                    const zp = document.createElement('button');
+                    zp.id = peer_lnaddress + '__zap';
+                    zp.className = html.zapIcon;
+                    zp.addEventListener('click', (event) => {
+                        event.stopPropagation(); // Prevent click from bubbling up
+                        handleLightning(zp);
+                    });
+                    d.appendChild(zp);
+                }
                 d.appendChild(p);
-                d.appendChild(vb);
+                this.videoMediaContainer.appendChild(vb);
                 this.videoMediaContainer.appendChild(d);
-                await this.attachMediaStream(elem, stream, type, 'Producer');
+
+                let pv;
+
+                // Create and append peer name header
+                const peerNameHeader = document.createElement('div');
+                peerNameHeader.className = 'peer-name-header';
+                
+                const peerNameContainer = document.createElement('div');
+                peerNameContainer.className = 'peer-name-container';
+                
+                const peerNameSpan = document.createElement('span');
+                peerNameSpan.className = 'peer-name';
+                peerNameSpan.textContent = peer_name;
+    
+                // Create and append volume control to peerNameSpan
+                pv = document.createElement('input');
+                pv.id = this.peer_id + '___pVolume';
+                pv.type = 'range';
+                pv.min = 0;
+                pv.max = 100;
+                pv.value = 100;
+                peerNameSpan.appendChild(pv);
+                
+                peerNameContainer.appendChild(peerNameSpan);
+    
+                if (peer_info.peer_npub) {
+                    const nostrIcon = document.createElement('span');
+                    nostrIcon.className = html.nostrIcon + ' nostr-icon-inline';
+                    nostrIcon.addEventListener('click', (event) => {
+                        event.stopPropagation();
+                        this.handleNostrClick(peer_info.peer_npub);
+                    });
+                    peerNameContainer.appendChild(nostrIcon);
+                }
+    
+                peerNameHeader.appendChild(peerNameContainer);
+                vb.appendChild(peerNameHeader);
+
+                if (this.isMobileDevice) {
+                    peerNameHeader.style.backgroundImage = `url('${peer_info.peer_url || image.avatar}')`;
+                    this.addCloseButton(peerNameHeader, this.peer_id);
+
+                }
+                
+                
+                d.addEventListener('click', (event) => {
+                    // Check if the clicked element is the zap button
+                    if (!event.target.closest('.' + html.zapIcon.split(' ')[0])) {
+                        this.toggleVideoMenuBar(this.peer_id);
+                    }
+                });
+
+                this.attachMediaStream(elem, stream, type, 'Producer');
                 this.myVideoEl = elem;
                 this.isVideoPictureInPictureSupported && this.handlePIP(elem.id, pip.id);
                 this.isVideoFullScreenSupported && this.handleFS(elem.id, fs.id);
@@ -1987,6 +2159,13 @@ class RoomClient {
                 break;
         }
         return elem;
+    }
+
+    simpleToggleVideoMenuBar(peerId) {
+        const videoMenuBar = this.getId(peerId + '__vb');
+        if (videoMenuBar) {
+            videoMenuBar.classList.toggle('active');
+        }
     }
 
     async pauseProducer(type) {
@@ -2261,15 +2440,16 @@ class RoomClient {
         let elem, vb, d, p, i, cm, au, pip, fs, ts, sf, sm, sv, gl, ban, ko, pb, pm, pv, pn, ha;
 
         let eDiv, eBtn, eVc; // expand buttons
-
+    
         console.log('PEER-INFO', peer_info);
-
+    
         const remotePeerId = peer_info.peer_id;
         const remoteIsScreen = type == mediaType.screen;
         const remotePeerAudio = peer_info.peer_audio;
         const remotePrivacyOn = peer_info.peer_video_privacy;
         const remotePeerPresenter = peer_info.peer_presenter;
-
+        const remoteLNAddress = peer_info.peer_lnaddress;
+    
         switch (type) {
             case mediaType.video:
             case mediaType.screen:
@@ -2289,21 +2469,56 @@ class RoomClient {
                 vb = document.createElement('div');
                 vb.setAttribute('id', remotePeerId + '__vb');
                 vb.className = 'videoMenuBar fadein';
-
-                eDiv = document.createElement('div');
-                eDiv.className = 'expand-video';
-                eBtn = document.createElement('button');
-                eBtn.id = remotePeerId + '_videoExpandBtn';
-                eBtn.className = html.expand;
-                eVc = document.createElement('div');
-                eVc.className = 'expand-video-content';
-
+                
+                // Add click event listener for both mobile and desktop
+                d.addEventListener('click', (event) => {
+                    // Check if the clicked element is the zap button
+                    if (!event.target.closest('.' + html.zapIcon.split(' ')[0])) {
+                        this.toggleVideoMenuBar(remotePeerId);
+                    }
+                });          
+                
+                // Create and append peer name header
+                const peerNameHeader = document.createElement('div');
+                peerNameHeader.className = 'peer-name-header';
+                
+                const peerNameContainer = document.createElement('div');
+                peerNameContainer.className = 'peer-name-container';
+                
+                const peerNameSpan = document.createElement('span');
+                peerNameSpan.className = 'peer-name';
+                peerNameSpan.textContent = peer_name;
+    
+                // Create and append volume control to peerNameSpan
                 pv = document.createElement('input');
                 pv.id = remotePeerId + '___pVolume';
                 pv.type = 'range';
                 pv.min = 0;
                 pv.max = 100;
                 pv.value = 100;
+                peerNameSpan.appendChild(pv);
+                
+                peerNameContainer.appendChild(peerNameSpan);
+    
+                if (peer_info.peer_npub) {
+                    const nostrIcon = document.createElement('span');
+                    nostrIcon.className = html.nostrIcon + ' nostr-icon-inline';
+                    nostrIcon.addEventListener('click', (event) => {
+                        event.stopPropagation();
+                        this.handleNostrClick(peer_info.peer_npub);
+                    });
+                    peerNameContainer.appendChild(nostrIcon);
+                }
+    
+                peerNameHeader.appendChild(peerNameContainer);
+                vb.appendChild(peerNameHeader);
+
+                if (this.isMobileDevice) {
+                    peerNameHeader.style.backgroundImage = `url('${peer_info.peer_url || image.avatar}')`;
+                    this.addCloseButton(peerNameHeader, remotePeerId);
+
+                }
+    
                 pip = document.createElement('button');
                 pip.id = id + '__pictureInPicture';
                 pip.className = html.pip;
@@ -2349,7 +2564,7 @@ class RoomClient {
                 p = document.createElement('p');
                 p.id = remotePeerId + '__name';
                 p.className = html.userName;
-                p.innerText = (remotePeerPresenter ? '⭐️ ' : '') + peer_name;
+                p.innerText = (remotePeerPresenter ? '⭐️ ' : ' ') + peer_name;
                 pm = document.createElement('div');
                 pb = document.createElement('div');
                 pm.setAttribute('id', remotePeerId + '__pitchMeter');
@@ -2378,11 +2593,74 @@ class RoomClient {
                 BUTTONS.consumerVideo.fullScreenButton && this.isVideoFullScreenSupported && vb.appendChild(fs);
                 BUTTONS.consumerVideo.focusVideoButton && vb.appendChild(ha);
                 if (!this.isMobileDevice) vb.appendChild(pn);
+    
+     /*     TODO: REVIEW THIS      
+                 if (this.isMobileDevice) {
+                    // Mobile-specific behavior
+                    BUTTONS.consumerVideo.sendMessageButton && vb.appendChild(sm);
+                    BUTTONS.consumerVideo.sendFileButton && vb.appendChild(sf);
+                    BUTTONS.consumerVideo.sendVideoButton && vb.appendChild(sv);
+                    BUTTONS.consumerVideo.geolocationButton && vb.appendChild(gl);
+                    BUTTONS.consumerVideo.banButton && vb.appendChild(ban);
+                    BUTTONS.consumerVideo.ejectButton && vb.appendChild(ko);
+                    vb.appendChild(au);
+                    vb.appendChild(cm);
+                    BUTTONS.consumerVideo.snapShotButton && vb.appendChild(ts);
+                    BUTTONS.consumerVideo.videoPictureInPicture &&
+                        this.isVideoPictureInPictureSupported &&
+                        vb.appendChild(pip);
+                    BUTTONS.consumerVideo.fullScreenButton && 
+                        this.isVideoFullScreenSupported && 
+                        vb.appendChild(fs);
+    
+                } else {
+                    // Desktop behavior
+                    eDiv = document.createElement('div');
+                    eDiv.className = 'expand-video';
+                    eBtn = document.createElement('button');
+                    eBtn.id = remotePeerId + '_videoExpandBtn';
+                    eBtn.className = html.expand;
+                    eVc = document.createElement('div');
+                    eVc.className = 'expand-video-content';
+    
+                    BUTTONS.consumerVideo.sendMessageButton && eVc.appendChild(sm);
+                    BUTTONS.consumerVideo.sendFileButton && eVc.appendChild(sf);
+                    BUTTONS.consumerVideo.sendVideoButton && eVc.appendChild(sv);
+                    BUTTONS.consumerVideo.geolocationButton && eVc.appendChild(gl);
+                    BUTTONS.consumerVideo.banButton && eVc.appendChild(ban);
+                    BUTTONS.consumerVideo.ejectButton && eVc.appendChild(ko);
+                    eDiv.appendChild(eBtn);
+                    eDiv.appendChild(eVc);
+    
+                    vb.appendChild(eDiv);
+                    vb.appendChild(au);
+                    vb.appendChild(cm);
+                    BUTTONS.consumerVideo.snapShotButton && vb.appendChild(ts);
+                    BUTTONS.consumerVideo.videoPictureInPicture &&
+                        this.isVideoPictureInPictureSupported &&
+                        vb.appendChild(pip);
+                    BUTTONS.consumerVideo.fullScreenButton && 
+                        this.isVideoFullScreenSupported && 
+                        vb.appendChild(fs);
+                    vb.appendChild(pn);
+                }
+     */    
                 d.appendChild(elem);
                 d.appendChild(i);
+    
+                // add remote lightning address or lnurl for zaps
+                if (remoteLNAddress) {
+                    let zp = document.createElement('button');
+                    console.log('remote lnaddress: ', remoteLNAddress);
+                    zp.id = remoteLNAddress + '__zap';
+                    zp.className = html.zapIcon;
+                    handleLightning(zp);
+                    d.appendChild(zp);
+                }
+    
                 d.appendChild(p);
                 d.appendChild(pm);
-                d.appendChild(vb);
+                this.videoMediaContainer.appendChild(vb);
                 this.videoMediaContainer.appendChild(d);
                 await this.attachMediaStream(elem, stream, type, 'Consumer');
                 this.isVideoPictureInPictureSupported && this.handlePIP(elem.id, pip.id);
@@ -2453,7 +2731,6 @@ class RoomClient {
                 if (sinkId && speakerSelect.value) {
                     this.changeAudioDestination(elem);
                 }
-                //elem.addEventListener('play', () => { elem.volume = 0.1 });
                 console.log('[Add audioConsumers]', this.audioConsumers);
                 break;
             default:
@@ -2524,66 +2801,99 @@ class RoomClient {
     // ####################################################
 
     setVideoOff(peer_info, remotePeer = false) {
-        //console.log('setVideoOff', peer_info);
+        console.log('setVideoOff', peer_info);
         let d, vb, i, h, au, sf, sm, sv, gl, ban, ko, p, pm, pb, pv;
-
-        const { peer_id, peer_name, peer_audio, peer_presenter } = peer_info;
-
+    
+        const { peer_id, peer_name, peer_audio, peer_presenter, peer_npub, peer_lnaddress } = peer_info;
+    
+        // Error handling: Check if peer_id is valid
+        if (!peer_id) {
+            console.error('Invalid peer_id in setVideoOff');
+            return;
+        }
+    
         this.removeVideoOff(peer_id);
+        
+        // Create main container
         d = document.createElement('div');
         d.className = 'Camera';
         d.id = peer_id + '__videoOff';
+    
+        // Create video menu bar
         vb = document.createElement('div');
-        vb.setAttribute('id', peer_id + 'vb');
+        vb.id = peer_id + 'vb';
         vb.className = 'videoMenuBar fadein';
+    
+        // Create and append peer name header
+        const peerNameHeader = document.createElement('div');
+        peerNameHeader.className = 'peer-name-header';
+        
+        const peerNameContainer = document.createElement('div');
+        peerNameContainer.className = 'peer-name-container';
+        
+        const peerNameSpan = document.createElement('span');
+        peerNameSpan.className = 'peer-name';
+        peerNameSpan.textContent = peer_name;
+        peerNameContainer.appendChild(peerNameSpan);
+        
+        if (this.isMobileDevice) {
+            peerNameHeader.style.backgroundImage = `url('${peer_info.peer_url || image.avatar}')`;
+        }
+        
+        if (peer_npub) {
+            const nostrIcon = document.createElement('span');
+            nostrIcon.className = html.nostrIcon + ' nostr-icon-inline';
+            nostrIcon.addEventListener('click', (event) => {
+                event.stopPropagation();
+                this.handleNostrClick(peer_npub);
+            });
+            peerNameContainer.appendChild(nostrIcon);
+        }
+    
+        peerNameHeader.appendChild(peerNameContainer);
+        vb.appendChild(peerNameHeader);
+    
+        // Create audio button
         au = document.createElement('button');
         au.id = peer_id + '__audio';
         au.className = peer_audio ? html.audioOn : html.audioOff;
+            
+        // Create and append controls for remote peers
         if (remotePeer) {
             pv = document.createElement('input');
-            pv.id = peer_id + '___pVolume';
+            pv.id = 'remotePeer___' + peer_id + '___pVolume';
             pv.type = 'range';
             pv.min = 0;
             pv.max = 100;
             pv.value = 100;
+            peerNameSpan.appendChild(pv);
+                    
+
             sf = document.createElement('button');
             sf.id = 'remotePeer___' + peer_id + '___sendFile';
             sf.className = html.sendFile;
+    
             sm = document.createElement('button');
             sm.id = 'remotePeer___' + peer_id + '___sendMsg';
             sm.className = html.sendMsg;
+    
             sv = document.createElement('button');
             sv.id = 'remotePeer___' + peer_id + '___sendVideo';
             sv.className = html.sendVideo;
+    
             gl = document.createElement('button');
             gl.id = 'remotePeer___' + peer_id + '___geoLocation';
             gl.className = html.geolocation;
+    
             ban = document.createElement('button');
             ban.id = 'remotePeer___' + peer_id + '___ban';
             ban.className = html.ban;
+    
             ko = document.createElement('button');
             ko.id = 'remotePeer___' + peer_id + '___kickOut';
             ko.className = html.kickOut;
-        }
-        i = document.createElement('img');
-        i.className = 'videoAvatarImage center'; // pulsate
-        i.id = peer_id + '__img';
-        p = document.createElement('p');
-        p.id = peer_id + '__name';
-        p.className = html.userName;
-        p.innerText = (peer_presenter ? '⭐️ ' : '') + peer_name + (remotePeer ? '' : ' (me) ');
-        h = document.createElement('i');
-        h.id = peer_id + '__hand';
-        h.className = html.userHand;
-        pm = document.createElement('div');
-        pb = document.createElement('div');
-        pm.setAttribute('id', peer_id + '__pitchMeter');
-        pb.setAttribute('id', peer_id + '__pitchBar');
-        pm.className = 'speechbar';
-        pb.className = 'bar';
-        pb.style.height = '1%';
-        pm.appendChild(pb);
-        if (remotePeer) {
+    
+            // Append buttons to video menu bar
             BUTTONS.videoOff.ejectButton && vb.appendChild(ko);
             BUTTONS.videoOff.banButton && vb.appendChild(ban);
             BUTTONS.videoOff.geolocationButton && vb.appendChild(gl);
@@ -2592,16 +2902,59 @@ class RoomClient {
             BUTTONS.videoOff.sendMessageButton && vb.appendChild(sm);
             BUTTONS.videoOff.audioVolumeInput && !this.isMobileDevice && vb.appendChild(pv);
         }
+    
         vb.appendChild(au);
+    
+        // Create and append avatar image
+        i = document.createElement('img');
+        i.className = 'videoAvatarImage center';
+        i.id = peer_id + '__img';
         d.appendChild(i);
+    
+        // Add lightning address button if available
+        if (peer_lnaddress) {
+            const zp = document.createElement('button');
+            zp.id = peer_lnaddress + '__zap';
+            zp.className = html.zapIcon;
+            zp.addEventListener('click', (event) => {
+                event.stopPropagation(); // Prevent click from bubbling up
+                handleLightning(zp);
+            });
+            d.appendChild(zp);
+        }
+            
+        // Create and append other UI elements
+        p = document.createElement('p');
+        p.id = peer_id + '__name';
+        p.className = html.userName;
+        p.innerText = (peer_presenter ? '⭐️ ' : '') + peer_name + (remotePeer ? '' : ' (me) ');
+    
+        h = document.createElement('i');
+        h.id = peer_id + '__hand';
+        h.className = html.userHand;
+    
+        pm = document.createElement('div');
+        pb = document.createElement('div');
+        pm.id = peer_id + '__pitchMeter';
+        pb.id = peer_id + '__pitchBar';
+        pm.className = 'speechbar';
+        pb.className = 'bar';
+        pb.style.height = '1%';
+        pm.appendChild(pb);
+    
         d.appendChild(p);
         d.appendChild(h);
         d.appendChild(pm);
-        d.appendChild(vb);
+        this.videoMediaContainer.appendChild(vb);
+    
+        // Append the main container to the video media container
         this.videoMediaContainer.appendChild(d);
+    
+        // Set up event handlers
         BUTTONS.videoOff.muteAudioButton && this.handleAU(au.id);
+        
         if (remotePeer) {
-            this.handlePV('remotePeer___' + pv.id);
+            this.handlePV('remotePeer___' + peer_id + '___pVolume');
             this.handleSM(sm.id);
             this.handleSF(sf.id);
             this.handleSV(sv.id);
@@ -2609,12 +2962,13 @@ class RoomClient {
             this.handleBAN(ban.id);
             this.handleKO(ko.id);
         }
+    
         this.handleDD(d.id, peer_id, !remotePeer);
         this.popupPeerInfo(p.id, peer_info);
-        this.setVideoAvatarImgName(i.id, peer_name);
-        this.getId(i.id).style.display = 'block';
-        handleAspectRatio();
-        if (isParticipantsListOpen) getRoomParticipants();
+        this.setVideoAvatarImgName(i.id, peer_name, peer_info.peer_url);
+    
+        i.style.display = 'block';
+    
         if (!this.isMobileDevice && remotePeer) {
             this.setTippy(sm.id, 'Send message', 'bottom');
             this.setTippy(sf.id, 'Send file', 'bottom');
@@ -2625,15 +2979,225 @@ class RoomClient {
             this.setTippy(ban.id, 'Ban', 'bottom');
             this.setTippy(ko.id, 'Eject', 'bottom');
         }
+    
         remotePeer ? this.setPeerAudio(peer_id, peer_audio) : this.setIsAudio(peer_id, peer_audio);
+    
+        // Add click event listener for toggling video menu bar
+        d.addEventListener('click', (event) => {
+            // Check if the clicked element is the zap button
+            if (!event.target.closest('.' + html.zapIcon.split(' ')[0])) {
+                this.toggleVideoMenuBar(peer_id);
+            }
+        });
 
+        if (this.isMobileDevice) {
+            peerNameHeader.style.backgroundImage = `url('${peer_info.peer_url || image.avatar}')`;
+            this.addCloseButton(peerNameHeader, peer_id);
+        }
+        this.addCloseButton(peerNameHeader, peer_id);
+
+    
         console.log('[setVideoOff] Video-element-count', this.videoMediaContainer.childElementCount);
-        //
+        handleAspectRatio();
+        if (isParticipantsListOpen) getRoomParticipants();
         wbUpdate();
 
         this.editorUpdate();
 
         this.handleHideMe();
+    }
+    
+    // Helper function to handle Nostr button click
+    handleNostrClick(peer_npub) {
+        const iframe = getProfile(peer_npub);
+        Swal.fire({
+            background: swalBackground,
+            html: iframe.outerHTML,
+            position: 'top-end',
+            showClass: {
+                popup: 'animate__animated animate__fadeInRight animate__faster'
+            },
+            hideClass: {
+                popup: 'animate__animated animate__fadeOutRight animate__faster'
+            },
+            grow: 'column',
+            width: 600,
+            showCloseButton: true,
+            showConfirmButton: false,
+        });
+    }
+    
+    toggleVideoMenuBar(peer_id) {
+        const videoMenuBar = this.findVideoMenuBar(peer_id);
+        if (!videoMenuBar) return;
+    
+        const isActive = videoMenuBar.classList.contains('active');
+        
+        if (isActive) {
+            // Close the menu bar
+            videoMenuBar.classList.remove('active');
+            if (this.isMobileDevice) {
+                document.body.style.overflow = '';
+                videoMenuBar.style.transition = 'transform 0.3s, opacity 0.3s';
+                videoMenuBar.style.transform = 'translateY(100%)';
+                videoMenuBar.style.opacity = '0';
+                setTimeout(() => {
+                    if (videoMenuBar && videoMenuBar.style) {
+                        videoMenuBar.style.transition = '';
+                    }
+                }, 300);
+            }
+        } else {
+            // Open the menu bar
+            this.closeAllVideoMenuBars();
+            videoMenuBar.classList.add('active');
+            if (this.isMobileDevice) {
+                document.body.style.overflow = 'hidden';
+                videoMenuBar.style.transition = 'transform 0.3s, opacity 0.3s';
+                videoMenuBar.style.transform = 'translateY(0)';
+                videoMenuBar.style.opacity = '1';
+                setTimeout(() => {
+                    if (videoMenuBar && videoMenuBar.style) {
+                        videoMenuBar.style.transition = '';
+                    }
+                }, 300);
+            }
+        }
+    }
+
+    closeVideoMenuBar(peer_id) {
+        const videoMenuBar = this.findVideoMenuBar(peer_id);
+        if (!videoMenuBar) return;
+    
+        videoMenuBar.classList.remove('active');
+        
+        if (this.isMobileDevice) {
+            document.body.style.overflow = '';
+            videoMenuBar.style.transition = 'transform 0.3s, opacity 0.3s';
+            videoMenuBar.style.transform = 'translateY(100%)';
+            videoMenuBar.style.opacity = '0';
+            setTimeout(() => {
+                videoMenuBar.style.transition = '';
+            }, 300);
+        }
+    }
+    
+    findVideoMenuBar(peer_id) {
+        const relatedElements = document.querySelectorAll(`[id*="${peer_id}"]`);
+        for (let elem of relatedElements) {
+            if (elem.classList.contains('videoMenuBar')) {
+                return elem;
+            }
+        }
+        return null;
+    }
+    
+    closeAllVideoMenuBars() {
+        const allMenuBars = document.querySelectorAll('.videoMenuBar.active');
+        allMenuBars.forEach(menuBar => {
+            const peerId = this.findPeerId(menuBar);
+            if (peerId) {
+                this.closeVideoMenuBar(peerId);
+            }
+        });
+    }
+    
+    closeAllVideoMenuBars(exceptPeerId) {
+        const allMenuBars = document.querySelectorAll('.videoMenuBar');
+        allMenuBars.forEach(bar => {
+            if (bar.id !== exceptPeerId + 'vb') {
+                bar.classList.remove('active');
+                if (this.isMobileDevice) {
+                    bar.style.transform = 'translateY(100%)';
+                    bar.style.opacity = '0';
+                }
+            }
+        });
+    }
+
+    addCloseButton(containerElement, peerId) {
+        // Create close button
+        const closeBtn = document.createElement('div');
+        closeBtn.className = 'videoMenuBarClose';
+        closeBtn.innerHTML = '&times;'; // Unicode for 'x'
+        closeBtn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            this.toggleVideoMenuBar(peerId);
+        });
+        containerElement.appendChild(closeBtn);
+    
+    }
+    
+    addLowLatencySwipeListener() {
+        let startY, currentY;
+        let isDragging = false;
+        let activeMenuBar = null;
+        let activePeerId = null;
+    
+        const findPeerId = (element) => {
+            while (element && !element.id) {
+                element = element.parentElement;
+            }
+            if (!element) return null;
+            const idParts = element.id.split('__');
+            return idParts[0];
+        };
+    
+        const handleTouchStart = (e) => {
+            if (e.target.type === 'range') return;
+    
+            activeMenuBar = e.target.closest('.videoMenuBar');
+            if (!activeMenuBar) return;
+    
+            activePeerId = findPeerId(activeMenuBar);
+            if (!activePeerId) return;
+    
+            startY = currentY = e.touches[0].clientY;
+            isDragging = true;
+        };
+    
+        const handleTouchMove = (e) => {
+            if (!isDragging || !activeMenuBar) return;
+            e.preventDefault();
+            currentY = e.touches[0].clientY;
+    
+            const deltaY = currentY - startY;
+            if (deltaY > 0) {
+                const progress = Math.min(deltaY / activeMenuBar.offsetHeight, 1);
+                const opacity = 1 - progress;
+                activeMenuBar.style.transform = `translateY(${deltaY}px)`;
+                activeMenuBar.style.opacity = opacity.toFixed(2);
+            }
+        };
+    
+        const handleTouchEnd = (e) => {
+            if (!isDragging || !activeMenuBar || !activePeerId) return;
+
+            isDragging = false;
+            const finalDeltaY = currentY - startY;
+
+            if (finalDeltaY > activeMenuBar.offsetHeight / 4) {
+                this.toggleVideoMenuBar(activePeerId);
+            } else {
+                const menuBar = activeMenuBar; // Store reference to activeMenuBar
+                menuBar.style.transition = 'transform 0.3s, opacity 0.3s';
+                menuBar.style.transform = 'translateY(0)';
+                menuBar.style.opacity = '1';
+                setTimeout(() => {
+                    if (menuBar && menuBar.style) {
+                        menuBar.style.transition = '';
+                    }
+                }, 300);
+            }
+
+            activeMenuBar = null;
+            activePeerId = null;
+        };
+
+    
+        this.videoMediaContainer.addEventListener('touchstart', handleTouchStart);
+        this.videoMediaContainer.addEventListener('touchmove', handleTouchMove, { passive: false });
+        this.videoMediaContainer.addEventListener('touchend', handleTouchEnd);
     }
 
     removeVideoOff(peer_id) {
@@ -2825,12 +3389,26 @@ class RoomClient {
         }
     }
 
-    setVideoAvatarImgName(elemId, peer_name) {
+    setVideoAvatarImgName(elemId, peer_name, peer_url) {
         let elem = this.getId(elemId);
         if (cfg.useAvatarSvg) {
-            rc.isValidEmail(peer_name)
-                ? elem.setAttribute('src', this.genGravatar(peer_name))
-                : elem.setAttribute('src', this.genAvatarSvg(peer_name, 250));
+            console.log('setVideoAvatarImgName: ', peer_name, 'url: ', peer_url);
+            let avatarImg = '';
+            if (peer_url) {
+                elem.setAttribute('src', peer_url); // this.getNostrAvatar(peer_name))
+            } else {
+                isValidLightningAddress(peer_name).then((isValid) => {
+                    if (isValid) {
+                        avatarImg = elem.setAttribute('src', boltavatar);
+                        console.log('valid lightning address', avatarImg);
+                    } else {
+                        avatarImg = rc.isValidEmail(peer_name)
+                            ? elem.setAttribute('src', this.genGravatar(peer_name))
+                            : elem.setAttribute('src', this.genAvatarSvg(peer_name, 250));
+                        console.log('avatar img', avatarImg);
+                    }
+                });
+            }
         } else {
             elem.setAttribute('src', image.avatar);
         }
@@ -2839,6 +3417,7 @@ class RoomClient {
     genGravatar(email, size = false) {
         const hash = md5(email.toLowerCase().trim());
         const gravatarURL = `https://www.gravatar.com/avatar/${hash}` + (size ? `?s=${size}` : '?s=250') + '?d=404';
+        console.log('inside genGravatar: gravatarURL', gravatarURL);
         return gravatarURL;
         function md5(input) {
             return CryptoJS.MD5(input).toString();
@@ -3314,37 +3893,40 @@ class RoomClient {
         let btnFs = this.getId(fsId);
         if (btnFs) {
             this.setTippy(fsId, 'Full screen', 'bottom');
-            btnFs.addEventListener('click', () => {
+            btnFs.addEventListener('click', (e) => {
+                e.stopPropagation(); // Prevent click from reaching container
                 if (videoPlayer.classList.contains('videoCircle')) {
                     return this.userLog('info', 'Full Screen not allowed if video on privacy mode', 'top-end');
                 }
-                videoPlayer.style.pointerEvents = this.isVideoOnFullScreen ? 'auto' : 'none';
                 this.toggleFullScreen(videoPlayer);
             });
         }
         if (videoPlayer) {
-            videoPlayer.addEventListener('click', () => {
+            videoPlayer.addEventListener('dblclick', (e) => {
                 if (videoPlayer.classList.contains('videoCircle')) {
                     return this.userLog('info', 'Full Screen not allowed if video on privacy mode', 'top-end');
                 }
                 if (!videoPlayer.hasAttribute('controls')) {
                     if ((this.isMobileDevice && this.isVideoOnFullScreen) || !this.isMobileDevice) {
-                        videoPlayer.style.pointerEvents = this.isVideoOnFullScreen ? 'auto' : 'none';
                         this.toggleFullScreen(videoPlayer);
                     }
                 }
             });
-            videoPlayer.addEventListener('fullscreenchange', (e) => {
-                if (!document.fullscreenElement) {
-                    videoPlayer.style.pointerEvents = 'auto';
-                    this.isVideoOnFullScreen = false;
-                }
+            videoPlayer.addEventListener('fullscreenchange', () => {
+                this.isVideoOnFullScreen = !!document.fullscreenElement;
+                videoPlayer.style.pointerEvents = 'auto';
             });
-            videoPlayer.addEventListener('webkitfullscreenchange', (e) => {
-                if (!document.webkitIsFullScreen) {
-                    videoPlayer.style.pointerEvents = 'auto';
-                    this.isVideoOnFullScreen = false;
-                }
+            videoPlayer.addEventListener('webkitfullscreenchange', () => {
+                this.isVideoOnFullScreen = !!document.webkitFullscreenElement;
+                videoPlayer.style.pointerEvents = 'auto';
+            });
+            videoPlayer.addEventListener('mozfullscreenchange', () => {
+                this.isVideoOnFullScreen = !!document.mozFullScreenElement;
+                videoPlayer.style.pointerEvents = 'auto';
+            });
+            videoPlayer.addEventListener('msfullscreenchange', () => {
+                this.isVideoOnFullScreen = !!document.msFullscreenElement;
+                videoPlayer.style.pointerEvents = 'auto';
             });
         }
     }
@@ -3693,6 +4275,7 @@ class RoomClient {
     async toggleChat() {
         const chatRoom = this.getId('chatRoom');
         chatRoom.classList.toggle('show');
+
         if (!this.isChatOpen) {
             await getRoomParticipants();
             hide(chatMinButton);
@@ -3703,9 +4286,19 @@ class RoomClient {
             this.sound('open');
             this.showPeerAboutAndMessages('all', 'all');
         }
+        // console.log("toggleChat: isPinned", this.isChatPinned, " isChatOpen ", this.isChatOpen)
         isParticipantsListOpen = !isParticipantsListOpen;
         this.isChatOpen = !this.isChatOpen;
-        if (this.isChatPinned) this.chatUnpin();
+        if (this.isMobileDevice) {
+            document.body.style.overflow = this.isChatOpen ? 'hidden' : '';
+        } else {
+            if (this.isChatPinned) {
+                this.chatUnpin();
+            } else {
+                this.chatPin();
+            }
+        }
+
         resizeChatRoom();
     }
 
@@ -3751,6 +4344,7 @@ class RoomClient {
         document.documentElement.style.setProperty('--msger-width', '100%');
         document.documentElement.style.setProperty('--msger-height', '100%');
         this.toggleChatHistorySize(true);
+        // console.log(" chatMaximize ", this.isChatMaximized)
     }
 
     chatMinimize() {
@@ -3765,9 +4359,12 @@ class RoomClient {
             document.documentElement.style.setProperty('--msger-height', '700px');
             this.toggleChatHistorySize(false);
         }
+        // console.log(" chatMinimize ", this.isChatMaximized)
     }
 
     chatPin() {
+        // console.log("chatPin Method: ", this.isChatPinned)
+
         if (!this.isVideoPinned) {
             this.videoMediaContainerPin();
         }
@@ -3782,6 +4379,7 @@ class RoomClient {
     }
 
     chatUnpin() {
+        // console.log("chat unpin method: ", this.isChatPinned)
         if (!this.isVideoPinned) {
             this.videoMediaContainerUnpin();
         }
@@ -3845,12 +4443,47 @@ class RoomClient {
             });
     }
 
-    sendMessage() {
-        if (!this.thereAreParticipants() && !isChatGPTOn) {
-            this.cleanMessage();
-            isChatPasteTxt = false;
-            return this.userLog('info', 'No participants in the room', 'top-end');
+    broadcastMessage(msg) {
+        // chatMessage.value = "broadcast this message"
+        const peer_msg = this.formatMsg(this.peer_name + ' ' + msg);
+
+        const data = {
+            room_id: this.room_id,
+            peer_name: this.peer_name,
+            peer_id: this.peer_id,
+            peer_msg: peer_msg,
+        };
+        const participantsList = this.getId('participantsList');
+        const participantsListItems = participantsList.getElementsByTagName('li');
+        for (let i = 0; i < participantsListItems.length; i++) {
+            const li = participantsListItems[i];
+            if (li.classList.contains('active')) {
+                data.to_peer_id = li.getAttribute('data-to-id');
+                data.to_peer_name = li.getAttribute('data-to-name');
+                console.log('Send message:', data);
+                this.socket.emit('message', data);
+                this.setMsgAvatar('left', this.peer_name);
+                this.appendMessage(
+                    'left',
+                    this.leftMsgAvatar,
+                    this.peer_name,
+                    this.peer_id,
+                    peer_msg,
+                    data.to_peer_id,
+                    data.to_peer_name,
+                );
+                this.cleanMessage();
+            }
         }
+    }
+
+    sendMessage() {
+        // comment out for testing,  allow send if no participants
+        // if (!this.thereAreParticipants() && !isChatGPTOn) {
+        //     this.cleanMessage();
+        //     isChatPasteTxt = false;
+        //     return this.userLog('info', 'No participants in the room', 'top-end');
+        // }
 
         // Prevent long messages
         if (this.chatMessageLengthCheck && chatMessage.value.length > this.chatMessageLength) {
@@ -3930,7 +4563,7 @@ class RoomClient {
                     const { message, context } = completion;
                     this.chatGPTContext = context ? context : [];
                     console.log('Receive message:', message);
-                    this.setMsgAvatar('right', 'ChatGPT');
+                    this.setMsgAvatar('right', 'ChatGPT'); // assume no avatar?
                     this.appendMessage('right', image.chatgpt, 'ChatGPT', this.peer_id, message, 'ChatGPT', 'ChatGPT');
                     this.cleanMessage();
                     this.streamingTask(message); // Video AI avatar speak
@@ -3942,6 +4575,8 @@ class RoomClient {
                     console.log('ChatGPT error:', err);
                 });
         } else {
+            // send message to group chat room
+            console.log('send msg to group room');
             const participantsList = this.getId('participantsList');
             const participantsListItems = participantsList.getElementsByTagName('li');
             for (let i = 0; i < participantsListItems.length; i++) {
@@ -4056,6 +4691,13 @@ class RoomClient {
 
     setMsgAvatar(avatar, peerName) {
         let avatarImg = rc.isValidEmail(peerName) ? this.genGravatar(peerName) : this.genAvatarSvg(peerName, 32);
+        // this line below doesn't work
+        //  avatarImg = peer_url ? peer_url : this.genAvatarSvg(peerName, 32);
+        // isValidLightningAddress(peerName).then(isValid => {
+        //     if (isValid) {
+        //         avatarImg = boltavatar;
+        //     }
+        // });
         avatar === 'left' ? (this.leftMsgAvatar = avatarImg) : (this.rightMsgAvatar = avatarImg);
     }
 
@@ -5896,8 +6538,6 @@ class RoomClient {
                     return userLog('warning', 'Something wrong, try with another Video or audio URL');
                 }
                 /*
-                    https://www.youtube.com/watch?v=RT6_Id5-7-s
-                    https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4
                     https://www.learningcontainer.com/wp-content/uploads/2020/02/Kalimba.mp3
                 */
                 let is_youtube = this.getVideoType(result.value) == 'na' ? true : false;
@@ -6317,9 +6957,30 @@ class RoomClient {
                     let lobbyTr = '';
                     let peer_id = data.peer_id;
                     let peer_name = data.peer_name;
-                    let avatarImg = rc.isValidEmail(peer_name)
-                        ? this.genGravatar(peer_name)
-                        : this.genAvatarSvg(peer_name, 32);
+                    // pass data.peer_info.peer_url to get avatar
+                    let peer_url = '';
+                    let avatarImg = '';
+                    try {
+                        peer_url = data.peer_info.peer_url;
+                        avatarImg = peer_url;
+
+                        if (!avatarImg) {
+                            console.log(' in RoomLobby --> avatarImg: ', avatarImg);
+                            isValidLightningAddress(peer_name).then((isValid) => {
+                                if (isValid) {
+                                    avatarImg = boltavatar;
+                                } else {
+                                    avatarImg = rc.isValidEmail(peer_name)
+                                        ? this.genGravatar(peer_name)
+                                        : this.genAvatarSvg(peer_name, 32);
+                                }
+                            });
+                        }
+                    } catch (error) {
+                        console.log("No peer_url, that's ok", error);
+                    }
+                    console.log(' in RoomLobby --> avatarImg: ', avatarImg);
+
                     let lobbyTb = this.getId('lobbyTb');
                     let lobbyAccept = _PEER.acceptPeer;
                     let lobbyReject = _PEER.ejectPeer;
@@ -6875,6 +7536,9 @@ class RoomClient {
             case 'roomEmoji':
                 this.handleRoomEmoji(cmd);
                 break;
+            case 'zapEmoji':
+                this.handleZapEmoji(cmd);
+                break;
             case 'transcript':
                 this.transcription.handleTranscript(cmd);
                 break;
@@ -6894,6 +7558,24 @@ class RoomClient {
             default:
                 break;
             //...
+        }
+    }
+
+    handleZapEmoji(cmd, duration = 5000) {
+        const userEmoji = document.getElementById(`userEmoji`);
+        if (userEmoji) {
+            const emojiDisplay = document.createElement('div');
+            emojiDisplay.className = 'animate__animated animate__backInUp';
+            emojiDisplay.style.padding = '10px';
+            emojiDisplay.style.fontSize = '3vh';
+            emojiDisplay.style.color = '#FFF';
+            emojiDisplay.style.backgroundColor = 'rgba(0, 0, 0, 0.2)';
+            emojiDisplay.style.borderRadius = '10px';
+            emojiDisplay.innerText = `${cmd.peer_name} zapped ${cmd.emoji}!`;
+            userEmoji.appendChild(emojiDisplay);
+            setTimeout(() => {
+                emojiDisplay.remove();
+            }, duration);
         }
     }
 
