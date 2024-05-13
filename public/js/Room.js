@@ -4452,38 +4452,23 @@ function showAbout() {
 
     Swal.fire({
         background: swalBackground,
-        imageUrl: image.about,
+        //imageUrl: image.about,
         customClass: { image: 'img-about' },
         position: 'center',
-        title: 'WebRTC SFU v1.5.66',
+        title: 'HiveTalk is a fork of MiroTalk SFU',
         html: `
         <br />
         <div id="about">
-            <button 
-                id="support-button" 
-                data-umami-event="Support button" 
-                onclick="window.open('https://codecanyon.net/user/miroslavpejic85')">
-                <i class="fas fa-heart"></i> 
-                Support
-            </button>
-            <br /><br /><br />
-            Author: <a 
+            <br /><br />
+            Original Author: <a
                 id="linkedin-button" 
                 data-umami-event="Linkedin button" 
                 href="https://www.linkedin.com/in/miroslav-pejic-976a07101/" target="_blank"> 
                 Miroslav Pejic
             </a>
             <br /><br />
-            Email:<a 
-                id="email-button" 
-                data-umami-event="Email button" 
-                href="mailto:miroslav.pejic.85@gmail.com?subject=MiroTalk SFU info"> 
-                miroslav.pejic.85@gmail.com
-            </a>
+            Fork maintainer: Bitkarrot
             <br /><br />
-            <hr />
-            <span>&copy; 2024 MiroTalk SFU, all rights reserved</span>
-            <hr />
         </div>
         `,
         showClass: { popup: 'animate__animated animate__fadeInDown' },
