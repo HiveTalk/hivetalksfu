@@ -34,6 +34,685 @@
     {
         1: [
             function (require, module, exports) {
+                // Copyright Joyent, Inc. and other Node contributors.
+                //
+                // Permission is hereby granted, free of charge, to any person obtaining a
+                // copy of this software and associated documentation files (the
+                // "Software"), to deal in the Software without restriction, including
+                // without limitation the rights to use, copy, modify, merge, publish,
+                // distribute, sublicense, and/or sell copies of the Software, and to permit
+                // persons to whom the Software is furnished to do so, subject to the
+                // following conditions:
+                //
+                // The above copyright notice and this permission notice shall be included
+                // in all copies or substantial portions of the Software.
+                //
+                // THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS
+                // OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
+                // MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN
+                // NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM,
+                // DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR
+                // OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE
+                // USE OR OTHER DEALINGS IN THE SOFTWARE.
+
+                'use strict';
+
+                var R = typeof Reflect === 'object' ? Reflect : null;
+                var ReflectApply =
+                    R && typeof R.apply === 'function'
+                        ? R.apply
+                        : function ReflectApply(target, receiver, args) {
+                              return Function.prototype.apply.call(target, receiver, args);
+                          };
+
+                var ReflectOwnKeys;
+                if (R && typeof R.ownKeys === 'function') {
+                    ReflectOwnKeys = R.ownKeys;
+                } else if (Object.getOwnPropertySymbols) {
+                    ReflectOwnKeys = function ReflectOwnKeys(target) {
+                        return Object.getOwnPropertyNames(target).concat(Object.getOwnPropertySymbols(target));
+                    };
+                } else {
+                    ReflectOwnKeys = function ReflectOwnKeys(target) {
+                        return Object.getOwnPropertyNames(target);
+                    };
+                }
+
+                function ProcessEmitWarning(warning) {
+                    if (console && console.warn) console.warn(warning);
+                }
+
+                var NumberIsNaN =
+                    Number.isNaN ||
+                    function NumberIsNaN(value) {
+                        return value !== value;
+                    };
+
+                function EventEmitter() {
+                    EventEmitter.init.call(this);
+                }
+                module.exports = EventEmitter;
+                module.exports.once = once;
+
+                // Backwards-compat with node 0.10.x
+                EventEmitter.EventEmitter = EventEmitter;
+
+                EventEmitter.prototype._events = undefined;
+                EventEmitter.prototype._eventsCount = 0;
+                EventEmitter.prototype._maxListeners = undefined;
+
+                // By default EventEmitters will print a warning if more than 10 listeners are
+                // added to it. This is a useful default which helps finding memory leaks.
+                var defaultMaxListeners = 10;
+
+                function checkListener(listener) {
+                    if (typeof listener !== 'function') {
+                        throw new TypeError(
+                            'The "listener" argument must be of type Function. Received type ' + typeof listener,
+                        );
+                    }
+                }
+
+                Object.defineProperty(EventEmitter, 'defaultMaxListeners', {
+                    enumerable: true,
+                    get: function () {
+                        return defaultMaxListeners;
+                    },
+                    set: function (arg) {
+                        if (typeof arg !== 'number' || arg < 0 || NumberIsNaN(arg)) {
+                            throw new RangeError(
+                                'The value of "defaultMaxListeners" is out of range. It must be a non-negative number. Received ' +
+                                    arg +
+                                    '.',
+                            );
+                        }
+                        defaultMaxListeners = arg;
+                    },
+                });
+
+                EventEmitter.init = function () {
+                    if (this._events === undefined || this._events === Object.getPrototypeOf(this)._events) {
+                        this._events = Object.create(null);
+                        this._eventsCount = 0;
+                    }
+
+                    this._maxListeners = this._maxListeners || undefined;
+                };
+
+                // Obviously not all Emitters should be limited to 10. This function allows
+                // that to be increased. Set to zero for unlimited.
+                EventEmitter.prototype.setMaxListeners = function setMaxListeners(n) {
+                    if (typeof n !== 'number' || n < 0 || NumberIsNaN(n)) {
+                        throw new RangeError(
+                            'The value of "n" is out of range. It must be a non-negative number. Received ' + n + '.',
+                        );
+                    }
+                    this._maxListeners = n;
+                    return this;
+                };
+
+                function _getMaxListeners(that) {
+                    if (that._maxListeners === undefined) return EventEmitter.defaultMaxListeners;
+                    return that._maxListeners;
+                }
+
+                EventEmitter.prototype.getMaxListeners = function getMaxListeners() {
+                    return _getMaxListeners(this);
+                };
+
+                EventEmitter.prototype.emit = function emit(type) {
+                    var args = [];
+                    for (var i = 1; i < arguments.length; i++) args.push(arguments[i]);
+                    var doError = type === 'error';
+
+                    var events = this._events;
+                    if (events !== undefined) doError = doError && events.error === undefined;
+                    else if (!doError) return false;
+
+                    // If there is no 'error' event listener then throw.
+                    if (doError) {
+                        var er;
+                        if (args.length > 0) er = args[0];
+                        if (er instanceof Error) {
+                            // Note: The comments on the `throw` lines are intentional, they show
+                            // up in Node's output if this results in an unhandled exception.
+                            throw er; // Unhandled 'error' event
+                        }
+                        // At least give some kind of context to the user
+                        var err = new Error('Unhandled error.' + (er ? ' (' + er.message + ')' : ''));
+                        err.context = er;
+                        throw err; // Unhandled 'error' event
+                    }
+
+                    var handler = events[type];
+
+                    if (handler === undefined) return false;
+
+                    if (typeof handler === 'function') {
+                        ReflectApply(handler, this, args);
+                    } else {
+                        var len = handler.length;
+                        var listeners = arrayClone(handler, len);
+                        for (var i = 0; i < len; ++i) ReflectApply(listeners[i], this, args);
+                    }
+
+                    return true;
+                };
+
+                function _addListener(target, type, listener, prepend) {
+                    var m;
+                    var events;
+                    var existing;
+
+                    checkListener(listener);
+
+                    events = target._events;
+                    if (events === undefined) {
+                        events = target._events = Object.create(null);
+                        target._eventsCount = 0;
+                    } else {
+                        // To avoid recursion in the case that type === "newListener"! Before
+                        // adding it to the listeners, first emit "newListener".
+                        if (events.newListener !== undefined) {
+                            target.emit('newListener', type, listener.listener ? listener.listener : listener);
+
+                            // Re-assign `events` because a newListener handler could have caused the
+                            // this._events to be assigned to a new object
+                            events = target._events;
+                        }
+                        existing = events[type];
+                    }
+
+                    if (existing === undefined) {
+                        // Optimize the case of one listener. Don't need the extra array object.
+                        existing = events[type] = listener;
+                        ++target._eventsCount;
+                    } else {
+                        if (typeof existing === 'function') {
+                            // Adding the second element, need to change to array.
+                            existing = events[type] = prepend ? [listener, existing] : [existing, listener];
+                            // If we've already got an array, just append.
+                        } else if (prepend) {
+                            existing.unshift(listener);
+                        } else {
+                            existing.push(listener);
+                        }
+
+                        // Check for listener leak
+                        m = _getMaxListeners(target);
+                        if (m > 0 && existing.length > m && !existing.warned) {
+                            existing.warned = true;
+                            // No error code for this since it is a Warning
+                            // eslint-disable-next-line no-restricted-syntax
+                            var w = new Error(
+                                'Possible EventEmitter memory leak detected. ' +
+                                    existing.length +
+                                    ' ' +
+                                    String(type) +
+                                    ' listeners ' +
+                                    'added. Use emitter.setMaxListeners() to ' +
+                                    'increase limit',
+                            );
+                            w.name = 'MaxListenersExceededWarning';
+                            w.emitter = target;
+                            w.type = type;
+                            w.count = existing.length;
+                            ProcessEmitWarning(w);
+                        }
+                    }
+
+                    return target;
+                }
+
+                EventEmitter.prototype.addListener = function addListener(type, listener) {
+                    return _addListener(this, type, listener, false);
+                };
+
+                EventEmitter.prototype.on = EventEmitter.prototype.addListener;
+
+                EventEmitter.prototype.prependListener = function prependListener(type, listener) {
+                    return _addListener(this, type, listener, true);
+                };
+
+                function onceWrapper() {
+                    if (!this.fired) {
+                        this.target.removeListener(this.type, this.wrapFn);
+                        this.fired = true;
+                        if (arguments.length === 0) return this.listener.call(this.target);
+                        return this.listener.apply(this.target, arguments);
+                    }
+                }
+
+                function _onceWrap(target, type, listener) {
+                    var state = { fired: false, wrapFn: undefined, target: target, type: type, listener: listener };
+                    var wrapped = onceWrapper.bind(state);
+                    wrapped.listener = listener;
+                    state.wrapFn = wrapped;
+                    return wrapped;
+                }
+
+                EventEmitter.prototype.once = function once(type, listener) {
+                    checkListener(listener);
+                    this.on(type, _onceWrap(this, type, listener));
+                    return this;
+                };
+
+                EventEmitter.prototype.prependOnceListener = function prependOnceListener(type, listener) {
+                    checkListener(listener);
+                    this.prependListener(type, _onceWrap(this, type, listener));
+                    return this;
+                };
+
+                // Emits a 'removeListener' event if and only if the listener was removed.
+                EventEmitter.prototype.removeListener = function removeListener(type, listener) {
+                    var list, events, position, i, originalListener;
+
+                    checkListener(listener);
+
+                    events = this._events;
+                    if (events === undefined) return this;
+
+                    list = events[type];
+                    if (list === undefined) return this;
+
+                    if (list === listener || list.listener === listener) {
+                        if (--this._eventsCount === 0) this._events = Object.create(null);
+                        else {
+                            delete events[type];
+                            if (events.removeListener) this.emit('removeListener', type, list.listener || listener);
+                        }
+                    } else if (typeof list !== 'function') {
+                        position = -1;
+
+                        for (i = list.length - 1; i >= 0; i--) {
+                            if (list[i] === listener || list[i].listener === listener) {
+                                originalListener = list[i].listener;
+                                position = i;
+                                break;
+                            }
+                        }
+
+                        if (position < 0) return this;
+
+                        if (position === 0) list.shift();
+                        else {
+                            spliceOne(list, position);
+                        }
+
+                        if (list.length === 1) events[type] = list[0];
+
+                        if (events.removeListener !== undefined)
+                            this.emit('removeListener', type, originalListener || listener);
+                    }
+
+                    return this;
+                };
+
+                EventEmitter.prototype.off = EventEmitter.prototype.removeListener;
+
+                EventEmitter.prototype.removeAllListeners = function removeAllListeners(type) {
+                    var listeners, events, i;
+
+                    events = this._events;
+                    if (events === undefined) return this;
+
+                    // not listening for removeListener, no need to emit
+                    if (events.removeListener === undefined) {
+                        if (arguments.length === 0) {
+                            this._events = Object.create(null);
+                            this._eventsCount = 0;
+                        } else if (events[type] !== undefined) {
+                            if (--this._eventsCount === 0) this._events = Object.create(null);
+                            else delete events[type];
+                        }
+                        return this;
+                    }
+
+                    // emit removeListener for all listeners on all events
+                    if (arguments.length === 0) {
+                        var keys = Object.keys(events);
+                        var key;
+                        for (i = 0; i < keys.length; ++i) {
+                            key = keys[i];
+                            if (key === 'removeListener') continue;
+                            this.removeAllListeners(key);
+                        }
+                        this.removeAllListeners('removeListener');
+                        this._events = Object.create(null);
+                        this._eventsCount = 0;
+                        return this;
+                    }
+
+                    listeners = events[type];
+
+                    if (typeof listeners === 'function') {
+                        this.removeListener(type, listeners);
+                    } else if (listeners !== undefined) {
+                        // LIFO order
+                        for (i = listeners.length - 1; i >= 0; i--) {
+                            this.removeListener(type, listeners[i]);
+                        }
+                    }
+
+                    return this;
+                };
+
+                function _listeners(target, type, unwrap) {
+                    var events = target._events;
+
+                    if (events === undefined) return [];
+
+                    var evlistener = events[type];
+                    if (evlistener === undefined) return [];
+
+                    if (typeof evlistener === 'function')
+                        return unwrap ? [evlistener.listener || evlistener] : [evlistener];
+
+                    return unwrap ? unwrapListeners(evlistener) : arrayClone(evlistener, evlistener.length);
+                }
+
+                EventEmitter.prototype.listeners = function listeners(type) {
+                    return _listeners(this, type, true);
+                };
+
+                EventEmitter.prototype.rawListeners = function rawListeners(type) {
+                    return _listeners(this, type, false);
+                };
+
+                EventEmitter.listenerCount = function (emitter, type) {
+                    if (typeof emitter.listenerCount === 'function') {
+                        return emitter.listenerCount(type);
+                    } else {
+                        return listenerCount.call(emitter, type);
+                    }
+                };
+
+                EventEmitter.prototype.listenerCount = listenerCount;
+                function listenerCount(type) {
+                    var events = this._events;
+
+                    if (events !== undefined) {
+                        var evlistener = events[type];
+
+                        if (typeof evlistener === 'function') {
+                            return 1;
+                        } else if (evlistener !== undefined) {
+                            return evlistener.length;
+                        }
+                    }
+
+                    return 0;
+                }
+
+                EventEmitter.prototype.eventNames = function eventNames() {
+                    return this._eventsCount > 0 ? ReflectOwnKeys(this._events) : [];
+                };
+
+                function arrayClone(arr, n) {
+                    var copy = new Array(n);
+                    for (var i = 0; i < n; ++i) copy[i] = arr[i];
+                    return copy;
+                }
+
+                function spliceOne(list, index) {
+                    for (; index + 1 < list.length; index++) list[index] = list[index + 1];
+                    list.pop();
+                }
+
+                function unwrapListeners(arr) {
+                    var ret = new Array(arr.length);
+                    for (var i = 0; i < ret.length; ++i) {
+                        ret[i] = arr[i].listener || arr[i];
+                    }
+                    return ret;
+                }
+
+                function once(emitter, name) {
+                    return new Promise(function (resolve, reject) {
+                        function errorListener(err) {
+                            emitter.removeListener(name, resolver);
+                            reject(err);
+                        }
+
+                        function resolver() {
+                            if (typeof emitter.removeListener === 'function') {
+                                emitter.removeListener('error', errorListener);
+                            }
+                            resolve([].slice.call(arguments));
+                        }
+
+                        eventTargetAgnosticAddListener(emitter, name, resolver, { once: true });
+                        if (name !== 'error') {
+                            addErrorHandlerIfEventEmitter(emitter, errorListener, { once: true });
+                        }
+                    });
+                }
+
+                function addErrorHandlerIfEventEmitter(emitter, handler, flags) {
+                    if (typeof emitter.on === 'function') {
+                        eventTargetAgnosticAddListener(emitter, 'error', handler, flags);
+                    }
+                }
+
+                function eventTargetAgnosticAddListener(emitter, name, listener, flags) {
+                    if (typeof emitter.on === 'function') {
+                        if (flags.once) {
+                            emitter.once(name, listener);
+                        } else {
+                            emitter.on(name, listener);
+                        }
+                    } else if (typeof emitter.addEventListener === 'function') {
+                        // EventTarget does not have `error` event semantics like Node
+                        // EventEmitters, we do not listen for `error` events here.
+                        emitter.addEventListener(name, function wrapListener(arg) {
+                            // IE does not have builtin `{ once: true }` support so we
+                            // have to do it manually.
+                            if (flags.once) {
+                                emitter.removeEventListener(name, wrapListener);
+                            }
+                            listener(arg);
+                        });
+                    } else {
+                        throw new TypeError(
+                            'The "emitter" argument must be of type EventEmitter. Received type ' + typeof emitter,
+                        );
+                    }
+                }
+            },
+            {},
+        ],
+        2: [
+            function (require, module, exports) {
+                // shim for using process in browser
+                var process = (module.exports = {});
+
+                // cached from whatever global is present so that test runners that stub it
+                // don't break things.  But we need to wrap it in a try catch in case it is
+                // wrapped in strict mode code which doesn't define any globals.  It's inside a
+                // function because try/catches deoptimize in certain engines.
+
+                var cachedSetTimeout;
+                var cachedClearTimeout;
+
+                function defaultSetTimout() {
+                    throw new Error('setTimeout has not been defined');
+                }
+                function defaultClearTimeout() {
+                    throw new Error('clearTimeout has not been defined');
+                }
+                (function () {
+                    try {
+                        if (typeof setTimeout === 'function') {
+                            cachedSetTimeout = setTimeout;
+                        } else {
+                            cachedSetTimeout = defaultSetTimout;
+                        }
+                    } catch (e) {
+                        cachedSetTimeout = defaultSetTimout;
+                    }
+                    try {
+                        if (typeof clearTimeout === 'function') {
+                            cachedClearTimeout = clearTimeout;
+                        } else {
+                            cachedClearTimeout = defaultClearTimeout;
+                        }
+                    } catch (e) {
+                        cachedClearTimeout = defaultClearTimeout;
+                    }
+                })();
+                function runTimeout(fun) {
+                    if (cachedSetTimeout === setTimeout) {
+                        //normal enviroments in sane situations
+                        return setTimeout(fun, 0);
+                    }
+                    // if setTimeout wasn't available but was latter defined
+                    if ((cachedSetTimeout === defaultSetTimout || !cachedSetTimeout) && setTimeout) {
+                        cachedSetTimeout = setTimeout;
+                        return setTimeout(fun, 0);
+                    }
+                    try {
+                        // when when somebody has screwed with setTimeout but no I.E. maddness
+                        return cachedSetTimeout(fun, 0);
+                    } catch (e) {
+                        try {
+                            // When we are in I.E. but the script has been evaled so I.E. doesn't trust the global object when called normally
+                            return cachedSetTimeout.call(null, fun, 0);
+                        } catch (e) {
+                            // same as above but when it's a version of I.E. that must have the global object for 'this', hopfully our context correct otherwise it will throw a global error
+                            return cachedSetTimeout.call(this, fun, 0);
+                        }
+                    }
+                }
+                function runClearTimeout(marker) {
+                    if (cachedClearTimeout === clearTimeout) {
+                        //normal enviroments in sane situations
+                        return clearTimeout(marker);
+                    }
+                    // if clearTimeout wasn't available but was latter defined
+                    if ((cachedClearTimeout === defaultClearTimeout || !cachedClearTimeout) && clearTimeout) {
+                        cachedClearTimeout = clearTimeout;
+                        return clearTimeout(marker);
+                    }
+                    try {
+                        // when when somebody has screwed with setTimeout but no I.E. maddness
+                        return cachedClearTimeout(marker);
+                    } catch (e) {
+                        try {
+                            // When we are in I.E. but the script has been evaled so I.E. doesn't  trust the global object when called normally
+                            return cachedClearTimeout.call(null, marker);
+                        } catch (e) {
+                            // same as above but when it's a version of I.E. that must have the global object for 'this', hopfully our context correct otherwise it will throw a global error.
+                            // Some versions of I.E. have different rules for clearTimeout vs setTimeout
+                            return cachedClearTimeout.call(this, marker);
+                        }
+                    }
+                }
+                var queue = [];
+                var draining = false;
+                var currentQueue;
+                var queueIndex = -1;
+
+                function cleanUpNextTick() {
+                    if (!draining || !currentQueue) {
+                        return;
+                    }
+                    draining = false;
+                    if (currentQueue.length) {
+                        queue = currentQueue.concat(queue);
+                    } else {
+                        queueIndex = -1;
+                    }
+                    if (queue.length) {
+                        drainQueue();
+                    }
+                }
+
+                function drainQueue() {
+                    if (draining) {
+                        return;
+                    }
+                    var timeout = runTimeout(cleanUpNextTick);
+                    draining = true;
+
+                    var len = queue.length;
+                    while (len) {
+                        currentQueue = queue;
+                        queue = [];
+                        while (++queueIndex < len) {
+                            if (currentQueue) {
+                                currentQueue[queueIndex].run();
+                            }
+                        }
+                        queueIndex = -1;
+                        len = queue.length;
+                    }
+                    currentQueue = null;
+                    draining = false;
+                    runClearTimeout(timeout);
+                }
+
+                process.nextTick = function (fun) {
+                    var args = new Array(arguments.length - 1);
+                    if (arguments.length > 1) {
+                        for (var i = 1; i < arguments.length; i++) {
+                            args[i - 1] = arguments[i];
+                        }
+                    }
+                    queue.push(new Item(fun, args));
+                    if (queue.length === 1 && !draining) {
+                        runTimeout(drainQueue);
+                    }
+                };
+
+                // v8 likes predictible objects
+                function Item(fun, array) {
+                    this.fun = fun;
+                    this.array = array;
+                }
+                Item.prototype.run = function () {
+                    this.fun.apply(null, this.array);
+                };
+                process.title = 'browser';
+                process.browser = true;
+                process.env = {};
+                process.argv = [];
+                process.version = ''; // empty string to avoid regexp issues
+                process.versions = {};
+
+                function noop() {}
+
+                process.on = noop;
+                process.addListener = noop;
+                process.once = noop;
+                process.off = noop;
+                process.removeListener = noop;
+                process.removeAllListeners = noop;
+                process.emit = noop;
+                process.prependListener = noop;
+                process.prependOnceListener = noop;
+
+                process.listeners = function (name) {
+                    return [];
+                };
+
+                process.binding = function (name) {
+                    throw new Error('process.binding is not supported');
+                };
+
+                process.cwd = function () {
+                    return '/';
+                };
+                process.chdir = function (dir) {
+                    throw new Error('process.chdir is not supported');
+                };
+                process.umask = function () {
+                    return 0;
+                };
+            },
+            {},
+        ],
+        3: [
+            function (require, module, exports) {
                 'use strict';
                 Object.defineProperty(exports, '__esModule', { value: true });
                 exports.Logger = void 0;
@@ -68,9 +747,9 @@
                 }
                 exports.Logger = Logger;
             },
-            { debug: 3 },
+            { debug: 5 },
         ],
-        2: [
+        4: [
             function (require, module, exports) {
                 'use strict';
                 Object.defineProperty(exports, '__esModule', { value: true });
@@ -251,9 +930,9 @@
                 }
                 exports.AwaitQueue = AwaitQueue;
             },
-            { './Logger': 1 },
+            { './Logger': 3 },
         ],
-        3: [
+        5: [
             function (require, module, exports) {
                 (function (process) {
                     (function () {
@@ -553,9 +1232,9 @@
                     }).call(this);
                 }).call(this, require('_process'));
             },
-            { './common': 4, _process: 52 },
+            { './common': 6, _process: 2 },
         ],
-        4: [
+        6: [
             function (require, module, exports) {
                 /**
                  * This is the common logic for both the Node.js and web browser
@@ -836,9 +1515,174 @@
 
                 module.exports = setup;
             },
-            { ms: 43 },
+            { ms: 7 },
         ],
-        5: [
+        7: [
+            function (require, module, exports) {
+                /**
+                 * Helpers.
+                 */
+
+                var s = 1000;
+                var m = s * 60;
+                var h = m * 60;
+                var d = h * 24;
+                var w = d * 7;
+                var y = d * 365.25;
+
+                /**
+                 * Parse or format the given `val`.
+                 *
+                 * Options:
+                 *
+                 *  - `long` verbose formatting [false]
+                 *
+                 * @param {String|Number} val
+                 * @param {Object} [options]
+                 * @throws {Error} throw an error if val is not a non-empty string or a number
+                 * @return {String|Number}
+                 * @api public
+                 */
+
+                module.exports = function (val, options) {
+                    options = options || {};
+                    var type = typeof val;
+                    if (type === 'string' && val.length > 0) {
+                        return parse(val);
+                    } else if (type === 'number' && isFinite(val)) {
+                        return options.long ? fmtLong(val) : fmtShort(val);
+                    }
+                    throw new Error('val is not a non-empty string or a valid number. val=' + JSON.stringify(val));
+                };
+
+                /**
+                 * Parse the given `str` and return milliseconds.
+                 *
+                 * @param {String} str
+                 * @return {Number}
+                 * @api private
+                 */
+
+                function parse(str) {
+                    str = String(str);
+                    if (str.length > 100) {
+                        return;
+                    }
+                    var match =
+                        /^(-?(?:\d+)?\.?\d+) *(milliseconds?|msecs?|ms|seconds?|secs?|s|minutes?|mins?|m|hours?|hrs?|h|days?|d|weeks?|w|years?|yrs?|y)?$/i.exec(
+                            str,
+                        );
+                    if (!match) {
+                        return;
+                    }
+                    var n = parseFloat(match[1]);
+                    var type = (match[2] || 'ms').toLowerCase();
+                    switch (type) {
+                        case 'years':
+                        case 'year':
+                        case 'yrs':
+                        case 'yr':
+                        case 'y':
+                            return n * y;
+                        case 'weeks':
+                        case 'week':
+                        case 'w':
+                            return n * w;
+                        case 'days':
+                        case 'day':
+                        case 'd':
+                            return n * d;
+                        case 'hours':
+                        case 'hour':
+                        case 'hrs':
+                        case 'hr':
+                        case 'h':
+                            return n * h;
+                        case 'minutes':
+                        case 'minute':
+                        case 'mins':
+                        case 'min':
+                        case 'm':
+                            return n * m;
+                        case 'seconds':
+                        case 'second':
+                        case 'secs':
+                        case 'sec':
+                        case 's':
+                            return n * s;
+                        case 'milliseconds':
+                        case 'millisecond':
+                        case 'msecs':
+                        case 'msec':
+                        case 'ms':
+                            return n;
+                        default:
+                            return undefined;
+                    }
+                }
+
+                /**
+                 * Short format for `ms`.
+                 *
+                 * @param {Number} ms
+                 * @return {String}
+                 * @api private
+                 */
+
+                function fmtShort(ms) {
+                    var msAbs = Math.abs(ms);
+                    if (msAbs >= d) {
+                        return Math.round(ms / d) + 'd';
+                    }
+                    if (msAbs >= h) {
+                        return Math.round(ms / h) + 'h';
+                    }
+                    if (msAbs >= m) {
+                        return Math.round(ms / m) + 'm';
+                    }
+                    if (msAbs >= s) {
+                        return Math.round(ms / s) + 's';
+                    }
+                    return ms + 'ms';
+                }
+
+                /**
+                 * Long format for `ms`.
+                 *
+                 * @param {Number} ms
+                 * @return {String}
+                 * @api private
+                 */
+
+                function fmtLong(ms) {
+                    var msAbs = Math.abs(ms);
+                    if (msAbs >= d) {
+                        return plural(ms, msAbs, d, 'day');
+                    }
+                    if (msAbs >= h) {
+                        return plural(ms, msAbs, h, 'hour');
+                    }
+                    if (msAbs >= m) {
+                        return plural(ms, msAbs, m, 'minute');
+                    }
+                    if (msAbs >= s) {
+                        return plural(ms, msAbs, s, 'second');
+                    }
+                    return ms + ' ms';
+                }
+
+                /**
+                 * Pluralization helper.
+                 */
+
+                function plural(ms, msAbs, n, name) {
+                    var isPlural = msAbs >= n * 1.5;
+                    return Math.round(ms / n) + ' ' + name + (isPlural ? 's' : '');
+                }
+            },
+            {},
+        ],
+        8: [
             function (require, module, exports) {
                 'use strict';
                 var __importDefault =
@@ -879,9 +1723,9 @@
                 }
                 exports.Logger = Logger;
             },
-            { debug: 3 },
+            { debug: 10 },
         ],
-        6: [
+        9: [
             function (require, module, exports) {
                 'use strict';
                 Object.defineProperty(exports, '__esModule', { value: true });
@@ -1345,9 +2189,27 @@
                     );
                 }
             },
-            { './Logger': 5 },
+            { './Logger': 8 },
         ],
-        7: [
+        10: [
+            function (require, module, exports) {
+                arguments[4][5][0].apply(exports, arguments);
+            },
+            { './common': 11, _process: 2, dup: 5 },
+        ],
+        11: [
+            function (require, module, exports) {
+                arguments[4][6][0].apply(exports, arguments);
+            },
+            { dup: 6, ms: 12 },
+        ],
+        12: [
+            function (require, module, exports) {
+                arguments[4][7][0].apply(exports, arguments);
+            },
+            { dup: 7 },
+        ],
+        13: [
             function (require, module, exports) {
                 'use strict';
                 Object.defineProperty(exports, '__esModule', { value: true });
@@ -1539,9 +2401,9 @@
                 }
                 exports.Consumer = Consumer;
             },
-            { './EnhancedEventEmitter': 11, './Logger': 12, './errors': 17 },
+            { './EnhancedEventEmitter': 17, './Logger': 18, './errors': 23 },
         ],
-        8: [
+        14: [
             function (require, module, exports) {
                 'use strict';
                 Object.defineProperty(exports, '__esModule', { value: true });
@@ -1709,9 +2571,9 @@
                 }
                 exports.DataConsumer = DataConsumer;
             },
-            { './EnhancedEventEmitter': 11, './Logger': 12 },
+            { './EnhancedEventEmitter': 17, './Logger': 18 },
         ],
-        9: [
+        15: [
             function (require, module, exports) {
                 'use strict';
                 Object.defineProperty(exports, '__esModule', { value: true });
@@ -1897,9 +2759,9 @@
                 }
                 exports.DataProducer = DataProducer;
             },
-            { './EnhancedEventEmitter': 11, './Logger': 12, './errors': 17 },
+            { './EnhancedEventEmitter': 17, './Logger': 18, './errors': 23 },
         ],
-        10: [
+        16: [
             function (require, module, exports) {
                 'use strict';
                 var __createBinding =
@@ -2427,28 +3289,28 @@
                 exports.Device = Device;
             },
             {
-                './EnhancedEventEmitter': 11,
-                './Logger': 12,
-                './Transport': 16,
-                './errors': 17,
-                './handlers/Chrome111': 18,
-                './handlers/Chrome55': 19,
-                './handlers/Chrome67': 20,
-                './handlers/Chrome70': 21,
-                './handlers/Chrome74': 22,
-                './handlers/Edge11': 23,
-                './handlers/Firefox120': 24,
-                './handlers/Firefox60': 25,
-                './handlers/ReactNative': 27,
-                './handlers/ReactNativeUnifiedPlan': 28,
-                './handlers/Safari11': 29,
-                './handlers/Safari12': 30,
-                './ortc': 39,
-                './utils': 42,
-                'ua-parser-js': 49,
+                './EnhancedEventEmitter': 17,
+                './Logger': 18,
+                './Transport': 22,
+                './errors': 23,
+                './handlers/Chrome111': 24,
+                './handlers/Chrome55': 25,
+                './handlers/Chrome67': 26,
+                './handlers/Chrome70': 27,
+                './handlers/Chrome74': 28,
+                './handlers/Edge11': 29,
+                './handlers/Firefox120': 30,
+                './handlers/Firefox60': 31,
+                './handlers/ReactNative': 33,
+                './handlers/ReactNativeUnifiedPlan': 34,
+                './handlers/Safari11': 35,
+                './handlers/Safari12': 36,
+                './ortc': 45,
+                './utils': 48,
+                'ua-parser-js': 57,
             },
         ],
-        11: [
+        17: [
             function (require, module, exports) {
                 'use strict';
                 Object.defineProperty(exports, '__esModule', { value: true });
@@ -2524,9 +3386,9 @@
                 }
                 exports.EnhancedEventEmitter = EnhancedEventEmitter;
             },
-            { './Logger': 12, events: 51 },
+            { './Logger': 18, events: 1 },
         ],
-        12: [
+        18: [
             function (require, module, exports) {
                 'use strict';
                 var __importDefault =
@@ -2567,9 +3429,9 @@
                 }
                 exports.Logger = Logger;
             },
-            { debug: 3 },
+            { debug: 49 },
         ],
-        13: [
+        19: [
             function (require, module, exports) {
                 'use strict';
                 Object.defineProperty(exports, '__esModule', { value: true });
@@ -2862,9 +3724,9 @@
                 }
                 exports.Producer = Producer;
             },
-            { './EnhancedEventEmitter': 11, './Logger': 12, './errors': 17 },
+            { './EnhancedEventEmitter': 17, './Logger': 18, './errors': 23 },
         ],
-        14: [
+        20: [
             function (require, module, exports) {
                 'use strict';
                 /**
@@ -2875,14 +3737,14 @@
             },
             {},
         ],
-        15: [
+        21: [
             function (require, module, exports) {
                 'use strict';
                 Object.defineProperty(exports, '__esModule', { value: true });
             },
             {},
         ],
-        16: [
+        22: [
             function (require, module, exports) {
                 'use strict';
                 var __createBinding =
@@ -3807,20 +4669,20 @@
                 exports.Transport = Transport;
             },
             {
-                './Consumer': 7,
-                './DataConsumer': 8,
-                './DataProducer': 9,
-                './EnhancedEventEmitter': 11,
-                './Logger': 12,
-                './Producer': 13,
-                './errors': 17,
-                './ortc': 39,
-                './utils': 42,
-                awaitqueue: 2,
-                'queue-microtask': 44,
+                './Consumer': 13,
+                './DataConsumer': 14,
+                './DataProducer': 15,
+                './EnhancedEventEmitter': 17,
+                './Logger': 18,
+                './Producer': 19,
+                './errors': 23,
+                './ortc': 45,
+                './utils': 48,
+                awaitqueue: 4,
+                'queue-microtask': 52,
             },
         ],
-        17: [
+        23: [
             function (require, module, exports) {
                 'use strict';
                 Object.defineProperty(exports, '__esModule', { value: true });
@@ -3862,7 +4724,7 @@
             },
             {},
         ],
-        18: [
+        24: [
             function (require, module, exports) {
                 'use strict';
                 var __createBinding =
@@ -4587,20 +5449,20 @@
                 exports.Chrome111 = Chrome111;
             },
             {
-                '../Logger': 12,
-                '../errors': 17,
-                '../ortc': 39,
-                '../scalabilityModes': 40,
-                '../utils': 42,
-                './HandlerInterface': 26,
-                './ortc/utils': 32,
-                './sdp/RemoteSdp': 34,
-                './sdp/commonUtils': 35,
-                './sdp/unifiedPlanUtils': 37,
-                'sdp-transform': 46,
+                '../Logger': 18,
+                '../errors': 23,
+                '../ortc': 45,
+                '../scalabilityModes': 46,
+                '../utils': 48,
+                './HandlerInterface': 32,
+                './ortc/utils': 38,
+                './sdp/RemoteSdp': 40,
+                './sdp/commonUtils': 41,
+                './sdp/unifiedPlanUtils': 43,
+                'sdp-transform': 54,
             },
         ],
-        19: [
+        25: [
             function (require, module, exports) {
                 'use strict';
                 var __createBinding =
@@ -5193,18 +6055,18 @@
                 exports.Chrome55 = Chrome55;
             },
             {
-                '../Logger': 12,
-                '../errors': 17,
-                '../ortc': 39,
-                '../utils': 42,
-                './HandlerInterface': 26,
-                './sdp/RemoteSdp': 34,
-                './sdp/commonUtils': 35,
-                './sdp/planBUtils': 36,
-                'sdp-transform': 46,
+                '../Logger': 18,
+                '../errors': 23,
+                '../ortc': 45,
+                '../utils': 48,
+                './HandlerInterface': 32,
+                './sdp/RemoteSdp': 40,
+                './sdp/commonUtils': 41,
+                './sdp/planBUtils': 42,
+                'sdp-transform': 54,
             },
         ],
-        20: [
+        26: [
             function (require, module, exports) {
                 'use strict';
                 var __createBinding =
@@ -5846,17 +6708,17 @@
                 exports.Chrome67 = Chrome67;
             },
             {
-                '../Logger': 12,
-                '../ortc': 39,
-                '../utils': 42,
-                './HandlerInterface': 26,
-                './sdp/RemoteSdp': 34,
-                './sdp/commonUtils': 35,
-                './sdp/planBUtils': 36,
-                'sdp-transform': 46,
+                '../Logger': 18,
+                '../ortc': 45,
+                '../utils': 48,
+                './HandlerInterface': 32,
+                './sdp/RemoteSdp': 40,
+                './sdp/commonUtils': 41,
+                './sdp/planBUtils': 42,
+                'sdp-transform': 54,
             },
         ],
-        21: [
+        27: [
             function (require, module, exports) {
                 'use strict';
                 var __createBinding =
@@ -6527,18 +7389,18 @@
                 exports.Chrome70 = Chrome70;
             },
             {
-                '../Logger': 12,
-                '../ortc': 39,
-                '../scalabilityModes': 40,
-                '../utils': 42,
-                './HandlerInterface': 26,
-                './sdp/RemoteSdp': 34,
-                './sdp/commonUtils': 35,
-                './sdp/unifiedPlanUtils': 37,
-                'sdp-transform': 46,
+                '../Logger': 18,
+                '../ortc': 45,
+                '../scalabilityModes': 46,
+                '../utils': 48,
+                './HandlerInterface': 32,
+                './sdp/RemoteSdp': 40,
+                './sdp/commonUtils': 41,
+                './sdp/unifiedPlanUtils': 43,
+                'sdp-transform': 54,
             },
         ],
-        22: [
+        28: [
             function (require, module, exports) {
                 'use strict';
                 var __createBinding =
@@ -7286,20 +8148,20 @@
                 exports.Chrome74 = Chrome74;
             },
             {
-                '../Logger': 12,
-                '../errors': 17,
-                '../ortc': 39,
-                '../scalabilityModes': 40,
-                '../utils': 42,
-                './HandlerInterface': 26,
-                './ortc/utils': 32,
-                './sdp/RemoteSdp': 34,
-                './sdp/commonUtils': 35,
-                './sdp/unifiedPlanUtils': 37,
-                'sdp-transform': 46,
+                '../Logger': 18,
+                '../errors': 23,
+                '../ortc': 45,
+                '../scalabilityModes': 46,
+                '../utils': 48,
+                './HandlerInterface': 32,
+                './ortc/utils': 38,
+                './sdp/RemoteSdp': 40,
+                './sdp/commonUtils': 41,
+                './sdp/unifiedPlanUtils': 43,
+                'sdp-transform': 54,
             },
         ],
-        23: [
+        29: [
             function (require, module, exports) {
                 'use strict';
                 var __createBinding =
@@ -7779,15 +8641,15 @@
                 exports.Edge11 = Edge11;
             },
             {
-                '../Logger': 12,
-                '../errors': 17,
-                '../ortc': 39,
-                '../utils': 42,
-                './HandlerInterface': 26,
-                './ortc/edgeUtils': 31,
+                '../Logger': 18,
+                '../errors': 23,
+                '../ortc': 45,
+                '../utils': 48,
+                './HandlerInterface': 32,
+                './ortc/edgeUtils': 37,
             },
         ],
-        24: [
+        30: [
             function (require, module, exports) {
                 'use strict';
                 var __createBinding =
@@ -8531,19 +9393,19 @@
                 exports.Firefox120 = Firefox120;
             },
             {
-                '../Logger': 12,
-                '../errors': 17,
-                '../ortc': 39,
-                '../scalabilityModes': 40,
-                '../utils': 42,
-                './HandlerInterface': 26,
-                './sdp/RemoteSdp': 34,
-                './sdp/commonUtils': 35,
-                './sdp/unifiedPlanUtils': 37,
-                'sdp-transform': 46,
+                '../Logger': 18,
+                '../errors': 23,
+                '../ortc': 45,
+                '../scalabilityModes': 46,
+                '../utils': 48,
+                './HandlerInterface': 32,
+                './sdp/RemoteSdp': 40,
+                './sdp/commonUtils': 41,
+                './sdp/unifiedPlanUtils': 43,
+                'sdp-transform': 54,
             },
         ],
-        25: [
+        31: [
             function (require, module, exports) {
                 'use strict';
                 var __createBinding =
@@ -9305,19 +10167,19 @@
                 exports.Firefox60 = Firefox60;
             },
             {
-                '../Logger': 12,
-                '../errors': 17,
-                '../ortc': 39,
-                '../scalabilityModes': 40,
-                '../utils': 42,
-                './HandlerInterface': 26,
-                './sdp/RemoteSdp': 34,
-                './sdp/commonUtils': 35,
-                './sdp/unifiedPlanUtils': 37,
-                'sdp-transform': 46,
+                '../Logger': 18,
+                '../errors': 23,
+                '../ortc': 45,
+                '../scalabilityModes': 46,
+                '../utils': 48,
+                './HandlerInterface': 32,
+                './sdp/RemoteSdp': 40,
+                './sdp/commonUtils': 41,
+                './sdp/unifiedPlanUtils': 43,
+                'sdp-transform': 54,
             },
         ],
-        26: [
+        32: [
             function (require, module, exports) {
                 'use strict';
                 Object.defineProperty(exports, '__esModule', { value: true });
@@ -9330,9 +10192,9 @@
                 }
                 exports.HandlerInterface = HandlerInterface;
             },
-            { '../EnhancedEventEmitter': 11 },
+            { '../EnhancedEventEmitter': 17 },
         ],
-        27: [
+        33: [
             function (require, module, exports) {
                 'use strict';
                 var __createBinding =
@@ -9942,18 +10804,18 @@
                 exports.ReactNative = ReactNative;
             },
             {
-                '../Logger': 12,
-                '../errors': 17,
-                '../ortc': 39,
-                '../utils': 42,
-                './HandlerInterface': 26,
-                './sdp/RemoteSdp': 34,
-                './sdp/commonUtils': 35,
-                './sdp/planBUtils': 36,
-                'sdp-transform': 46,
+                '../Logger': 18,
+                '../errors': 23,
+                '../ortc': 45,
+                '../utils': 48,
+                './HandlerInterface': 32,
+                './sdp/RemoteSdp': 40,
+                './sdp/commonUtils': 41,
+                './sdp/planBUtils': 42,
+                'sdp-transform': 54,
             },
         ],
-        28: [
+        34: [
             function (require, module, exports) {
                 'use strict';
                 var __createBinding =
@@ -10726,20 +11588,20 @@
                 exports.ReactNativeUnifiedPlan = ReactNativeUnifiedPlan;
             },
             {
-                '../Logger': 12,
-                '../errors': 17,
-                '../ortc': 39,
-                '../scalabilityModes': 40,
-                '../utils': 42,
-                './HandlerInterface': 26,
-                './ortc/utils': 32,
-                './sdp/RemoteSdp': 34,
-                './sdp/commonUtils': 35,
-                './sdp/unifiedPlanUtils': 37,
-                'sdp-transform': 46,
+                '../Logger': 18,
+                '../errors': 23,
+                '../ortc': 45,
+                '../scalabilityModes': 46,
+                '../utils': 48,
+                './HandlerInterface': 32,
+                './ortc/utils': 38,
+                './sdp/RemoteSdp': 40,
+                './sdp/commonUtils': 41,
+                './sdp/unifiedPlanUtils': 43,
+                'sdp-transform': 54,
             },
         ],
-        29: [
+        35: [
             function (require, module, exports) {
                 'use strict';
                 var __createBinding =
@@ -11376,17 +12238,17 @@
                 exports.Safari11 = Safari11;
             },
             {
-                '../Logger': 12,
-                '../ortc': 39,
-                '../utils': 42,
-                './HandlerInterface': 26,
-                './sdp/RemoteSdp': 34,
-                './sdp/commonUtils': 35,
-                './sdp/planBUtils': 36,
-                'sdp-transform': 46,
+                '../Logger': 18,
+                '../ortc': 45,
+                '../utils': 48,
+                './HandlerInterface': 32,
+                './sdp/RemoteSdp': 40,
+                './sdp/commonUtils': 41,
+                './sdp/planBUtils': 42,
+                'sdp-transform': 54,
             },
         ],
-        30: [
+        36: [
             function (require, module, exports) {
                 'use strict';
                 var __createBinding =
@@ -12108,20 +12970,20 @@
                 exports.Safari12 = Safari12;
             },
             {
-                '../Logger': 12,
-                '../errors': 17,
-                '../ortc': 39,
-                '../scalabilityModes': 40,
-                '../utils': 42,
-                './HandlerInterface': 26,
-                './ortc/utils': 32,
-                './sdp/RemoteSdp': 34,
-                './sdp/commonUtils': 35,
-                './sdp/unifiedPlanUtils': 37,
-                'sdp-transform': 46,
+                '../Logger': 18,
+                '../errors': 23,
+                '../ortc': 45,
+                '../scalabilityModes': 46,
+                '../utils': 48,
+                './HandlerInterface': 32,
+                './ortc/utils': 38,
+                './sdp/RemoteSdp': 40,
+                './sdp/commonUtils': 41,
+                './sdp/unifiedPlanUtils': 43,
+                'sdp-transform': 54,
             },
         ],
-        31: [
+        37: [
             function (require, module, exports) {
                 'use strict';
                 var __createBinding =
@@ -12236,9 +13098,9 @@
                 }
                 exports.mangleRtpParameters = mangleRtpParameters;
             },
-            { '../../utils': 42 },
+            { '../../utils': 48 },
         ],
-        32: [
+        38: [
             function (require, module, exports) {
                 'use strict';
                 Object.defineProperty(exports, '__esModule', { value: true });
@@ -12264,7 +13126,7 @@
             },
             {},
         ],
-        33: [
+        39: [
             function (require, module, exports) {
                 'use strict';
                 var __createBinding =
@@ -12900,9 +13762,9 @@
                     return mimeTypeMatch[2];
                 }
             },
-            { '../../utils': 42, 'sdp-transform': 46 },
+            { '../../utils': 48, 'sdp-transform': 54 },
         ],
-        34: [
+        40: [
             function (require, module, exports) {
                 'use strict';
                 var __createBinding =
@@ -13239,9 +14101,9 @@
                 }
                 exports.RemoteSdp = RemoteSdp;
             },
-            { '../../Logger': 12, './MediaSection': 33, 'sdp-transform': 46 },
+            { '../../Logger': 18, './MediaSection': 39, 'sdp-transform': 54 },
         ],
-        35: [
+        41: [
             function (require, module, exports) {
                 'use strict';
                 var __createBinding =
@@ -13494,9 +14356,9 @@
                 }
                 exports.applyCodecParameters = applyCodecParameters;
             },
-            { 'sdp-transform': 46 },
+            { 'sdp-transform': 54 },
         ],
-        36: [
+        42: [
             function (require, module, exports) {
                 'use strict';
                 Object.defineProperty(exports, '__esModule', { value: true });
@@ -13653,7 +14515,7 @@
             },
             {},
         ],
-        37: [
+        43: [
             function (require, module, exports) {
                 'use strict';
                 Object.defineProperty(exports, '__esModule', { value: true });
@@ -13785,7 +14647,7 @@
             },
             {},
         ],
-        38: [
+        44: [
             function (require, module, exports) {
                 'use strict';
                 var __createBinding =
@@ -13874,9 +14736,9 @@
                     },
                 });
             },
-            { './Device': 10, './scalabilityModes': 40, './types': 41, debug: 3 },
+            { './Device': 16, './scalabilityModes': 46, './types': 47, debug: 49 },
         ],
-        39: [
+        45: [
             function (require, module, exports) {
                 'use strict';
                 var __createBinding =
@@ -14817,9 +15679,9 @@
                     return reducedRtcpFeedback;
                 }
             },
-            { './utils': 42, 'h264-profile-level-id': 6 },
+            { './utils': 48, 'h264-profile-level-id': 9 },
         ],
-        40: [
+        46: [
             function (require, module, exports) {
                 'use strict';
                 Object.defineProperty(exports, '__esModule', { value: true });
@@ -14843,7 +15705,7 @@
             },
             {},
         ],
-        41: [
+        47: [
             function (require, module, exports) {
                 'use strict';
                 var __createBinding =
@@ -14886,19 +15748,19 @@
                 __exportStar(require('./errors'), exports);
             },
             {
-                './Consumer': 7,
-                './DataConsumer': 8,
-                './DataProducer': 9,
-                './Device': 10,
-                './Producer': 13,
-                './RtpParameters': 14,
-                './SctpParameters': 15,
-                './Transport': 16,
-                './errors': 17,
-                './handlers/HandlerInterface': 26,
+                './Consumer': 13,
+                './DataConsumer': 14,
+                './DataProducer': 15,
+                './Device': 16,
+                './Producer': 19,
+                './RtpParameters': 20,
+                './SctpParameters': 21,
+                './Transport': 22,
+                './errors': 23,
+                './handlers/HandlerInterface': 32,
             },
         ],
-        42: [
+        48: [
             function (require, module, exports) {
                 'use strict';
                 Object.defineProperty(exports, '__esModule', { value: true });
@@ -14946,172 +15808,25 @@
             },
             {},
         ],
-        43: [
+        49: [
             function (require, module, exports) {
-                /**
-                 * Helpers.
-                 */
-
-                var s = 1000;
-                var m = s * 60;
-                var h = m * 60;
-                var d = h * 24;
-                var w = d * 7;
-                var y = d * 365.25;
-
-                /**
-                 * Parse or format the given `val`.
-                 *
-                 * Options:
-                 *
-                 *  - `long` verbose formatting [false]
-                 *
-                 * @param {String|Number} val
-                 * @param {Object} [options]
-                 * @throws {Error} throw an error if val is not a non-empty string or a number
-                 * @return {String|Number}
-                 * @api public
-                 */
-
-                module.exports = function (val, options) {
-                    options = options || {};
-                    var type = typeof val;
-                    if (type === 'string' && val.length > 0) {
-                        return parse(val);
-                    } else if (type === 'number' && isFinite(val)) {
-                        return options.long ? fmtLong(val) : fmtShort(val);
-                    }
-                    throw new Error('val is not a non-empty string or a valid number. val=' + JSON.stringify(val));
-                };
-
-                /**
-                 * Parse the given `str` and return milliseconds.
-                 *
-                 * @param {String} str
-                 * @return {Number}
-                 * @api private
-                 */
-
-                function parse(str) {
-                    str = String(str);
-                    if (str.length > 100) {
-                        return;
-                    }
-                    var match =
-                        /^(-?(?:\d+)?\.?\d+) *(milliseconds?|msecs?|ms|seconds?|secs?|s|minutes?|mins?|m|hours?|hrs?|h|days?|d|weeks?|w|years?|yrs?|y)?$/i.exec(
-                            str,
-                        );
-                    if (!match) {
-                        return;
-                    }
-                    var n = parseFloat(match[1]);
-                    var type = (match[2] || 'ms').toLowerCase();
-                    switch (type) {
-                        case 'years':
-                        case 'year':
-                        case 'yrs':
-                        case 'yr':
-                        case 'y':
-                            return n * y;
-                        case 'weeks':
-                        case 'week':
-                        case 'w':
-                            return n * w;
-                        case 'days':
-                        case 'day':
-                        case 'd':
-                            return n * d;
-                        case 'hours':
-                        case 'hour':
-                        case 'hrs':
-                        case 'hr':
-                        case 'h':
-                            return n * h;
-                        case 'minutes':
-                        case 'minute':
-                        case 'mins':
-                        case 'min':
-                        case 'm':
-                            return n * m;
-                        case 'seconds':
-                        case 'second':
-                        case 'secs':
-                        case 'sec':
-                        case 's':
-                            return n * s;
-                        case 'milliseconds':
-                        case 'millisecond':
-                        case 'msecs':
-                        case 'msec':
-                        case 'ms':
-                            return n;
-                        default:
-                            return undefined;
-                    }
-                }
-
-                /**
-                 * Short format for `ms`.
-                 *
-                 * @param {Number} ms
-                 * @return {String}
-                 * @api private
-                 */
-
-                function fmtShort(ms) {
-                    var msAbs = Math.abs(ms);
-                    if (msAbs >= d) {
-                        return Math.round(ms / d) + 'd';
-                    }
-                    if (msAbs >= h) {
-                        return Math.round(ms / h) + 'h';
-                    }
-                    if (msAbs >= m) {
-                        return Math.round(ms / m) + 'm';
-                    }
-                    if (msAbs >= s) {
-                        return Math.round(ms / s) + 's';
-                    }
-                    return ms + 'ms';
-                }
-
-                /**
-                 * Long format for `ms`.
-                 *
-                 * @param {Number} ms
-                 * @return {String}
-                 * @api private
-                 */
-
-                function fmtLong(ms) {
-                    var msAbs = Math.abs(ms);
-                    if (msAbs >= d) {
-                        return plural(ms, msAbs, d, 'day');
-                    }
-                    if (msAbs >= h) {
-                        return plural(ms, msAbs, h, 'hour');
-                    }
-                    if (msAbs >= m) {
-                        return plural(ms, msAbs, m, 'minute');
-                    }
-                    if (msAbs >= s) {
-                        return plural(ms, msAbs, s, 'second');
-                    }
-                    return ms + ' ms';
-                }
-
-                /**
-                 * Pluralization helper.
-                 */
-
-                function plural(ms, msAbs, n, name) {
-                    var isPlural = msAbs >= n * 1.5;
-                    return Math.round(ms / n) + ' ' + name + (isPlural ? 's' : '');
-                }
+                arguments[4][5][0].apply(exports, arguments);
             },
-            {},
+            { './common': 50, _process: 2, dup: 5 },
         ],
-        44: [
+        50: [
+            function (require, module, exports) {
+                arguments[4][6][0].apply(exports, arguments);
+            },
+            { dup: 6, ms: 51 },
+        ],
+        51: [
+            function (require, module, exports) {
+                arguments[4][7][0].apply(exports, arguments);
+            },
+            { dup: 7 },
+        ],
+        52: [
             function (require, module, exports) {
                 (function (global) {
                     (function () {
@@ -15142,7 +15857,7 @@
             },
             {},
         ],
-        45: [
+        53: [
             function (require, module, exports) {
                 var grammar = (module.exports = {
                     v: [
@@ -15655,7 +16370,7 @@
             },
             {},
         ],
-        46: [
+        54: [
             function (require, module, exports) {
                 var parser = require('./parser');
                 var writer = require('./writer');
@@ -15669,9 +16384,9 @@
                 exports.parseImageAttributes = parser.parseImageAttributes;
                 exports.parseSimulcastStreamList = parser.parseSimulcastStreamList;
             },
-            { './parser': 47, './writer': 48 },
+            { './parser': 55, './writer': 56 },
         ],
-        47: [
+        55: [
             function (require, module, exports) {
                 var toIntIfInt = function (v) {
                     return String(Number(v)) === v ? Number(v) : v;
@@ -15804,9 +16519,9 @@
                     });
                 };
             },
-            { './grammar': 45 },
+            { './grammar': 53 },
         ],
-        48: [
+        56: [
             function (require, module, exports) {
                 var grammar = require('./grammar');
 
@@ -15916,9 +16631,9 @@
                     return sdp.join('\r\n') + '\r\n';
                 };
             },
-            { './grammar': 45 },
+            { './grammar': 53 },
         ],
-        49: [
+        57: [
             function (require, module, exports) {
                 /////////////////////////////////////////////////////////////////////////////////
                 /* UAParser.js v1.0.37
@@ -17197,693 +17912,14 @@
             },
             {},
         ],
-        50: [
+        58: [
             function (require, module, exports) {
                 const client = require('mediasoup-client');
                 window.mediasoupClient = client;
             },
-            { 'mediasoup-client': 38 },
-        ],
-        51: [
-            function (require, module, exports) {
-                // Copyright Joyent, Inc. and other Node contributors.
-                //
-                // Permission is hereby granted, free of charge, to any person obtaining a
-                // copy of this software and associated documentation files (the
-                // "Software"), to deal in the Software without restriction, including
-                // without limitation the rights to use, copy, modify, merge, publish,
-                // distribute, sublicense, and/or sell copies of the Software, and to permit
-                // persons to whom the Software is furnished to do so, subject to the
-                // following conditions:
-                //
-                // The above copyright notice and this permission notice shall be included
-                // in all copies or substantial portions of the Software.
-                //
-                // THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS
-                // OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
-                // MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN
-                // NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM,
-                // DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR
-                // OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE
-                // USE OR OTHER DEALINGS IN THE SOFTWARE.
-
-                'use strict';
-
-                var R = typeof Reflect === 'object' ? Reflect : null;
-                var ReflectApply =
-                    R && typeof R.apply === 'function'
-                        ? R.apply
-                        : function ReflectApply(target, receiver, args) {
-                              return Function.prototype.apply.call(target, receiver, args);
-                          };
-
-                var ReflectOwnKeys;
-                if (R && typeof R.ownKeys === 'function') {
-                    ReflectOwnKeys = R.ownKeys;
-                } else if (Object.getOwnPropertySymbols) {
-                    ReflectOwnKeys = function ReflectOwnKeys(target) {
-                        return Object.getOwnPropertyNames(target).concat(Object.getOwnPropertySymbols(target));
-                    };
-                } else {
-                    ReflectOwnKeys = function ReflectOwnKeys(target) {
-                        return Object.getOwnPropertyNames(target);
-                    };
-                }
-
-                function ProcessEmitWarning(warning) {
-                    if (console && console.warn) console.warn(warning);
-                }
-
-                var NumberIsNaN =
-                    Number.isNaN ||
-                    function NumberIsNaN(value) {
-                        return value !== value;
-                    };
-
-                function EventEmitter() {
-                    EventEmitter.init.call(this);
-                }
-                module.exports = EventEmitter;
-                module.exports.once = once;
-
-                // Backwards-compat with node 0.10.x
-                EventEmitter.EventEmitter = EventEmitter;
-
-                EventEmitter.prototype._events = undefined;
-                EventEmitter.prototype._eventsCount = 0;
-                EventEmitter.prototype._maxListeners = undefined;
-
-                // By default EventEmitters will print a warning if more than 10 listeners are
-                // added to it. This is a useful default which helps finding memory leaks.
-                var defaultMaxListeners = 10;
-
-                function checkListener(listener) {
-                    if (typeof listener !== 'function') {
-                        throw new TypeError(
-                            'The "listener" argument must be of type Function. Received type ' + typeof listener,
-                        );
-                    }
-                }
-
-                Object.defineProperty(EventEmitter, 'defaultMaxListeners', {
-                    enumerable: true,
-                    get: function () {
-                        return defaultMaxListeners;
-                    },
-                    set: function (arg) {
-                        if (typeof arg !== 'number' || arg < 0 || NumberIsNaN(arg)) {
-                            throw new RangeError(
-                                'The value of "defaultMaxListeners" is out of range. It must be a non-negative number. Received ' +
-                                    arg +
-                                    '.',
-                            );
-                        }
-                        defaultMaxListeners = arg;
-                    },
-                });
-
-                EventEmitter.init = function () {
-                    if (this._events === undefined || this._events === Object.getPrototypeOf(this)._events) {
-                        this._events = Object.create(null);
-                        this._eventsCount = 0;
-                    }
-
-                    this._maxListeners = this._maxListeners || undefined;
-                };
-
-                // Obviously not all Emitters should be limited to 10. This function allows
-                // that to be increased. Set to zero for unlimited.
-                EventEmitter.prototype.setMaxListeners = function setMaxListeners(n) {
-                    if (typeof n !== 'number' || n < 0 || NumberIsNaN(n)) {
-                        throw new RangeError(
-                            'The value of "n" is out of range. It must be a non-negative number. Received ' + n + '.',
-                        );
-                    }
-                    this._maxListeners = n;
-                    return this;
-                };
-
-                function _getMaxListeners(that) {
-                    if (that._maxListeners === undefined) return EventEmitter.defaultMaxListeners;
-                    return that._maxListeners;
-                }
-
-                EventEmitter.prototype.getMaxListeners = function getMaxListeners() {
-                    return _getMaxListeners(this);
-                };
-
-                EventEmitter.prototype.emit = function emit(type) {
-                    var args = [];
-                    for (var i = 1; i < arguments.length; i++) args.push(arguments[i]);
-                    var doError = type === 'error';
-
-                    var events = this._events;
-                    if (events !== undefined) doError = doError && events.error === undefined;
-                    else if (!doError) return false;
-
-                    // If there is no 'error' event listener then throw.
-                    if (doError) {
-                        var er;
-                        if (args.length > 0) er = args[0];
-                        if (er instanceof Error) {
-                            // Note: The comments on the `throw` lines are intentional, they show
-                            // up in Node's output if this results in an unhandled exception.
-                            throw er; // Unhandled 'error' event
-                        }
-                        // At least give some kind of context to the user
-                        var err = new Error('Unhandled error.' + (er ? ' (' + er.message + ')' : ''));
-                        err.context = er;
-                        throw err; // Unhandled 'error' event
-                    }
-
-                    var handler = events[type];
-
-                    if (handler === undefined) return false;
-
-                    if (typeof handler === 'function') {
-                        ReflectApply(handler, this, args);
-                    } else {
-                        var len = handler.length;
-                        var listeners = arrayClone(handler, len);
-                        for (var i = 0; i < len; ++i) ReflectApply(listeners[i], this, args);
-                    }
-
-                    return true;
-                };
-
-                function _addListener(target, type, listener, prepend) {
-                    var m;
-                    var events;
-                    var existing;
-
-                    checkListener(listener);
-
-                    events = target._events;
-                    if (events === undefined) {
-                        events = target._events = Object.create(null);
-                        target._eventsCount = 0;
-                    } else {
-                        // To avoid recursion in the case that type === "newListener"! Before
-                        // adding it to the listeners, first emit "newListener".
-                        if (events.newListener !== undefined) {
-                            target.emit('newListener', type, listener.listener ? listener.listener : listener);
-
-                            // Re-assign `events` because a newListener handler could have caused the
-                            // this._events to be assigned to a new object
-                            events = target._events;
-                        }
-                        existing = events[type];
-                    }
-
-                    if (existing === undefined) {
-                        // Optimize the case of one listener. Don't need the extra array object.
-                        existing = events[type] = listener;
-                        ++target._eventsCount;
-                    } else {
-                        if (typeof existing === 'function') {
-                            // Adding the second element, need to change to array.
-                            existing = events[type] = prepend ? [listener, existing] : [existing, listener];
-                            // If we've already got an array, just append.
-                        } else if (prepend) {
-                            existing.unshift(listener);
-                        } else {
-                            existing.push(listener);
-                        }
-
-                        // Check for listener leak
-                        m = _getMaxListeners(target);
-                        if (m > 0 && existing.length > m && !existing.warned) {
-                            existing.warned = true;
-                            // No error code for this since it is a Warning
-                            // eslint-disable-next-line no-restricted-syntax
-                            var w = new Error(
-                                'Possible EventEmitter memory leak detected. ' +
-                                    existing.length +
-                                    ' ' +
-                                    String(type) +
-                                    ' listeners ' +
-                                    'added. Use emitter.setMaxListeners() to ' +
-                                    'increase limit',
-                            );
-                            w.name = 'MaxListenersExceededWarning';
-                            w.emitter = target;
-                            w.type = type;
-                            w.count = existing.length;
-                            ProcessEmitWarning(w);
-                        }
-                    }
-
-                    return target;
-                }
-
-                EventEmitter.prototype.addListener = function addListener(type, listener) {
-                    return _addListener(this, type, listener, false);
-                };
-
-                EventEmitter.prototype.on = EventEmitter.prototype.addListener;
-
-                EventEmitter.prototype.prependListener = function prependListener(type, listener) {
-                    return _addListener(this, type, listener, true);
-                };
-
-                function onceWrapper() {
-                    if (!this.fired) {
-                        this.target.removeListener(this.type, this.wrapFn);
-                        this.fired = true;
-                        if (arguments.length === 0) return this.listener.call(this.target);
-                        return this.listener.apply(this.target, arguments);
-                    }
-                }
-
-                function _onceWrap(target, type, listener) {
-                    var state = { fired: false, wrapFn: undefined, target: target, type: type, listener: listener };
-                    var wrapped = onceWrapper.bind(state);
-                    wrapped.listener = listener;
-                    state.wrapFn = wrapped;
-                    return wrapped;
-                }
-
-                EventEmitter.prototype.once = function once(type, listener) {
-                    checkListener(listener);
-                    this.on(type, _onceWrap(this, type, listener));
-                    return this;
-                };
-
-                EventEmitter.prototype.prependOnceListener = function prependOnceListener(type, listener) {
-                    checkListener(listener);
-                    this.prependListener(type, _onceWrap(this, type, listener));
-                    return this;
-                };
-
-                // Emits a 'removeListener' event if and only if the listener was removed.
-                EventEmitter.prototype.removeListener = function removeListener(type, listener) {
-                    var list, events, position, i, originalListener;
-
-                    checkListener(listener);
-
-                    events = this._events;
-                    if (events === undefined) return this;
-
-                    list = events[type];
-                    if (list === undefined) return this;
-
-                    if (list === listener || list.listener === listener) {
-                        if (--this._eventsCount === 0) this._events = Object.create(null);
-                        else {
-                            delete events[type];
-                            if (events.removeListener) this.emit('removeListener', type, list.listener || listener);
-                        }
-                    } else if (typeof list !== 'function') {
-                        position = -1;
-
-                        for (i = list.length - 1; i >= 0; i--) {
-                            if (list[i] === listener || list[i].listener === listener) {
-                                originalListener = list[i].listener;
-                                position = i;
-                                break;
-                            }
-                        }
-
-                        if (position < 0) return this;
-
-                        if (position === 0) list.shift();
-                        else {
-                            spliceOne(list, position);
-                        }
-
-                        if (list.length === 1) events[type] = list[0];
-
-                        if (events.removeListener !== undefined)
-                            this.emit('removeListener', type, originalListener || listener);
-                    }
-
-                    return this;
-                };
-
-                EventEmitter.prototype.off = EventEmitter.prototype.removeListener;
-
-                EventEmitter.prototype.removeAllListeners = function removeAllListeners(type) {
-                    var listeners, events, i;
-
-                    events = this._events;
-                    if (events === undefined) return this;
-
-                    // not listening for removeListener, no need to emit
-                    if (events.removeListener === undefined) {
-                        if (arguments.length === 0) {
-                            this._events = Object.create(null);
-                            this._eventsCount = 0;
-                        } else if (events[type] !== undefined) {
-                            if (--this._eventsCount === 0) this._events = Object.create(null);
-                            else delete events[type];
-                        }
-                        return this;
-                    }
-
-                    // emit removeListener for all listeners on all events
-                    if (arguments.length === 0) {
-                        var keys = Object.keys(events);
-                        var key;
-                        for (i = 0; i < keys.length; ++i) {
-                            key = keys[i];
-                            if (key === 'removeListener') continue;
-                            this.removeAllListeners(key);
-                        }
-                        this.removeAllListeners('removeListener');
-                        this._events = Object.create(null);
-                        this._eventsCount = 0;
-                        return this;
-                    }
-
-                    listeners = events[type];
-
-                    if (typeof listeners === 'function') {
-                        this.removeListener(type, listeners);
-                    } else if (listeners !== undefined) {
-                        // LIFO order
-                        for (i = listeners.length - 1; i >= 0; i--) {
-                            this.removeListener(type, listeners[i]);
-                        }
-                    }
-
-                    return this;
-                };
-
-                function _listeners(target, type, unwrap) {
-                    var events = target._events;
-
-                    if (events === undefined) return [];
-
-                    var evlistener = events[type];
-                    if (evlistener === undefined) return [];
-
-                    if (typeof evlistener === 'function')
-                        return unwrap ? [evlistener.listener || evlistener] : [evlistener];
-
-                    return unwrap ? unwrapListeners(evlistener) : arrayClone(evlistener, evlistener.length);
-                }
-
-                EventEmitter.prototype.listeners = function listeners(type) {
-                    return _listeners(this, type, true);
-                };
-
-                EventEmitter.prototype.rawListeners = function rawListeners(type) {
-                    return _listeners(this, type, false);
-                };
-
-                EventEmitter.listenerCount = function (emitter, type) {
-                    if (typeof emitter.listenerCount === 'function') {
-                        return emitter.listenerCount(type);
-                    } else {
-                        return listenerCount.call(emitter, type);
-                    }
-                };
-
-                EventEmitter.prototype.listenerCount = listenerCount;
-                function listenerCount(type) {
-                    var events = this._events;
-
-                    if (events !== undefined) {
-                        var evlistener = events[type];
-
-                        if (typeof evlistener === 'function') {
-                            return 1;
-                        } else if (evlistener !== undefined) {
-                            return evlistener.length;
-                        }
-                    }
-
-                    return 0;
-                }
-
-                EventEmitter.prototype.eventNames = function eventNames() {
-                    return this._eventsCount > 0 ? ReflectOwnKeys(this._events) : [];
-                };
-
-                function arrayClone(arr, n) {
-                    var copy = new Array(n);
-                    for (var i = 0; i < n; ++i) copy[i] = arr[i];
-                    return copy;
-                }
-
-                function spliceOne(list, index) {
-                    for (; index + 1 < list.length; index++) list[index] = list[index + 1];
-                    list.pop();
-                }
-
-                function unwrapListeners(arr) {
-                    var ret = new Array(arr.length);
-                    for (var i = 0; i < ret.length; ++i) {
-                        ret[i] = arr[i].listener || arr[i];
-                    }
-                    return ret;
-                }
-
-                function once(emitter, name) {
-                    return new Promise(function (resolve, reject) {
-                        function errorListener(err) {
-                            emitter.removeListener(name, resolver);
-                            reject(err);
-                        }
-
-                        function resolver() {
-                            if (typeof emitter.removeListener === 'function') {
-                                emitter.removeListener('error', errorListener);
-                            }
-                            resolve([].slice.call(arguments));
-                        }
-
-                        eventTargetAgnosticAddListener(emitter, name, resolver, { once: true });
-                        if (name !== 'error') {
-                            addErrorHandlerIfEventEmitter(emitter, errorListener, { once: true });
-                        }
-                    });
-                }
-
-                function addErrorHandlerIfEventEmitter(emitter, handler, flags) {
-                    if (typeof emitter.on === 'function') {
-                        eventTargetAgnosticAddListener(emitter, 'error', handler, flags);
-                    }
-                }
-
-                function eventTargetAgnosticAddListener(emitter, name, listener, flags) {
-                    if (typeof emitter.on === 'function') {
-                        if (flags.once) {
-                            emitter.once(name, listener);
-                        } else {
-                            emitter.on(name, listener);
-                        }
-                    } else if (typeof emitter.addEventListener === 'function') {
-                        // EventTarget does not have `error` event semantics like Node
-                        // EventEmitters, we do not listen for `error` events here.
-                        emitter.addEventListener(name, function wrapListener(arg) {
-                            // IE does not have builtin `{ once: true }` support so we
-                            // have to do it manually.
-                            if (flags.once) {
-                                emitter.removeEventListener(name, wrapListener);
-                            }
-                            listener(arg);
-                        });
-                    } else {
-                        throw new TypeError(
-                            'The "emitter" argument must be of type EventEmitter. Received type ' + typeof emitter,
-                        );
-                    }
-                }
-            },
-            {},
-        ],
-        52: [
-            function (require, module, exports) {
-                // shim for using process in browser
-                var process = (module.exports = {});
-
-                // cached from whatever global is present so that test runners that stub it
-                // don't break things.  But we need to wrap it in a try catch in case it is
-                // wrapped in strict mode code which doesn't define any globals.  It's inside a
-                // function because try/catches deoptimize in certain engines.
-
-                var cachedSetTimeout;
-                var cachedClearTimeout;
-
-                function defaultSetTimout() {
-                    throw new Error('setTimeout has not been defined');
-                }
-                function defaultClearTimeout() {
-                    throw new Error('clearTimeout has not been defined');
-                }
-                (function () {
-                    try {
-                        if (typeof setTimeout === 'function') {
-                            cachedSetTimeout = setTimeout;
-                        } else {
-                            cachedSetTimeout = defaultSetTimout;
-                        }
-                    } catch (e) {
-                        cachedSetTimeout = defaultSetTimout;
-                    }
-                    try {
-                        if (typeof clearTimeout === 'function') {
-                            cachedClearTimeout = clearTimeout;
-                        } else {
-                            cachedClearTimeout = defaultClearTimeout;
-                        }
-                    } catch (e) {
-                        cachedClearTimeout = defaultClearTimeout;
-                    }
-                })();
-                function runTimeout(fun) {
-                    if (cachedSetTimeout === setTimeout) {
-                        //normal enviroments in sane situations
-                        return setTimeout(fun, 0);
-                    }
-                    // if setTimeout wasn't available but was latter defined
-                    if ((cachedSetTimeout === defaultSetTimout || !cachedSetTimeout) && setTimeout) {
-                        cachedSetTimeout = setTimeout;
-                        return setTimeout(fun, 0);
-                    }
-                    try {
-                        // when when somebody has screwed with setTimeout but no I.E. maddness
-                        return cachedSetTimeout(fun, 0);
-                    } catch (e) {
-                        try {
-                            // When we are in I.E. but the script has been evaled so I.E. doesn't trust the global object when called normally
-                            return cachedSetTimeout.call(null, fun, 0);
-                        } catch (e) {
-                            // same as above but when it's a version of I.E. that must have the global object for 'this', hopfully our context correct otherwise it will throw a global error
-                            return cachedSetTimeout.call(this, fun, 0);
-                        }
-                    }
-                }
-                function runClearTimeout(marker) {
-                    if (cachedClearTimeout === clearTimeout) {
-                        //normal enviroments in sane situations
-                        return clearTimeout(marker);
-                    }
-                    // if clearTimeout wasn't available but was latter defined
-                    if ((cachedClearTimeout === defaultClearTimeout || !cachedClearTimeout) && clearTimeout) {
-                        cachedClearTimeout = clearTimeout;
-                        return clearTimeout(marker);
-                    }
-                    try {
-                        // when when somebody has screwed with setTimeout but no I.E. maddness
-                        return cachedClearTimeout(marker);
-                    } catch (e) {
-                        try {
-                            // When we are in I.E. but the script has been evaled so I.E. doesn't  trust the global object when called normally
-                            return cachedClearTimeout.call(null, marker);
-                        } catch (e) {
-                            // same as above but when it's a version of I.E. that must have the global object for 'this', hopfully our context correct otherwise it will throw a global error.
-                            // Some versions of I.E. have different rules for clearTimeout vs setTimeout
-                            return cachedClearTimeout.call(this, marker);
-                        }
-                    }
-                }
-                var queue = [];
-                var draining = false;
-                var currentQueue;
-                var queueIndex = -1;
-
-                function cleanUpNextTick() {
-                    if (!draining || !currentQueue) {
-                        return;
-                    }
-                    draining = false;
-                    if (currentQueue.length) {
-                        queue = currentQueue.concat(queue);
-                    } else {
-                        queueIndex = -1;
-                    }
-                    if (queue.length) {
-                        drainQueue();
-                    }
-                }
-
-                function drainQueue() {
-                    if (draining) {
-                        return;
-                    }
-                    var timeout = runTimeout(cleanUpNextTick);
-                    draining = true;
-
-                    var len = queue.length;
-                    while (len) {
-                        currentQueue = queue;
-                        queue = [];
-                        while (++queueIndex < len) {
-                            if (currentQueue) {
-                                currentQueue[queueIndex].run();
-                            }
-                        }
-                        queueIndex = -1;
-                        len = queue.length;
-                    }
-                    currentQueue = null;
-                    draining = false;
-                    runClearTimeout(timeout);
-                }
-
-                process.nextTick = function (fun) {
-                    var args = new Array(arguments.length - 1);
-                    if (arguments.length > 1) {
-                        for (var i = 1; i < arguments.length; i++) {
-                            args[i - 1] = arguments[i];
-                        }
-                    }
-                    queue.push(new Item(fun, args));
-                    if (queue.length === 1 && !draining) {
-                        runTimeout(drainQueue);
-                    }
-                };
-
-                // v8 likes predictible objects
-                function Item(fun, array) {
-                    this.fun = fun;
-                    this.array = array;
-                }
-                Item.prototype.run = function () {
-                    this.fun.apply(null, this.array);
-                };
-                process.title = 'browser';
-                process.browser = true;
-                process.env = {};
-                process.argv = [];
-                process.version = ''; // empty string to avoid regexp issues
-                process.versions = {};
-
-                function noop() {}
-
-                process.on = noop;
-                process.addListener = noop;
-                process.once = noop;
-                process.off = noop;
-                process.removeListener = noop;
-                process.removeAllListeners = noop;
-                process.emit = noop;
-                process.prependListener = noop;
-                process.prependOnceListener = noop;
-
-                process.listeners = function (name) {
-                    return [];
-                };
-
-                process.binding = function (name) {
-                    throw new Error('process.binding is not supported');
-                };
-
-                process.cwd = function () {
-                    return '/';
-                };
-                process.chdir = function (dir) {
-                    throw new Error('process.chdir is not supported');
-                };
-                process.umask = function () {
-                    return 0;
-                };
-            },
-            {},
+            { 'mediasoup-client': 44 },
         ],
     },
     {},
-    [50],
+    [58],
 );
