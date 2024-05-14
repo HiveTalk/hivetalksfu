@@ -1195,14 +1195,15 @@ label {
     left: -1.3%;
     width: 152.84%;
     height: 178.78%;
-    background-image: url('../images/hero-back-illustration.svg');
+    background-image: url('../images/bgimg.gif');
+/*    background-image: url('../images/hero-back-illustration.svg');*/
 }
 .hero-figure::after {
     top: -35.6%;
     left: 99.6%;
     width: 57.2%;
     height: 87.88%;
-    background-image: url('../images/hero-top-illustration.svg');
+   /* background-image: url('../images/hero-top-illustration.svg');*/
 }
 .hero-figure-box {
     position: absolute;
@@ -1428,7 +1429,7 @@ label {
     justify-content: center;
     padding: 1rem;
     border-radius: 1rem;
-    background: radial-gradient(circle at bottom, #539ce2 0%, #1870d7 50%, #1d2026 100%);
+    background: radial-gradient(circle at bottom, #539ce2 0%, #702792 50%, #1d2026 100%);
 }
 @media (min-width: 641px) {
     .features-wrap:first-of-type {
@@ -1549,7 +1550,7 @@ label {
 }
 .cta-inner {
     position: relative;
-    background: #15181d;
+    background: #1cd4f0;
     overflow: hidden;
 }
 .cta-inner::before {
