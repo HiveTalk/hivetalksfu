@@ -1,4 +1,15 @@
-<h1 align="center">MiroTalk SFU</h1>
+<h1 align="center">HiveTalk, a Fork of MiroTalk SFU</h1>
+
+<h2> TODO </h2>
+- enable API, to schedule remotely
+- add nostr login
+- add nostr avatar picture, link to nostr profile
+- add web scheduler
+- enable front page web schedule
+- add schedule bot on nostr
+- enable chatGPT, with paid zap plan
+- add zap capabilities
+
 
 <br />
 
