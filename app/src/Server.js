@@ -179,8 +179,8 @@ if (sentryEnabled) {
 // Stats
 const defaultStats = {
     enabled: true,
-    src: 'https://stats.mirotalk.com/script.js',
-    id: '41d26670-f275-45bb-af82-3ce91fe57756',
+    src: 'https://analytics.eu.umami.is/script.js',
+    id: 'dc2ba10d-8018-473a-97c5-7635b5a0bc9b',
 };
 
 // OpenAI/ChatGPT
