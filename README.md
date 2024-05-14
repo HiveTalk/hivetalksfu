@@ -1,6 +1,6 @@
-<h1 align="center">HiveTalk, a Fork of MiroTalk SFU</h1>
+<h1 align="center">HiveTalk </h1>
 
-<h2> TODO </h2>
+### TODO
 - enable API, to schedule remotely
 - add nostr login
 - add nostr avatar picture, link to nostr profile
@@ -10,9 +10,9 @@
 - enable chatGPT, with paid zap plan
 - add zap capabilities
 
-
 <br />
 
+### HiveTalk is a Fork of MiroTalk SFU
 <p align="center">Free WebRTC - SFU - Simple, Secure, Scalable Real-Time Video Conferences with support for up to 4k resolution. It's compatible with all major browsers and platforms</p>
 
 <hr />
