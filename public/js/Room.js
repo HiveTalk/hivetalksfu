@@ -3941,11 +3941,13 @@ function showAbout() {
         //imageUrl: image.about,
         customClass: { image: 'img-about' },
         position: 'center',
-        title: 'HiveTalk is a fork of MiroTalk SFU',
+        title: 'HiveTalk',
         html: `
         <br/>
         <div id="about">
-            <br /><br />
+            <br />
+             HiveTalk is a fork of MiroTalk SFU
+            <br />
             Original Author: <a
                 id="linkedin-button" 
                 data-umami-event="Linkedin button" 
@@ -3953,7 +3955,7 @@ function showAbout() {
                 Miroslav Pejic
             </a>
             <br /><br />
-            Fork maintainer: Bitkarrot
+            Fork maintainer: <a href="https://github.com/bitkarrot" target="_blank"> Bitkarrot</a>
             <br /><br />
         </div>
         `,
