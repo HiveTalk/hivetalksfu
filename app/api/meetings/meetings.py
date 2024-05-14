@@ -2,7 +2,7 @@
 import requests
 import json
 
-API_KEY_SECRET = "mirotalksfu_default_secret"
+API_KEY_SECRET = "mirotalksfu_default_secret_234234"
 #MIROTALK_URL = "https://sfu.mirotalk.com/api/v1/meetings"
 MIROTALK_URL = "http://localhost:3010/api/v1/meetings"
 

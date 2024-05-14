@@ -72,7 +72,7 @@ module.exports = {
     },
     api: {
         // Default secret key for app/api
-        keySecret: 'mirotalksfu_default_secret',
+        keySecret: 'mirotalksfu_default_secret_234234',
         // Define which endpoints are allowed
         allowed: {
             meetings: false,
