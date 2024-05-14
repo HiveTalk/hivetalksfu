@@ -5,7 +5,7 @@ async function getJoin() {
         // Use dynamic import with await
         const { default: fetch } = await import('node-fetch');
 
-        const API_KEY_SECRET = 'mirotalksfu_default_secret';
+        const API_KEY_SECRET = 'mirotalksfu_default_secret_234234';
         //const MIROTALK_URL = 'https://sfu.mirotalk.com/api/v1/join';
         const MIROTALK_URL = 'http://localhost:3010/api/v1/join';
 
