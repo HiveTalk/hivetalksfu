@@ -1,6 +1,6 @@
-<h1 align="center">HiveTalk, a Fork of MiroTalk SFU</h1>
+<h1 align="center">HiveTalk </h1>
 
-<h2> TODO </h2>
+### TODO
 - enable API, to schedule remotely
 - add nostr login
 - add nostr avatar picture, link to nostr profile
@@ -10,18 +10,10 @@
 - enable chatGPT, with paid zap plan
 - add zap capabilities
 
-
 <br />
 
-<div align="center">
-
-<a href="">[![Author](https://img.shields.io/badge/Author-miroslav-brightgreen.svg)](https://www.linkedin.com/in/miroslav-pejic-976a07101/)</a>
-<a href="">![License: AGPLv3](https://img.shields.io/badge/License-AGPLv3-blue.svg)</a>
-<a href="">[![Community](https://img.shields.io/badge/Community-forum-pink.svg)](https://discord.gg/rgGYfeYW3N)</a>
-
-</div>
-
-<p align="center">Free WebRTC - SFU - Simple, Secure, Scalable Real-Time Video Conferences with support for up to 8k resolution and 60fps. It's compatible with all major browsers and platforms</p>
+### HiveTalk is a Fork of MiroTalk SFU
+<p align="center">Free WebRTC - SFU - Simple, Secure, Scalable Real-Time Video Conferences with support for up to 4k resolution. It's compatible with all major browsers and platforms</p>
 
 <hr />
 
