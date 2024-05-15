@@ -2640,6 +2640,7 @@ class RoomClient {
     genGravatar(email, size = false) {
         const hash = md5(email.toLowerCase().trim());
         const gravatarURL = `https://www.gravatar.com/avatar/${hash}` + (size ? `?s=${size}` : '?s=250') + '?d=404';
+        console.log('gravatarURL', gravatarURL);
         return gravatarURL;
         function md5(input) {
             return CryptoJS.MD5(input).toString();
