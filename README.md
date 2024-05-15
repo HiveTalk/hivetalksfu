@@ -2,20 +2,20 @@
 
 ### TODO
 
--   enable API, to schedule remotely
 -   add nostr login
--   add nostr avatar picture, link to nostr profile
--   add web scheduler
--   enable front page web schedule
--   add schedule bot on nostr
--   enable chatGPT, with paid zap plan
--   add zap capabilities
+-   add nostr avatar picture, name, and link to nostr profile
+-   enable front page web schedule, also show active public rooms
+    - ( use built-in API to pull data to front page, see samples in codebase)
+-   enable chatGPT or rather, bitcoiner equiv
+-   add scheduled events announcement bot on nostr
 
 <br />
 
 ### HiveTalk is a Fork of MiroTalk SFU
 
 <p>Free WebRTC - SFU - Simple, Secure, Scalable Real-Time Video Conferences with support for up to 4k resolution. It's compatible with all major browsers and platforms</p>
+
+<img width="934" alt="Screenshot 2024-05-14 at 5 49 39 PM" src="https://github.com/bitkarrot/hivetalksfu/assets/73979971/20889dec-9a64-4baf-8496-3df6fa071ac8">
 
 <a href="https://sfu.mirotalk.com/">Explore MiroTalk SFU</a>
 
