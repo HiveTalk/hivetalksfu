@@ -13,6 +13,7 @@
  *
  */
 
+
 const cfg = {
     useAvatarSvg: true,
 };
@@ -2849,6 +2850,10 @@ class RoomClient {
     isValidEmail(email) {
         const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
         return emailRegex.test(email);
+    }
+
+    isValidNpub(name)  { 
+        return True
     }
 
     genAvatarSvg(peerName, avatarImgSize) {
