@@ -35,30 +35,56 @@ async function getMeetingInfo() {
             // <div class="feature text-center is-revealing">
             // <div class="feature-icon">
 
-            const meetingDiv = document.createElement('div');
-            meetingDiv.classList.add('feature', 'text-center');
+            // const meetingDiv = document.createElement('div');
+            // meetingDiv.classList.add('feature', 'text-center');
   
+            // const roomIdDiv = document.createElement('h4');
+            // roomIdDiv.classList.add('room-id');
+            // roomIdDiv.textContent = `Room ID: ${meeting.roomId}`;
+
+            // const peersDiv = document.createElement('b');
+            // peersDiv.classList.add('peers');
+            // peersDiv.textContent = `Bees: ${meeting.peers}`;
+  
+            // meetingDiv.appendChild(roomIdDiv);
+            // meetingDiv.appendChild(peersDiv);
+
+            // const a = document.createElement('a');
+            // const url = "/join/" + meeting.roomId;
+            // const linkText = document.createTextNode("Join Room");
+            // a.setAttribute('href', url);
+            // a.setAttribute('target', '_blank');
+            // a.appendChild(linkText);
+            // meetingDiv.appendChild(a);
+    
+            // container.appendChild(meetingDiv);
+
+            const meetingDiv = document.createElement('div');
+            meetingDiv.classList.add('feature', 'text-center', 'button-like');
+            
             const roomIdDiv = document.createElement('h4');
             roomIdDiv.classList.add('room-id');
             roomIdDiv.textContent = `Room ID: ${meeting.roomId}`;
-
+            
             const peersDiv = document.createElement('b');
             peersDiv.classList.add('peers');
-            peersDiv.textContent = `Peers: ${meeting.peers}`;
-  
+            peersDiv.textContent = `Bees: ${meeting.peers}`;
+            
             meetingDiv.appendChild(roomIdDiv);
             meetingDiv.appendChild(peersDiv);
-
+            
             const a = document.createElement('a');
             const url = "/join/" + meeting.roomId;
-            const linkText = document.createTextNode("Join Room");
             a.setAttribute('href', url);
             a.setAttribute('target', '_blank');
-            a.appendChild(linkText);
-            meetingDiv.appendChild(a);
-    
-            container.appendChild(meetingDiv);
-          });
+            
+            // Append the meetingDiv to the a element
+            a.appendChild(meetingDiv);
+            
+            // Append the a element to the container
+            container.appendChild(a);
+            
+        });
 
         }
       }
