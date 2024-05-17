@@ -41,6 +41,7 @@
         "node": ">=18"
     },
     "dependencies": {
+        "@nostr-dev-kit/ndk": "^2.8.2",
         "@sentry/integrations": "7.114.0",
         "@sentry/node": "7.114.0",
         "axios": "^1.6.8",

@@ -1,5 +1,6 @@
 'use strict';
 
+
 if (location.href.substr(0, 5) !== 'https') location.href = 'https' + location.href.substr(4, location.href.length - 4);
 
 /**
@@ -849,6 +850,18 @@ function getPeerInfo() {
 async function whoAreYou() {
     console.log('04 ----> Who are you?');
 
+    // // Import the package
+    // import NDK, { NDKNip07Signer } from "@nostr-dev-kit/ndk";
+
+    // const nip07signer = new NDKNip07Signer();
+    // //const ndk = new NDK({ signer: nip07signer });    
+    // nip07signer.user().then(async (user) => {
+    //     if (!!user.npub) {
+    //         console.log("--> NPUB REQUEST FROM EXTENSION SIGNER")
+    //         console.log("Permission granted to read their public key:", user.npub);
+    //     }
+    // });
+    
     hide(loadingDiv);
     document.body.style.background = 'var(--body-bg)';
 
@@ -919,7 +932,7 @@ async function whoAreYou() {
         inputAttributes: { maxlength: 32 },
         inputValue: default_name,
         html: initUser, // Inject HTML
-        confirmButtonText: `Join meeting`,
+        confirmButtonText: `Join room`,
         customClass: { popup: 'init-modal-size' },
         showClass: { popup: 'animate__animated animate__fadeInDown' },
         hideClass: { popup: 'animate__animated animate__fadeOutUp' },
@@ -1199,6 +1212,11 @@ function joinRoom(peer_name, room_id) {
 }
 
 function roomIsReady() {
+    // if (rc.isValidNpub(peer_name)) {
+    //     // just set the avatar for now
+    //     myProfileAvatar.setAttribute('src', rc.genAvatarSvg(peer_name, 64));
+    // }
+
     if (rc.isValidEmail(peer_name)) {
         myProfileAvatar.style.borderRadius = `50px`;
         myProfileAvatar.setAttribute('src', rc.genGravatar(peer_name));
