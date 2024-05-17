@@ -2080,3 +2080,20 @@ main {
 .loading-img {
     width: 400px;
 }
+
+/*--------------------------------------------------------------
+# button box for active rooms
+--------------------------------------------------------------*/
+
+.button-like {
+    border: 1px solid #ccc;
+    border-radius: 8px;
+    padding: 10px 20px;
+    margin: 10px;
+    display: inline-block;
+    cursor: pointer;
+    background-color: #dd18a9;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    text-decoration: none;  /* Ensure no underline */
+    color: inherit;  /* Ensure text color inherits from parent */
+}
