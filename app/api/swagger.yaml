@@ -12,6 +12,23 @@ schemes:
     - http
 
 paths:
+    /meetinfo:
+        get:
+            tags:
+                - 'meeting info'
+            summary: 'Get meeting info'
+            description: 'Get meeting info'
+            produces:
+                - 'application/json'
+            security:
+                - secretApiKey: []
+            responses:
+                '200':
+                    description: 'Get Meeting info'
+                    schema:
+                        $ref: '#/definitions/MeetingsResponse'
+                '403':
+                    description: 'Unauthorized!'
     /meetings:
         get:
             tags:
