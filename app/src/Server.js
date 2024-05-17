@@ -839,6 +839,34 @@ function startServer() {
     // REST API
     // ####################################################
 
+    // get basic room info with room name and number of peers
+    app.get([restApi.basePath + '/meetinfo'], (req, res) => {
+        // Check if endpoint allowed
+        if (restApi.allowed && !restApi.allowed.meetings) {
+            return res.status(403).json({
+                error: 'This endpoint has been disabled. Please contact the administrator for further information.',
+            });
+        }
+        // check if user was authorized for the api call
+        const { host, authorization } = req.headers;
+        const api = new ServerApi(host, authorization);
+        // Get meetings
+        const meetings = api.getMeetings(roomList);
+        meetings.forEach(room => {
+            // Replace the "peers" array with its length
+            room.peers = room.peers.length;
+        });
+        res.json({ meetings: meetings });
+        // log.debug the output if all done
+        log.debug('HiveTalk get meetings - Authorized', {
+            header: req.headers,
+            body: req.body,
+            meetings: meetings,
+        });
+    });
+
+
+
     // request meetings list
     app.get([restApi.basePath + '/meetings'], (req, res) => {
         // Check if endpoint allowed
@@ -851,7 +879,7 @@ function startServer() {
         const { host, authorization } = req.headers;
         const api = new ServerApi(host, authorization);
         if (!api.isAuthorized()) {
-            log.debug('MiroTalk get meetings - Unauthorized', {
+            log.debug('HiveTalk get meetings - Unauthorized', {
                 header: req.headers,
                 body: req.body,
             });
@@ -861,7 +889,7 @@ function startServer() {
         const meetings = api.getMeetings(roomList);
         res.json({ meetings: meetings });
         // log.debug the output if all done
-        log.debug('MiroTalk get meetings - Authorized', {
+        log.debug('HiveTalk get meetings - Authorized', {
             header: req.headers,
             body: req.body,
             meetings: meetings,
@@ -880,7 +908,7 @@ function startServer() {
         const { host, authorization } = req.headers;
         const api = new ServerApi(host, authorization);
         if (!api.isAuthorized()) {
-            log.debug('MiroTalk get meeting - Unauthorized', {
+            log.debug('HiveTalk get meeting - Unauthorized', {
                 header: req.headers,
                 body: req.body,
             });
@@ -890,7 +918,7 @@ function startServer() {
         const meetingURL = api.getMeetingURL();
         res.json({ meeting: meetingURL });
         // log.debug the output if all done
-        log.debug('MiroTalk get meeting - Authorized', {
+        log.debug('HiveTalk get meeting - Authorized', {
             header: req.headers,
             body: req.body,
             meeting: meetingURL,
@@ -909,7 +937,7 @@ function startServer() {
         const { host, authorization } = req.headers;
         const api = new ServerApi(host, authorization);
         if (!api.isAuthorized()) {
-            log.debug('MiroTalk get join - Unauthorized', {
+            log.debug('HiveTalk get join - Unauthorized', {
                 header: req.headers,
                 body: req.body,
             });
@@ -919,7 +947,7 @@ function startServer() {
         const joinURL = api.getJoinURL(req.body);
         res.json({ join: joinURL });
         // log.debug the output if all done
-        log.debug('MiroTalk get join - Authorized', {
+        log.debug('HiveTalk get join - Authorized', {
             header: req.headers,
             body: req.body,
             join: joinURL,
@@ -938,7 +966,7 @@ function startServer() {
         const { host, authorization } = req.headers;
         const api = new ServerApi(host, authorization);
         if (!api.isAuthorized()) {
-            log.debug('MiroTalk get token - Unauthorized', {
+            log.debug('HiveTalk get token - Unauthorized', {
                 header: req.headers,
                 body: req.body,
             });
@@ -948,7 +976,7 @@ function startServer() {
         const token = api.getToken(req.body);
         res.json({ token: token });
         // log.debug the output if all done
-        log.debug('MiroTalk get token - Authorized', {
+        log.debug('HiveTalk get token - Authorized', {
             header: req.headers,
             body: req.body,
             token: token,
