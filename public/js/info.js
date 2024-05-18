@@ -56,14 +56,52 @@ async function getMeetingInfo() {
             
             // Append the a element to the container
             container.appendChild(a);
-            
         });
-
         }
       }
     } catch (error) {
       console.error("Error fetching data:", error);
     }
   }
+
+
+  async function getScheduledInfo() {
+    try {
+      const HIVETALK_URL = "https://localhost:3010/api/v1/scheduled";
   
-  document.addEventListener('DOMContentLoaded', getMeetingInfo);
+      const response = await fetch(HIVETALK_URL, {
+        method: "GET",
+        headers: {
+          "Content-Type": "application/json",
+        },
+      });
+
+      if (!response.ok) {
+        throw new Error(`HTTP error! Status: ${response.status}`);
+      }
+
+      const data = await response.json();
+      console.log("data", data)
+
+      if (data.error) {
+        console.log("Error:", data.error);
+
+    } else {
+        if (data && data.meetings) {
+            console.log("data from meetings")
+            console.log(data)
+
+          const container = document.getElementById('scheduledContainer');
+          container.innerHTML = '';  // Clear previous content if any
+        }
+    }
+
+    } catch (error) {
+    console.error("Error fetching data:", error);
+  }
+
+}
+
+
+document.addEventListener('DOMContentLoaded', getMeetingInfo);
+// document.addEventListener('DOMContentLoaded', getScheduledInfo);
