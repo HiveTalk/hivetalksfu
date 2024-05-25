@@ -45,7 +45,6 @@ dependencies: {
  * @version 1.4.35
  *
  */
-const { NDKNip07Signer } = require("@nostr-dev-kit/ndk");
 
 const express = require('express');
 const { auth, requiresAuth } = require('express-openid-connect');

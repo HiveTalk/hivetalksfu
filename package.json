@@ -41,7 +41,6 @@
         "node": ">=18"
     },
     "dependencies": {
-        "@nostr-dev-kit/ndk": "^2.8.2",
         "@sentry/integrations": "7.114.0",
         "@sentry/node": "7.114.0",
         "axios": "^1.6.8",
@@ -58,6 +57,7 @@
         "mediasoup-client": "3.7.8",
         "ngrok": "^5.0.0-beta.2",
         "nodemailer": "^6.9.13",
+        "nostr-tools": "^2.5.2",
         "openai": "^4.45.0",
         "qs": "6.12.1",
         "socket.io": "4.7.5",
