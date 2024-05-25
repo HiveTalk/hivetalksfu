@@ -1,6 +1,5 @@
 'use strict';
 
-
 if (location.href.substr(0, 5) !== 'https') location.href = 'https' + location.href.substr(4, location.href.length - 4);
 
 /**
@@ -19,8 +18,13 @@ if (location.href.substr(0, 5) !== 'https') location.href = 'https' + location.h
 // ####################################################
 // STATIC SETTINGS
 // ####################################################
-
 console.log('Window Location', window.location);
+
+var loggedIn = false
+
+// Access the functions from the global object
+const { generateSecretKey, getPublicKey } = NostrTools;
+const nip19 = NostrTools.nip19;
 
 const socket = io({ transports: ['websocket'] });
 
@@ -261,6 +265,7 @@ let quill = null;
 
 document.addEventListener('DOMContentLoaded', function () {
     initClient();
+    console.log("init client.......")
 });
 
 function initClient() {
@@ -467,6 +472,7 @@ async function initRoom() {
     if (!isAudioAllowed && !isVideoAllowed && !joinRoomWithoutAudioVideo) {
         openURL(`/permission?room_id=${room_id}&message=Not allowed both Audio and Video`);
     } else {
+        await nostrLogin();
         setButtonsInit();
         handleSelectsInit();
         await whoAreYou();
@@ -915,18 +921,6 @@ function getInfo() {
 async function whoAreYou() {
     console.log('04 ----> Who are you?');
 
-    // // Import the package
-    // import NDK, { NDKNip07Signer } from "@nostr-dev-kit/ndk";
-
-    // const nip07signer = new NDKNip07Signer();
-    // //const ndk = new NDK({ signer: nip07signer });    
-    // nip07signer.user().then(async (user) => {
-    //     if (!!user.npub) {
-    //         console.log("--> NPUB REQUEST FROM EXTENSION SIGNER")
-    //         console.log("Permission granted to read their public key:", user.npub);
-    //     }
-    // });
-    
     hide(loadingDiv);
     document.body.style.background = 'var(--body-bg)';
 
@@ -987,6 +981,29 @@ async function whoAreYou() {
 
     initUser.classList.toggle('hidden');
 
+    // find a better way to transfer value from nostr login to app here. 
+    // relies on cookies
+    let current_name = '';
+    let pubkey = '';
+    let url = '';
+
+    const userInfo = JSON.parse(window.localStorage.getItem('__nostrlogin_accounts'));
+    try {
+        if (userInfo && userInfo.length > 0) {
+            const user = userInfo[0];
+            console.log("who are you - user from _nostrlogin_accounts: ", user.name);
+            console.log("who are you - user picture: ", user.picture);
+            pubkey = user.pubkey;
+            current_name = user.name;
+            url = user.picture;
+        } else {
+            console.log(" who are you - No user info available (empty array)");
+        }
+    } catch (error) {
+        console.log("Error parsing userInfo:", error);
+    }
+
+
     Swal.fire({
         allowOutsideClick: false,
         allowEscapeKey: false,
@@ -995,15 +1012,19 @@ async function whoAreYou() {
         input: 'text',
         inputPlaceholder: 'Enter your email or name',
         inputAttributes: { maxlength: 32 },
-        inputValue: default_name,
+        inputValue: current_name,
+        // imageUrl: url,
+        // imageWidth: 100,
+        // imageHeight: 100,
         html: initUser, // Inject HTML
-        confirmButtonText: `Join room`,
+        confirmButtonText: `Lets Go!`,
         customClass: { popup: 'init-modal-size' },
         showClass: { popup: 'animate__animated animate__fadeInDown' },
         hideClass: { popup: 'animate__animated animate__fadeOutUp' },
         inputValidator: (name) => {
             if (!name) return 'Please enter your email or name';
             if (name.length > 30) return 'Name must be max 30 char';
+            
             name = filterXSS(name);
             if (isHtml(name)) return 'Invalid name!';
             if (!getCookie(room_id + '_name')) {
@@ -1157,21 +1178,21 @@ async function shareRoom(useNavigator = false) {
             <p style="background:transparent; color:rgb(8, 189, 89);">Join from your mobile device</p>
             <p style="background:transparent; color:white; font-family: Arial, Helvetica, sans-serif;">No need for apps, simply capture the QR code with your mobile camera Or Invite someone else to join by sending them the following URL</p>
             <p style="background:transparent; color:rgb(8, 189, 89);">${RoomURL}</p>`,
-            showDenyButton: true,
+            showDenyButton: false,
             showCancelButton: true,
             cancelButtonColor: 'red',
-            denyButtonColor: 'green',
+            // denyButtonColor: 'green',
             confirmButtonText: `Copy URL`,
-            denyButtonText: `Email invite`,
+            //  denyButtonText: `Email invite`,
             cancelButtonText: `Close`,
             showClass: { popup: 'animate__animated animate__fadeInDown' },
             hideClass: { popup: 'animate__animated animate__fadeOutUp' },
         }).then((result) => {
             if (result.isConfirmed) {
                 copyRoomURL();
-            } else if (result.isDenied) {
-                shareRoomByEmail();
-            }
+            } //else if (result.isDenied) {
+                //shareRoomByEmail();
+           // }
             // share screen on join
             if (isScreenAllowed) {
                 rc.shareScreen();
@@ -1294,14 +1315,14 @@ function joinRoom(peer_name, room_id) {
 }
 
 function roomIsReady() {
-    // if (rc.isValidNpub(peer_name)) {
-    //     // just set the avatar for now
-    //     myProfileAvatar.setAttribute('src', rc.genAvatarSvg(peer_name, 64));
-    // }
-
-    if (rc.isValidEmail(peer_name)) {
+    console.log('06 ----> roomIsReady');
+    if (rc.hasNostrImg(peer_name)) {
         myProfileAvatar.style.borderRadius = `50px`;
-        myProfileAvatar.setAttribute('src', rc.genGravatar(peer_name));
+        myProfileAvatar.setAttribute('src', rc.getNostrAvatar(peer_name));
+    }
+    else if (rc.isValidEmail(peer_name)) {
+         myProfileAvatar.style.borderRadius = `50px`;
+         myProfileAvatar.setAttribute('src', rc.genGravatar(peer_name));
     } else {
         myProfileAvatar.setAttribute('src', rc.genAvatarSvg(peer_name, 64));
     }
@@ -3064,6 +3085,85 @@ function handleRoomClientEvents() {
 // UTILITY
 // ####################################################
 
+document.addEventListener('nlAuth', (e) => {
+    console.log("nlauth", e)
+    if (e.detail.type === 'login' || e.detail.type === 'signup') {
+        if (!loggedIn) {
+            console.log("Logging In")
+            loggedIn = true
+              // get pubkey with window.nostr and show user profile
+            setTimeout(function() {
+                loadUser();
+            }, 200);
+        }
+    } else {
+    // clear local user data, hide profile info 
+    if (loggedIn) {
+        setTimeout(function() {
+            console.log("logoff section")
+            loggedIn = false
+            clearUserInfo();
+            document.dispatchEvent(new Event("nlLogout")); // logout from nostr-login
+        }, 200);
+    }
+    }
+})
+
+function displayUserInfo() {
+    setTimeout(() => { // Adding a delay to ensure data is available
+        // Assuming userInfo is stored in localStorage or accessible through the event
+        const userInfo = JSON.parse(window.localStorage.getItem('__nostrlogin_accounts'));
+        try {
+            if (userInfo && userInfo.length > 0) {
+                const user = userInfo[0];
+                console.log("user from _nostrlogin_accounts: ", user.name);
+                console.log("user picture: ", user.picture);
+                window.localStorage.peer_pubkey = user.pubkey;
+                window.localStorage.peer_name = user.name;
+                window.localStorage.peer_url = user.picture;
+                window.localStorage.peer_nip05 = user.nip05;                
+            } else {
+                console.log("No user info available (empty array)");
+            }
+        } catch (error) {
+            console.log("Error parsing userInfo:", error);
+        }
+    }, 200); // Delay to ensure data is loaded
+}
+
+async function loadUser() {
+    if (window.nostr) {
+        window.nostr.getPublicKey().then(function (pubkey) {
+            if (pubkey) {
+                loggedIn = true
+                console.log("fetched pubkey", pubkey)
+                displayUserInfo();
+            } 
+        }).catch((err) => {
+            console.log("LoadUser Err", err);
+            console.log("logoff section")
+            loggedIn = false
+            document.dispatchEvent(new Event("nlLogout")); // logout from nostr-login
+        });
+    }
+}
+
+
+
+async function nostrLogin() { 
+    console.log('3.5.00 ----> Nostr Login');
+    document.dispatchEvent(new CustomEvent('nlLaunch', { detail: 'welcome' }));
+    displayUserInfo();
+    Swal.fire({
+        title: "Sweet!",
+        text: "Modal with a custom image.",
+        imageUrl: "https://unsplash.it/400/200",
+        imageWidth: 400,
+        imageHeight: 200,
+        imageAlt: "Custom image"
+      });
+}
+
 function leaveFeedback() {
     Swal.fire({
         allowOutsideClick: false,
@@ -4190,7 +4290,11 @@ function refreshParticipantsCount(count, adapt = true) {
 }
 
 function getParticipantAvatar(peerName) {
-    if (rc.isValidEmail(peerName)) {
+    console.log("getParticipantAvatar - peerName: ", peerName);
+    if (rc.hasNostrImg(peerName)) {
+        return rc.getNostrAvatar(peerName);
+    }
+    else if (rc.isValidEmail(peerName)) {
         return rc.genGravatar(peerName);
     }
     return rc.genAvatarSvg(peerName, 32);
