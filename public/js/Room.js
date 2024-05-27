@@ -61,6 +61,8 @@ const _PEER = {
     sendVideo: '<i class="fab fa-youtube"></i>',
 };
 
+const initNostr = document.getElementById('initNostr');
+
 const initUser = document.getElementById('initUser');
 const initVideoContainerClass = document.querySelector('.init-video-container');
 const bars = document.querySelectorAll('.volume-bar');
@@ -197,6 +199,10 @@ let isHideMeActive = getHideMeActive();
 let notify = getNotify();
 isPresenter = isPeerPresenter();
 
+let peer_url = null;
+let peer_pubkey = null;
+let peer_npub = null;
+
 let peer_info = null;
 
 let isPushToTalkActive = false;
@@ -253,10 +259,149 @@ let transcription;
 // INIT ROOM
 // ####################################################
 
+
+
 document.addEventListener('DOMContentLoaded', function () {
-    initClient();
-    console.log("init client.......")
+    console.log('00 ----> init Nostr Login');
+    hide(loadingDiv);
+    nostrLogin();
 });
+
+// nostr-login auth
+document.addEventListener('nlAuth', (e) => {
+    console.log("nlauth", e)
+    if (e.detail.type === 'login' || e.detail.type === 'signup') {
+        if (!loggedIn) {
+            console.log("Logging In")
+            loggedIn = true
+              // get pubkey with window.nostr and show user profile
+              const login = window.localStorage.getItem('login');
+              console.log("NLAUTH -->  login info: ", login)
+              setTimeout(function() {
+                loadUser();
+            }, 200);
+        }
+    } else {
+    // clear local user data, hide profile info 
+    if (loggedIn) {
+        setTimeout(function() {
+            console.log("logoff section")
+            loggedIn = false
+            //  clear user info from the local storage
+            document.dispatchEvent(new Event("nlLogout")); // logout from nostr-login
+            openURL('/newroom'); // redirect to new room page on logout
+        }, 200);
+    }
+    }
+})
+
+function loadUser() {
+    if (window.nostr) {
+        window.nostr.getPublicKey().then(function (pubkey) {
+            if (pubkey) {
+                loggedIn = true
+                console.log("LOAD USER --> fetched pubkey", pubkey)
+                peer_pubkey = pubkey        
+                window.localStorage.peer_pubkey = pubkey;          
+                // getDisplayUserInfo();
+            } 
+        }).catch((err) => {
+            console.log("LoadUser Err", err);
+            console.log("logoff section")
+            loggedIn = false
+            document.dispatchEvent(new Event("nlLogout")); // logout from nostr-login
+        });
+    }
+}
+
+
+function getDisplayUserInfo() {
+    setTimeout(() => { // Adding a delay to ensure data is available
+        // Assuming userInfo is stored in localStorage or accessible through the event
+        const userInfo = JSON.parse(window.localStorage.getItem('__nostrlogin_accounts'));
+        try {
+            if (userInfo && userInfo.length > 0) {
+                const user = userInfo[0];
+                console.log("user from _nostrlogin_accounts: ", user.name);
+                console.log("user picture: ", user.picture);
+                peer_name = user.name;
+                peer_url = user.picture;
+                peer_pubkey = user.pubkey;
+                // peer_npub = nip19.npubEncode(user.pubkey)
+
+                window.localStorage.peer_pubkey = user.pubkey;
+                window.localStorage.peer_name = user.name;
+                window.localStorage.peer_url = user.picture;
+            } else {
+                console.log("No user info available (empty array)");
+            }
+        } catch (error) {
+            console.log("Error parsing userInfo:", error);
+        }
+
+        console.log("getDisplayUserInfo()......")
+        console.log("peer_name:", peer_name)
+        console.log("peer_pubkey:", peer_pubkey)
+        console.log("peer_url:", peer_url)               
+
+    }, 200); // Delay to ensure data is loaded
+}
+
+
+function nostrLogin() { 
+    console.log('3.5.00 ----> Nostr Login');
+    document.dispatchEvent(new CustomEvent('nlLaunch', { detail: 'welcome' }));
+
+    // TODO: HOW TO WAIT FOR THE LOGIN TO COMPLETE BEFORE GETTING INFO FROM LOCAL STORAGE
+    console.log("NostrLogin - Logged in status : ", loggedIn)
+    getDisplayUserInfo()
+    peer_name = window.localStorage.getItem('peer_name')
+    peer_pubkey = window.localStorage.getItem('peer_pubkey')
+    peer_url = window.localStorage.getItem('peer_url')
+
+    console.log("nostrLogin: peer_name:", peer_name)
+    console.log("nostrLogin: peer_pubkey:", peer_pubkey)
+    console.log("nostrLogin: peer_url:", peer_url)
+
+    Swal.fire({
+        background: swalBackground,
+        title:  peer_name || 'Anonymous',
+        text: "Nostr pubkey: " + peer_pubkey,
+        imageUrl: peer_url,
+        imageWidth: 100,
+        imageHeight: 100,
+        imageAlt: "Avatar",
+        showCancelButton: true,
+        confirmButtonColor: "#3085d6",
+        cancelButtonColor: "#d33",
+        confirmButtonText: "Yes, Let's go!"
+      }).then((result) => {
+        if (result.isConfirmed) {
+          Swal.fire({
+            background: swalBackground,
+            title: "OK!",
+            text: "Let's continue!",
+            icon: "success"
+          });
+            setTimeout(function() {
+                show(loadingDiv);
+                initClient();
+                console.log("init client.......")
+            }, 200);
+     
+        } else { 
+            console.log("nostrLogin: user canceled")
+            openURL('/');
+        }
+    });
+      
+
+}
+
+
+
+
+
 
 function initClient() {
     setTheme();
@@ -445,7 +590,6 @@ async function initRoom() {
     if (!isAudioAllowed && !isVideoAllowed && !joinRoomWithoutAudioVideo) {
         openURL(`/permission?room_id=${room_id}&message=Not allowed both Audio and Video`);
     } else {
-        await nostrLogin();
         setButtonsInit();
         handleSelectsInit();
         await whoAreYou();
@@ -767,6 +911,18 @@ function getPeerName() {
     return name;
 }
 
+// function getPeerPubkey() { 
+//     console.log("get Peer Pubkey");
+//     // dummy pubkey for now
+//     return "dummypubkeyhere";
+// }
+
+// function getPeerUrl() { 
+//     console.log("get Peer Url");
+//     // random image for now
+//     return "https://unsplash.it/400/200"
+// }
+
 function getPeerUUID() {
     if (lS.getItemLocalStorage('peer_uuid')) {
         return lS.getItemLocalStorage('peer_uuid');
@@ -829,6 +985,8 @@ function getPeerInfo() {
         peer_uuid: peer_uuid,
         peer_id: socket.id,
         peer_name: peer_name,
+        peer_pubkey: peer_pubkey,
+        peer_url: peer_url,
         peer_token: peer_token,
         peer_presenter: isPresenter,
         peer_audio: isAudioAllowed,
@@ -916,29 +1074,6 @@ async function whoAreYou() {
 
     initUser.classList.toggle('hidden');
 
-    // find a better way to transfer value from nostr login to app here. 
-    // relies on cookies
-    let current_name = '';
-    let pubkey = '';
-    let url = '';
-
-    const userInfo = JSON.parse(window.localStorage.getItem('__nostrlogin_accounts'));
-    try {
-        if (userInfo && userInfo.length > 0) {
-            const user = userInfo[0];
-            console.log("who are you - user from _nostrlogin_accounts: ", user.name);
-            console.log("who are you - user picture: ", user.picture);
-            pubkey = user.pubkey;
-            current_name = user.name;
-            url = user.picture;
-        } else {
-            console.log(" who are you - No user info available (empty array)");
-        }
-    } catch (error) {
-        console.log("Error parsing userInfo:", error);
-    }
-
-
     Swal.fire({
         allowOutsideClick: false,
         allowEscapeKey: false,
@@ -947,10 +1082,7 @@ async function whoAreYou() {
         input: 'text',
         inputPlaceholder: 'Enter your name',
         inputAttributes: { maxlength: 32 },
-        inputValue: current_name,
-        // imageUrl: url,
-        // imageWidth: 100,
-        // imageHeight: 100,
+        inputValue: default_name,
         html: initUser, // Inject HTML
         confirmButtonText: `Lets Go!`,
         customClass: { popup: 'init-modal-size' },
@@ -958,13 +1090,13 @@ async function whoAreYou() {
         hideClass: { popup: 'animate__animated animate__fadeOutUp' },
         inputValidator: (name) => {
             if (!name) return 'Please enter your name';
-            if (name.length > 30) return 'Name must be max 30 char';
-            
+            if (name.length > 30) return 'Name must be max 30 char';            
             name = filterXSS(name);
             if (isHtml(name)) return 'Invalid name!';
             if (!getCookie(room_id + '_name')) {
                 window.localStorage.peer_name = name;
             }
+            // TODO - deal with cookies on leave room
             setCookie(room_id + '_name', name, 30);
             peer_name = name;
         },
@@ -1096,7 +1228,8 @@ async function shareRoom(useNavigator = false) {
             share();
         }
     } else {
-        share();
+       console.log("share room info is omitted on launch")
+        // share();
     }
     function share() {
         sound('open');
@@ -1234,11 +1367,15 @@ function joinRoom(peer_name, room_id) {
 
 function roomIsReady() {
     console.log('06 ----> roomIsReady');
-    if (rc.hasNostrImg(peer_name)) {
-        myProfileAvatar.style.borderRadius = `50px`;
-        myProfileAvatar.setAttribute('src', rc.getNostrAvatar(peer_name));
-    }
-    else if (rc.isValidEmail(peer_name)) {
+    console.log("TODO set nostr avatar here in roomIsReady");
+    let avatar = peer_info.peer_url
+    console.log("roomIsReady - nostr avatar", avatar)
+    // set Nostr Avatar here
+    // if (rc.hasNostrImg(peer_name)) {
+    //     myProfileAvatar.style.borderRadius = `50px`;
+    //     myProfileAvatar.setAttribute('src', rc.getNostrAvatar(peer_name));
+    // }
+    if (rc.isValidEmail(peer_name)) {
          myProfileAvatar.style.borderRadius = `50px`;
          myProfileAvatar.setAttribute('src', rc.genGravatar(peer_name));
     } else {
@@ -2744,7 +2881,6 @@ function handleRoomClientEvents() {
         }
     });
     rc.on(RoomClient.EVENTS.exitRoom, () => {
-        console.log('Room event: Client leave room');
         if (rc.isRecording() || recordingStatus.innerText != '0s') {
             rc.saveRecording('Room event: Client save recording before to exit');
         }
@@ -2759,85 +2895,6 @@ function handleRoomClientEvents() {
 // ####################################################
 // UTILITY
 // ####################################################
-
-document.addEventListener('nlAuth', (e) => {
-    console.log("nlauth", e)
-    if (e.detail.type === 'login' || e.detail.type === 'signup') {
-        if (!loggedIn) {
-            console.log("Logging In")
-            loggedIn = true
-              // get pubkey with window.nostr and show user profile
-            setTimeout(function() {
-                loadUser();
-            }, 200);
-        }
-    } else {
-    // clear local user data, hide profile info 
-    if (loggedIn) {
-        setTimeout(function() {
-            console.log("logoff section")
-            loggedIn = false
-            clearUserInfo();
-            document.dispatchEvent(new Event("nlLogout")); // logout from nostr-login
-        }, 200);
-    }
-    }
-})
-
-function displayUserInfo() {
-    setTimeout(() => { // Adding a delay to ensure data is available
-        // Assuming userInfo is stored in localStorage or accessible through the event
-        const userInfo = JSON.parse(window.localStorage.getItem('__nostrlogin_accounts'));
-        try {
-            if (userInfo && userInfo.length > 0) {
-                const user = userInfo[0];
-                console.log("user from _nostrlogin_accounts: ", user.name);
-                console.log("user picture: ", user.picture);
-                window.localStorage.peer_pubkey = user.pubkey;
-                window.localStorage.peer_name = user.name;
-                window.localStorage.peer_url = user.picture;
-                window.localStorage.peer_nip05 = user.nip05;                
-            } else {
-                console.log("No user info available (empty array)");
-            }
-        } catch (error) {
-            console.log("Error parsing userInfo:", error);
-        }
-    }, 200); // Delay to ensure data is loaded
-}
-
-async function loadUser() {
-    if (window.nostr) {
-        window.nostr.getPublicKey().then(function (pubkey) {
-            if (pubkey) {
-                loggedIn = true
-                console.log("fetched pubkey", pubkey)
-                displayUserInfo();
-            } 
-        }).catch((err) => {
-            console.log("LoadUser Err", err);
-            console.log("logoff section")
-            loggedIn = false
-            document.dispatchEvent(new Event("nlLogout")); // logout from nostr-login
-        });
-    }
-}
-
-
-
-async function nostrLogin() { 
-    console.log('3.5.00 ----> Nostr Login');
-    document.dispatchEvent(new CustomEvent('nlLaunch', { detail: 'welcome' }));
-    displayUserInfo();
-    Swal.fire({
-        title: "Sweet!",
-        text: "Modal with a custom image.",
-        imageUrl: "https://unsplash.it/400/200",
-        imageWidth: 400,
-        imageHeight: 200,
-        imageAlt: "Custom image"
-      });
-}
 
 function leaveFeedback() {
     Swal.fire({
@@ -2862,6 +2919,8 @@ function leaveFeedback() {
 }
 
 function redirectOnLeave() {
+    console.log('Room event: Client leave room');
+    document.dispatchEvent(new Event("nlLogout")); // logout from nostr-login
     redirect && redirect.enabled ? openURL(redirect.url) : openURL('/newroom');
 }
 
@@ -3685,7 +3744,12 @@ function getParticipantsList(peers) {
         const peer_geoLocation = _PEER.geoLocation;
         const peer_sendFile = _PEER.sendFile;
         const peer_id = peer_info.peer_id;
-        const avatarImg = getParticipantAvatar(peer_name);
+        const peer_pubkey = peer_info.peer_pubkey;
+        console.log("getParticipant list - setting avatarImg :", peer_info.peer_url)
+        const avatarImg = peer_info.peer_url || getParticipantAvatar( peer_name ) 
+        // || rc.genAvatarSvg(peer_name, 32);
+        // TODO FIX 
+         //  || getParticipantAvatar(peer_name); // use peer_info for nostr avatar
 
         // NOT ME
         if (socket.id !== peer_id) {
@@ -3863,10 +3927,7 @@ function refreshParticipantsCount(count, adapt = true) {
 
 function getParticipantAvatar(peerName) {
     console.log("getParticipantAvatar - peerName: ", peerName);
-    if (rc.hasNostrImg(peerName)) {
-        return rc.getNostrAvatar(peerName);
-    }
-    else if (rc.isValidEmail(peerName)) {
+    if (rc.isValidEmail(peerName)) {
         return rc.genGravatar(peerName);
     }
     return rc.genAvatarSvg(peerName, 32);

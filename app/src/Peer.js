@@ -16,6 +16,8 @@ module.exports = class Peer {
             peer_video_privacy,
             peer_recording,
             peer_hand,
+            peer_url,
+            peer_pubkey,
         } = peer_info;
 
         this.id = socket_id;
@@ -28,6 +30,8 @@ module.exports = class Peer {
         this.peer_video_privacy = peer_video_privacy;
         this.peer_recording = peer_recording;
         this.peer_hand = peer_hand;
+        this.peer_url = peer_url;
+        this.peer_pubkey = peer_pubkey;
 
         this.transports = new Map();
         this.consumers = new Map();

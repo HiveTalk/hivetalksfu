@@ -2419,7 +2419,7 @@ class RoomClient {
         }
         this.handleDD(d.id, peer_id, !remotePeer);
         this.popupPeerInfo(p.id, peer_info);
-        this.setVideoAvatarImgName(i.id, peer_name);
+        this.setVideoAvatarImgName(i.id, peer_name, peer_info.peer_url);
         this.getId(i.id).style.display = 'block';
         handleAspectRatio();
         if (isParticipantsListOpen) getRoomParticipants();
@@ -2627,15 +2627,19 @@ class RoomClient {
         }
     }
 
-    setVideoAvatarImgName(elemId, peer_name) {
+    setVideoAvatarImgName(elemId, peer_name, peer_url) {
         let elem = this.getId(elemId);
         if (cfg.useAvatarSvg) {
-            rc.hasNostrImg(peer_name)
-                ? elem.setAttribute('src', this.getNostrAvatar(peer_name)) 
-                : elem.setAttribute('src', this.genAvatarSvg(peer_name, 250));
-            if (rc.isValidEmail(peer_name)) {
-                elem.setAttribute('src', this.genGravatar(peer_name));
+            console.log("setVideoAvatarImgName: ", peer_name, peer_url);
+            if (peer_url) {
+                elem.setAttribute('src', peer_url)  // this.getNostrAvatar(peer_name))
             }
+            else {
+                rc.isValidEmail(peer_name)
+                ? elem.setAttribute('src', this.genGravatar(peer_name))
+                : elem.setAttribute('src', this.genAvatarSvg(peer_name, 250))
+            }
+
         } else {
             elem.setAttribute('src', image.avatar);
         }
@@ -2660,39 +2664,47 @@ class RoomClient {
         return True
     }
 
-    hasNostrImg(peerName) {
-        console.log("hasNostrImg?", peerName);
-        const userInfo = JSON.parse(localStorage.getItem('__nostrlogin_accounts'));
-        if (userInfo && userInfo.length > 0) {
-            const user = userInfo[0];
-            if (peerName === user.name) {
-                if (user.picture){ 
-                    console.log('hasNostrImg - user picture: ', user.picture);
-                    return true
-                } else { return false}       
-            } else { return false }
-        }
-        return false
-    }
+    // hasNostrImg(peerName) {
+    //     console.log("hasNostrImg?", peerName);
+    //     const peers = new Map(JSON.parse(room.peers));
+    //     for (let peer of Array.from(peers.keys()).filter((id) => id == peerName)) {
+    //         let my_peer_info = peers.get(peer).peer_info;
+    //         console.log('hasNostr PeerInfo: ', my_peer_info);
+    //         let peer_url = my_peer_info.peer_url;
+    //         console.log('hasNostr PeerUrl: ', peer_url);
+    //     }
+
+    //     const userInfo = JSON.parse(localStorage.getItem('__nostrlogin_accounts'));
+    //     if (userInfo && userInfo.length > 0) {
+    //         const user = userInfo[0];
+    //         if (peerName === user.name) {
+    //             if (user.picture){ 
+    //                 console.log('hasNostrImg - user picture: ', user.picture);
+    //                 return true
+    //             } else { return false}       
+    //         } else { return false }
+    //     }
+    //     return false
+    // }
     
-    getNostrAvatar(peerName) {
-        const userInfo = JSON.parse(localStorage.getItem('__nostrlogin_accounts'));
-        let url = null;
-        try {
-            if (userInfo && userInfo.length > 0) {
-                const user = userInfo[0];
-                console.log("getNostrAvatar - user from _nostrlogin_accounts: ", user.name, ":", peerName);
-                console.log("getNostrAvatar - user picture: ", user.picture);
-                url = user.picture; 
-                return url;
-            } else {
-                console.log("getNostrAvatar - No user info available (empty array)");
-            }
-        } catch (error) {
-            console.log("getNostrAvatar - Error parsing userInfo:", error);
-        }
-        return url
-    }
+    // getNostrAvatar(peerName) {
+    //     const userInfo = JSON.parse(localStorage.getItem('__nostrlogin_accounts'));
+    //     let url = null;
+    //     try {
+    //         if (userInfo && userInfo.length > 0) {
+    //             const user = userInfo[0];
+    //             console.log("getNostrAvatar - user from _nostrlogin_accounts: ", user.name, ":", peerName);
+    //             console.log("getNostrAvatar - user picture: ", user.picture);
+    //             url = user.picture; 
+    //             return url;
+    //         } else {
+    //             console.log("getNostrAvatar - No user info available (empty array)");
+    //         }
+    //     } catch (error) {
+    //         console.log("getNostrAvatar - Error parsing userInfo:", error);
+    //     }
+    //     return url
+    // }
     
 
     genAvatarSvg(peerName, avatarImgSize) {
@@ -3723,7 +3735,7 @@ class RoomClient {
                     const { message, context } = completion;
                     this.chatGPTContext = context ? context : [];
                     console.log('Receive message:', message);
-                    this.setMsgAvatar('right', 'ChatGPT');
+                    this.setMsgAvatar('right', 'ChatGPT'); // assume no avatar?
                     this.appendMessage('right', image.chatgpt, 'ChatGPT', this.peer_id, message, 'ChatGPT', 'ChatGPT');
                     this.cleanMessage();
                     this.speechInMessages ? this.speechMessage(true, 'ChatGPT', message) : this.sound('message');
@@ -3839,7 +3851,7 @@ class RoomClient {
 
     setMsgAvatar(avatar, peerName) {        
         let avatarImg = rc.isValidEmail(peerName) ? this.genGravatar(peerName) : this.genAvatarSvg(peerName, 32);
-        avatarImg = rc.hasNostrImg(peerName) ? this.getNostrAvatar(peerName) : avatarImg;
+       // avatarImg = peer_url ? peer_url : avatarImg;
         avatar === 'left' ? (this.leftMsgAvatar = avatarImg) : (this.rightMsgAvatar = avatarImg);
     }
 
@@ -5378,14 +5390,16 @@ class RoomClient {
                     let lobbyTr = '';
                     let peer_id = data.peer_id;
                     let peer_name = data.peer_name;
-
-                    let avatarImg = rc.hasNostrImg(peer_name) 
-                        ? this.getNostrAvatar(peer_name) 
-                        : this.genAvatarSvg(peer_name, 32);
-
-                    avatarImg = rc.isValidEmail(peer_name)
-                        ? this.genGravatar(peer_name)
-                        : avatarImg;
+                    // pass data.peer_info.peer_url to get avatar
+                    let peer_url = data.peer_info.peer_url
+                    let avatarImg = peer_url
+                    
+                    if (!avatarImg) {                   
+                        avatarImg = rc.isValidEmail(peer_name)
+                            ? this.genGravatar(peer_name)
+                            : this.genAvatarSvg(peer_name, 32);
+                    }
+                    console.log(" in RoomLobby --> avatarImg: ", avatarImg)
 
                     let lobbyTb = this.getId('lobbyTb');
                     let lobbyAccept = _PEER.acceptPeer;
