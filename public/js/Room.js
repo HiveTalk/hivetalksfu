@@ -275,8 +275,8 @@ document.addEventListener('nlAuth', (e) => {
             console.log("Logging In")
             loggedIn = true
               // get pubkey with window.nostr and show user profile
-              const login = window.localStorage.getItem('login');
-              console.log("NLAUTH -->  login info: ", login)
+              //const login = window.localStorage.getItem('login');
+              console.log("NLAUTH -->  login info: ") // , login)
               setTimeout(function() {
                 loadUser();
             }, 200);
@@ -303,7 +303,7 @@ function loadUser() {
                 console.log("LOAD USER --> fetched pubkey", pubkey)
                 peer_pubkey = pubkey        
                 window.localStorage.peer_pubkey = pubkey;          
-                // getDisplayUserInfo();
+                getDisplayUserInfo();
             } 
         }).catch((err) => {
             console.log("LoadUser Err", err);
@@ -316,6 +316,7 @@ function loadUser() {
 
 
 function getDisplayUserInfo() {
+    console.log("getDisplayUserInfo()......")
     setTimeout(() => { // Adding a delay to ensure data is available
         // Assuming userInfo is stored in localStorage or accessible through the event
         const userInfo = JSON.parse(window.localStorage.getItem('__nostrlogin_accounts'));
@@ -338,69 +339,140 @@ function getDisplayUserInfo() {
         } catch (error) {
             console.log("Error parsing userInfo:", error);
         }
-
-        console.log("getDisplayUserInfo()......")
-        console.log("peer_name:", peer_name)
-        console.log("peer_pubkey:", peer_pubkey)
-        console.log("peer_url:", peer_url)               
-
     }, 200); // Delay to ensure data is loaded
 }
+
+function generateRandomName() {
+    // Define some syllables to combine into a name
+    const syllables = [
+        'la', 'ma', 'ra', 'sa', 'ta', 'na', 'ka', 'pa', 'fa', 'zi', 'li', 'mi', 
+        'nu', 'ke', 'jo', 'lu', 'vi', 'ri', 'si', 'di', 'bi', 'ti', 'mo', 'no'
+    ];
+    let name = '';
+    const maxLength = 10;  // Ensure the name length is < 30 chars
+    while (name.length < maxLength) {
+        const randomIndex = Math.floor(Math.random() * syllables.length);
+        const newSyllable = syllables[randomIndex];        
+        // Check if adding the new syllable would exceed the maxLength
+        if (name.length + newSyllable.length >= maxLength) break;        
+        name += newSyllable;
+    }
+    // Capitalize the first letter of the generated name
+    name = name.charAt(0).toUpperCase() + name.slice(1);
+    return name;
+}
+
+
+function setRandomName() { 
+    let name = generateRandomName()
+    console.log("just set a peer name")
+    name = filterXSS(name);
+    // if (!getCookie(room_id + '_name')) {
+    //     window.localStorage.peer_name = name;
+    // }
+    // TODO - deal with cookies on leave room
+    // setCookie(room_id + '_name', name, 30);
+    peer_name = name;
+
+}
+
+function checkUserInfo() {
+    console.log("....inside checkUserInfo....")
+    const userInfo = JSON.parse(window.localStorage.getItem('__nostrlogin_accounts'));
+    if (userInfo && userInfo.length > 0) {
+        // Do something with the userInfo
+        const user = userInfo[0]                        
+        console.log("checkUserInfo :", user.pubkey, user.name, user.picture);
+        peer_name = user.name;
+        peer_url = user.picture;
+        peer_pubkey = user.pubkey;
+        clearInterval(checkInterval);
+    }
+}
+
+// Check every 1000 milliseconds (1 second)
+const checkInterval = setInterval(checkUserInfo, 1000);
 
 
 function nostrLogin() { 
     console.log('3.5.00 ----> Nostr Login');
-    document.dispatchEvent(new CustomEvent('nlLaunch', { detail: 'welcome' }));
-
-    // TODO: HOW TO WAIT FOR THE LOGIN TO COMPLETE BEFORE GETTING INFO FROM LOCAL STORAGE
-    console.log("NostrLogin - Logged in status : ", loggedIn)
-    getDisplayUserInfo()
-    peer_name = window.localStorage.getItem('peer_name')
-    peer_pubkey = window.localStorage.getItem('peer_pubkey')
-    peer_url = window.localStorage.getItem('peer_url')
-
-    console.log("nostrLogin: peer_name:", peer_name)
-    console.log("nostrLogin: peer_pubkey:", peer_pubkey)
-    console.log("nostrLogin: peer_url:", peer_url)
 
     Swal.fire({
+        allowOutsideClick: false,
+        allowEscapeKey: false,
         background: swalBackground,
-        title:  peer_name || 'Anonymous',
-        text: "Nostr pubkey: " + peer_pubkey,
-        imageUrl: peer_url,
-        imageWidth: 100,
-        imageHeight: 100,
-        imageAlt: "Avatar",
-        showCancelButton: true,
+        title: 'Welcome to HiveTalk',        
+        showDenyButton: true,
+        denyButtonText: `Just set a random name`,
+        denyButtonColor: "green",
+        confirmButtonText: "Login with Nostr",
         confirmButtonColor: "#3085d6",
-        cancelButtonColor: "#d33",
-        confirmButtonText: "Yes, Let's go!"
-      }).then((result) => {
-        if (result.isConfirmed) {
-          Swal.fire({
-            background: swalBackground,
-            title: "OK!",
-            text: "Let's continue!",
-            icon: "success"
-          });
-            setTimeout(function() {
-                show(loadingDiv);
-                initClient();
-                console.log("init client.......")
-            }, 200);
-     
-        } else { 
-            console.log("nostrLogin: user canceled")
-            openURL('/');
-        }
+    }).then((result) => {        
+            if (result.isConfirmed) {
+                    console.log("NOSTR LOGIN: No user info from nostr, try launching the nostr-login dialog")
+                    document.dispatchEvent(new CustomEvent('nlLaunch', { detail: 'welcome' }));
+                    setTimeout(function() {
+                        getDisplayUserInfo()
+                    }, 200);
+
+                    Swal.fire({
+                        background: swalBackground,
+                        title: "Logged in with Nostr",
+                        //  title: window.localStorage.peer_name, //  peer_name,
+                        //text: "Logged in with Nostr", //  pubkey: " + window.localStorage.peer_pubkey,
+                        imageUrl: window.localStorage.peer_url,
+                        imageWidth: 100,
+                        imageHeight: 100,
+                        cancelButtonColor: "#d33",
+                        showCancelButton: true,
+                    }).then((result) => {
+                        if (result.isConfirmed) {
+                            console.log("nostrLogin: user confirmed")
+                            setTimeout(function() {
+                                show(loadingDiv);
+                                initClient();
+                                console.log("init client.......")
+                            }, 200);
+                        } else {
+                            console.log("nostrLogin: user canceled")
+                            openURL('/');
+                        }
+                    });
+
+            } else if (result.isDenied) {
+                setRandomName()
+                console.log("Set Random Name")
+                // blank out the other values
+                peer_pubkey = ''
+                peer_url = ''
+                Swal.fire({
+                    allowOutsideClick: false,
+                    allowEscapeKey: false,
+                    background: swalBackground,
+                    title: "Your Random Name is:",
+                    text: peer_name,
+                    icon: "question"
+                  }).then((result) => {
+                    if (result.isConfirmed) {
+                        console.log("nostrLogin: user confirmed")
+                        clearInterval(checkInterval);
+                        console.log(".... clear check interval NOW ....")
+
+                        setTimeout(function() {
+                                show(loadingDiv);
+                                initClient();
+                                console.log("init client.......")
+                            }, 200);
+                    }
+                  })
+            }  else { 
+                console.log("nostrLogin: user canceled")
+                openURL('/');
+            }
     });
-      
 
+    console.log("NostrLogin - Logged in status : ", loggedIn)
 }
-
-
-
-
 
 
 function initClient() {
