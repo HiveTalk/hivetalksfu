@@ -4193,25 +4193,24 @@ function showAbout() {
 
     Swal.fire({
         background: swalBackground,
-        //imageUrl: image.about,
+        imageUrl: image.about,
         customClass: { image: 'img-about' },
         position: 'center',
         title: 'HiveTalk',
         html: `
-        <br/>
         <div id="about">
             <br />
-             HiveTalk is a fork of MiroTalk SFU
-            <br />
-            Original Author: <a
-                id="linkedin-button" 
-                data-umami-event="Linkedin button" 
-                href="https://www.linkedin.com/in/miroslav-pejic-976a07101/" target="_blank"> 
-                Miroslav Pejic
-            </a>
-            <br /><br />
+             HiveTalk is a fork of MiroTalk SFU <br/>
             Fork maintainer: <a href="https://github.com/bitkarrot" target="_blank"> Bitkarrot</a>
-            <br /><br />
+            <br/><br/>
+            <button 
+                id="support-button" 
+                data-umami-event="Support button" 
+                class="pulsate" 
+                onclick="window.open('https://sats.lnaddy.com/tipjar/11')">
+                <i class="fas fa-heart"></i> 
+                Support
+            </button>
         </div>
         `,
         showClass: { popup: 'animate__animated animate__fadeInDown' },

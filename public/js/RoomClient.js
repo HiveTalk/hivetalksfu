@@ -70,8 +70,10 @@ const icons = {
 };
 
 const image = {
-    about: '../images/mirotalk-logo.gif',
-    avatar: '../images/mirotalksfu-logo.png',
+    about: '',
+    //about: '../images/hivelogo50x200.svg',
+    avatar: '',
+    // avatar: '../images/mirotalksfu-logo.png',
     audio: '../images/audio.gif',
     poster: '../images/loader.gif',
     rec: '../images/rec.png',
