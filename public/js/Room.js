@@ -30,7 +30,7 @@ const socket = io({ transports: ['websocket'] });
 
 let survey = {
     enabled: true,
-    url: 'https://www.questionpro.com/t/AUs7VZq02P',
+    url: 'https://airtable.com/appVEKIEmgTd6LJYH/pagUdn2jQ37n0i8TI/form',
 };
 
 let redirect = {
@@ -1366,7 +1366,7 @@ async function shareRoom(useNavigator = false) {
         }
     } else {
        console.log("share room info is omitted on launch")
-        // share();
+       share();
     }
     function share() {
         sound('open');
@@ -3301,7 +3301,7 @@ function leaveFeedback() {
         background: swalBackground,
         imageUrl: image.feedback,
         title: 'Leave a feedback',
-        text: 'Do you want to rate your MiroTalk experience?',
+        text: 'Do you want to rate your HiveTalk experience?',
         confirmButtonText: `Yes`,
         denyButtonText: `No`,
         showClass: { popup: 'animate__animated animate__fadeInDown' },
