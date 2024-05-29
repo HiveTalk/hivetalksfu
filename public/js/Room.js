@@ -276,7 +276,7 @@ document.addEventListener('nlAuth', (e) => {
             loggedIn = true
               // get pubkey with window.nostr and show user profile
               //const login = window.localStorage.getItem('login');
-              console.log("NLAUTH -->  login info: ") // , login)
+              console.log("NLAUTH -->  login info: ", e.detail.type)  // , login)
               setTimeout(function() {
                 loadUser();
             }, 200);
@@ -295,15 +295,20 @@ document.addEventListener('nlAuth', (e) => {
     }
 })
 
-function loadUser() {
+let app_relays = ['wss://relay.nostr.band','wss://relay.primal.net','wss://relay.nos.social'];
+
+async function loadUser() {
     if (window.nostr) {
         window.nostr.getPublicKey().then(function (pubkey) {
             if (pubkey) {
-                loggedIn = true
                 console.log("LOAD USER --> fetched pubkey", pubkey)
                 peer_pubkey = pubkey        
-                window.localStorage.peer_pubkey = pubkey;          
+                window.localStorage.peer_pubkey = pubkey;
+                peer_npub = nip19.npubEncode(pubkey);
+                console.log('npub: ', peer_npub);
+
                 getDisplayUserInfo();
+
             } 
         }).catch((err) => {
             console.log("LoadUser Err", err);
@@ -386,7 +391,10 @@ function checkUserInfo() {
         peer_name = user.name;
         peer_url = user.picture;
         peer_pubkey = user.pubkey;
-        clearInterval(checkInterval);
+        if (peer_name && peer_pubkey) {
+            loggedIn = true
+            clearInterval(checkInterval);
+        }
     }
 }
 
@@ -405,39 +413,45 @@ function nostrLogin() {
         showDenyButton: true,
         denyButtonText: `Just set a random name`,
         denyButtonColor: "green",
-        confirmButtonText: "Login with Nostr",
+        confirmButtonText: "Login with NIP-07",
         confirmButtonColor: "#3085d6",
+        preConfirm: async () => {
+            try {
+                setTimeout(() => {
+                    loadUser();
+                }, 500);
+            } catch (error) {
+                // loggedIn = false                
+                Swal.showValidationMessage(`
+                Request failed: ${error}
+              `);
+            }
+        }
     }).then((result) => {        
             if (result.isConfirmed) {
-                    console.log("NOSTR LOGIN: No user info from nostr, try launching the nostr-login dialog")
-                    document.dispatchEvent(new CustomEvent('nlLaunch', { detail: 'welcome' }));
-                    setTimeout(function() {
-                        getDisplayUserInfo()
-                    }, 200);
-
-                    Swal.fire({
-                        background: swalBackground,
-                        title: "Logged in with Nostr",
-                        //  title: window.localStorage.peer_name, //  peer_name,
-                        //text: "Logged in with Nostr", //  pubkey: " + window.localStorage.peer_pubkey,
-                        imageUrl: window.localStorage.peer_url,
-                        imageWidth: 100,
-                        imageHeight: 100,
-                        cancelButtonColor: "#d33",
-                        showCancelButton: true,
-                    }).then((result) => {
-                        if (result.isConfirmed) {
-                            console.log("nostrLogin: user confirmed")
-                            setTimeout(function() {
-                                show(loadingDiv);
-                                initClient();
-                                console.log("init client.......")
-                            }, 200);
-                        } else {
-                            console.log("nostrLogin: user canceled")
-                            openURL('/');
-                        }
-                    });
+                    // how to DELAY THIS UNTIL THE ABOVE IS SUCCESS???                    
+                        // Don't show this unless logged in
+                        Swal.fire({
+                            background: swalBackground, 
+                            title: "Let's Go",
+                            confirmButtonText: 'OK',
+                            cancelButtonText: 'Exit',
+                            cancelButtonColor: "#d33",
+                            showCancelButton: true,
+                        }).then((result) => {
+                            if (result.isConfirmed) {
+                                console.log("nostrLogin: user confirmed")
+                                clearInterval(checkInterval);
+                                setTimeout(function() {
+                                    show(loadingDiv);
+                                    initClient();
+                                    console.log("init client.......")
+                                }, 200);
+                            } else {
+                                console.log("nostrLogin: user canceled")
+                                openURL('/');
+                            }
+                        });                    
 
             } else if (result.isDenied) {
                 setRandomName()
@@ -2991,6 +3005,7 @@ function leaveFeedback() {
 }
 
 function redirectOnLeave() {
+    loggedIn = false;
     console.log('Room event: Client leave room');
     document.dispatchEvent(new Event("nlLogout")); // logout from nostr-login
     redirect && redirect.enabled ? openURL(redirect.url) : openURL('/newroom');

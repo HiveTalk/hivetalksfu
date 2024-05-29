@@ -2337,7 +2337,7 @@ class RoomClient {
         //console.log('setVideoOff', peer_info);
         let d, vb, i, h, au, sf, sm, sv, gl, ban, ko, p, pm, pb, pv;
 
-        const { peer_id, peer_name, peer_audio, peer_presenter } = peer_info;
+        const { peer_id, peer_name, peer_audio, peer_presenter, peer_url } = peer_info;
 
         this.removeVideoOff(peer_id);
         d = document.createElement('div');
@@ -2375,6 +2375,12 @@ class RoomClient {
             ko.id = 'remotePeer___' + peer_id + '___kickOut';
             ko.className = html.kickOut;
         }
+        // a href to nostr profile
+        nostr = document.createElement('a');
+        nostr.href = 'https://njump.me/';
+        nostr.target = '_blank';
+        nostr.id = peer_id + '__nostrProfile'; 
+//        nostr.className = 'nostrProfile';
         i = document.createElement('img');
         i.className = 'videoAvatarImage center'; // pulsate
         i.id = peer_id + '__img';
@@ -2403,6 +2409,7 @@ class RoomClient {
             BUTTONS.videoOff.audioVolumeInput && !this.isMobileDevice && vb.appendChild(pv);
         }
         vb.appendChild(au);
+        d.appendChild(nostr);
         d.appendChild(i);
         d.appendChild(p);
         d.appendChild(h);
