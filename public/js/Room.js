@@ -287,9 +287,9 @@ document.addEventListener('nlAuth', (e) => {
               // get pubkey with window.nostr and show user profile
               //const login = window.localStorage.getItem('login');
               console.log("NLAUTH -->  login info: ", e.detail.type)  // , login)
-              setTimeout(function() {
-                loadUser();
-            }, 200);
+            //   setTimeout(function() {
+            //     loadUser();
+            // }, 200);
         }
     } else {
     // clear local user data, hide profile info 
