@@ -391,19 +391,63 @@ function checkUserInfo() {
         peer_name = user.name;
         peer_url = user.picture;
         peer_pubkey = user.pubkey;
+        window.localStorage.peer_name = user.name;
+        window.localStorage.peer_url = user.picture;
+        window.localStorage.peer_pubkey = user.pubkey;
+
+        // TODO: what do we do here if there is no peer_name?
+        // wait until timer is up in 3 min? and then go back to home page.
+
+        // we are assuming peer_name exists. if not, then we need to offer
+        // option to set a username after X period of checking and no username
+
         if (peer_name && peer_pubkey) {
-            loggedIn = true
+            console.log("discovery complete: checkUserInfo: ", peer_name, peer_pubkey, peer_url);
+            loggedIn = true            
             clearInterval(checkInterval);
+            continueNostrLogin();
         }
     }
 }
 
-// Check every 1000 milliseconds (1 second)
-const checkInterval = setInterval(checkUserInfo, 1000);
+
+function continueNostrLogin() { 
+    console.log('0.2.00 ----> Continue Nostr Login');
+
+    Swal.fire({
+        background: swalBackground, 
+        title: "Let's Go ",
+        text: "Hello " + peer_name,
+        imageUrl:  peer_url || '', // only if peer_url is not null
+        imageWidth: 100,
+        imageHeight: 100,
+        confirmButtonText: 'OK',
+        cancelButtonText: 'Exit',
+        cancelButtonColor: "#d33",
+        showCancelButton: true,
+    }).then((result) => {
+        if (result.isConfirmed) {
+            console.log("nostrLogin: user confirmed")
+            clearInterval(checkInterval);
+            setTimeout(function() {
+                show(loadingDiv);
+                initClient();
+                console.log("init client.......")
+            }, 200);
+        } else {
+            console.log("nostrLogin: user canceled")
+            openURL('/');
+        }
+    }); 
+    
+}
+
+// Check every 500 milliseconds (0.5 second)
+const checkInterval = setInterval(checkUserInfo, 500);
 
 
 function nostrLogin() { 
-    console.log('3.5.00 ----> Nostr Login');
+    console.log('0.1.00 ----> Nostr Login');
 
     Swal.fire({
         allowOutsideClick: false,
@@ -413,7 +457,7 @@ function nostrLogin() {
         showDenyButton: true,
         denyButtonText: `Just set a random name`,
         denyButtonColor: "green",
-        confirmButtonText: "Login with NIP-07",
+        confirmButtonText: "Login with Nostr",
         confirmButtonColor: "#3085d6",
         preConfirm: async () => {
             try {
@@ -429,29 +473,8 @@ function nostrLogin() {
         }
     }).then((result) => {        
             if (result.isConfirmed) {
-                    // how to DELAY THIS UNTIL THE ABOVE IS SUCCESS???                    
-                        // Don't show this unless logged in
-                        Swal.fire({
-                            background: swalBackground, 
-                            title: "Let's Go",
-                            confirmButtonText: 'OK',
-                            cancelButtonText: 'Exit',
-                            cancelButtonColor: "#d33",
-                            showCancelButton: true,
-                        }).then((result) => {
-                            if (result.isConfirmed) {
-                                console.log("nostrLogin: user confirmed")
-                                clearInterval(checkInterval);
-                                setTimeout(function() {
-                                    show(loadingDiv);
-                                    initClient();
-                                    console.log("init client.......")
-                                }, 200);
-                            } else {
-                                console.log("nostrLogin: user canceled")
-                                openURL('/');
-                            }
-                        });                    
+                // see checkUserInfo to continue login
+                console.log("NOSTR LOGIN CONFIRMED")
 
             } else if (result.isDenied) {
                 setRandomName()
@@ -997,17 +1020,6 @@ function getPeerName() {
     return name;
 }
 
-// function getPeerPubkey() { 
-//     console.log("get Peer Pubkey");
-//     // dummy pubkey for now
-//     return "dummypubkeyhere";
-// }
-
-// function getPeerUrl() { 
-//     console.log("get Peer Url");
-//     // random image for now
-//     return "https://unsplash.it/400/200"
-// }
 
 function getPeerUUID() {
     if (lS.getItemLocalStorage('peer_uuid')) {
