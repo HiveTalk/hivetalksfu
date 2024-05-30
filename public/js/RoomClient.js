@@ -2569,11 +2569,11 @@ class RoomClient {
             ko.className = html.kickOut;
         }
         // a href to nostr profile
-        nostr = document.createElement('a');
-        nostr.href = 'https://njump.me/';
-        nostr.target = '_blank';
-        nostr.id = peer_id + '__nostrProfile'; 
-//        nostr.className = 'nostrProfile';
+        // nostr = document.createElement('a');
+        // nostr.href = 'https://njump.me/';
+        // nostr.target = '_blank';
+        // nostr.id = peer_id + '__nostrProfile'; 
+        //  nostr.className = 'nostrProfile';
         i = document.createElement('img');
         i.className = 'videoAvatarImage center'; // pulsate
         i.id = peer_id + '__img';
@@ -2602,7 +2602,7 @@ class RoomClient {
             BUTTONS.videoOff.audioVolumeInput && !this.isMobileDevice && vb.appendChild(pv);
         }
         vb.appendChild(au);
-        d.appendChild(nostr);
+       //  d.appendChild(nostr);
         d.appendChild(i);
         d.appendChild(p);
         d.appendChild(h);
