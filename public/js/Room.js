@@ -4276,7 +4276,7 @@ function showAbout() {
         <div id="about">
             <br />
              HiveTalk is a fork of MiroTalk SFU <br/>
-            Fork maintainer: <a href="https://github.com/bitkarrot" target="_blank"> Bitkarrot</a>
+            Fork maintainer: <a href="https://github.com/hivetalk" target="_blank"> HiveTalk group</a>
             <br/><br/>
             <button 
                 id="support-button" 
