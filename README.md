@@ -12,7 +12,7 @@
 
 #### 2nd release
 
--   fix chatroom avatars so that nostr avatars are shown in chat.
+-   fix chatroom avatars so that nostr avatars are shown in chat. (see link to video below)
 -   add 'Talking in room now' user post to nostr relays. (similar to twitter/X)
 -   Remove items that aren't needed or might have issues like google translate or transcription.
 -   is there a webRTC timeout?
@@ -23,6 +23,16 @@
 -   add API keys for different users on request.
 -   enable chatGPT or rather, bitcoiner equiv unleashed.chat
 -   TODO items in the existing code base, and from upstream fork.
+
+
+TO FIX: 
+
+- see in video below, the nostr profile opens out to an external window. the link should be a more visible button, such as dropdown
+- Also see chat avatars in chat are not matching the nostr logged in avatar. Random name avatars are OK. 
+
+https://github.com/HiveTalk/hivetalksfu/assets/73979971/58f6b487-76c2-44da-9261-651d4fc5cc8b
+
+
 
 
 <br />
