@@ -2,12 +2,22 @@
 
 ### TODO
 
--   add nostr login
--   add nostr avatar picture, name, and link to nostr profile
--   enable front page web schedule, also show active public rooms
+#### 1st release
+
+-   add nostr login - done
+-   add nostr avatar picture, name - done
+-   enable front page - show active public rooms - done
     - ( use built-in API to pull data to front page, see samples in codebase)
--   enable chatGPT or rather, bitcoiner equiv
--   add scheduled events announcement bot on nostr
+-   add npub and link to nostr profile
+
+#### 2nd release
+
+-   add 'talking in room now' per user post to nostr
+-   add API keys for different users on request.
+-   enable chatGPT or rather, bitcoiner equiv unleashed.chat
+-   TODO items in the existing code base, and from upstream fork.
+-   fix any other bugs as needed
+
 
 <br />
 
