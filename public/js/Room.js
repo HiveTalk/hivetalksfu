@@ -1579,10 +1579,6 @@ function roomIsReady() {
     let avatar = peer_info.peer_url
     console.log("roomIsReady - nostr avatar", avatar)
     // set Nostr Avatar here
-    // if (rc.hasNostrImg(peer_name)) {
-    //     myProfileAvatar.style.borderRadius = `50px`;
-    //     myProfileAvatar.setAttribute('src', rc.getNostrAvatar(peer_name));
-    // }
     if (rc.isValidEmail(peer_name)) {
          myProfileAvatar.style.borderRadius = `50px`;
          myProfileAvatar.setAttribute('src', rc.genGravatar(peer_name));
@@ -4296,11 +4292,15 @@ function getParticipantsList(peers) {
         const peer_sendFile = _PEER.sendFile;
         const peer_id = peer_info.peer_id;
         const peer_pubkey = peer_info.peer_pubkey;
-        console.log("getParticipant list - setting avatarImg :", peer_info.peer_url)
+        let peer_npub = '';
+        if (peer_pubkey) {
+            // only get the npub if there is a nostr pubkey
+            peer_npub = nip19.npubEncode(peer_pubkey);
+        }
+//        console.log("getParticipant list - peer_name :", peer_name, ", peer_pubkey :", peer_pubkey, "npub:", peer_npub)      
+//        console.log("getParticipant list - setting avatarImg :", peer_info.peer_url)
         const avatarImg = peer_info.peer_url || getParticipantAvatar( peer_name ) 
         // || rc.genAvatarSvg(peer_name, 32);
-        // TODO FIX 
-         //  || getParticipantAvatar(peer_name); // use peer_info for nostr avatar
 
         // NOT ME
         if (socket.id !== peer_id) {
@@ -4313,11 +4313,21 @@ function getParticipantsList(peers) {
                     data-to-name="${peer_name}"
                     class="clearfix" 
                     onclick="rc.showPeerAboutAndMessages(this.id, '${peer_name}', event)"
-                >
+                >`;
+
+                if (peer_npub){
+                    li +=`                
+                    <a href="https://njump.me/${peer_npub}" target="_blank">
                     <img
-                        src="${avatarImg}"
-                        alt="avatar" 
+                    src="${avatarImg}"
+                    alt="avatar" 
                     />
+                    </a>`;    
+                } else {
+                    li += `<img src="${avatarImg}" alt="avatar" />`;
+                }
+
+                li +=`
                     <div class="about">
                         <div class="name">${peer_name_limited}</div>
                         <div class="status"> <i class="fa fa-circle online"></i> online <i id="${peer_id}-unread-msg" class="fas fa-comments hidden"></i> </div>
@@ -4389,11 +4399,21 @@ function getParticipantsList(peers) {
                     data-to-name="${peer_name}"
                     class="clearfix" 
                     onclick="rc.showPeerAboutAndMessages(this.id, '${peer_name}', event)"
-                >
-                <img 
+                >`
+
+                if (peer_npub){
+                    li +=`                
+                    <a href="https://njump.me/${peer_npub}" target="_blank">
+                    <img
                     src="${avatarImg}"
                     alt="avatar" 
-                />
+                    />
+                    </a>`;    
+                } else {
+                    li += `<img src="${avatarImg}" alt="avatar" />`;
+                }
+
+                li += `
                     <div class="about">
                         <div class="name">${peer_name_limited}</div>
                         <div class="status"> <i class="fa fa-circle online"></i> online <i id="${peer_id}-unread-msg" class="fas fa-comments hidden"></i> </div>
@@ -4481,7 +4501,7 @@ function refreshParticipantsCount(count, adapt = true) {
 }
 
 function getParticipantAvatar(peerName) {
-    console.log("getParticipantAvatar - peerName: ", peerName);
+   // console.log("getParticipantAvatar - peerName: ", peerName);
     if (rc.isValidEmail(peerName)) {
         return rc.genGravatar(peerName);
     }
