@@ -391,8 +391,42 @@ function setRandomName() {
 
 }
 
+// Check every 500 milliseconds (0.5 second)
+const checkInterval = setInterval(checkUserInfo, 500);
+let cycleCount = 0;
+const maxCycles = 24;  // 240 cycles, 120 seconds = 2 minutes to login with Nostr before redirecting to Home Page
+
 function checkUserInfo() {
-    console.log("....inside checkUserInfo....")
+    console.log("....inside checkUserInfo...." + cycleCount)
+    cycleCount++;
+    
+    // wait until timer is up in 1 min (120 cycles) and then go back to home page.
+    if (cycleCount >= maxCycles) {
+        clearInterval(checkInterval);
+        console.log("checkUserInfo aborted after 120 cycles.");
+        let timerInterval;
+        Swal.fire({
+            background: swalBackground, 
+            title: "No Nostr Login Detected!",
+            html: "Redirecting to Home Page in <b></b> milliseconds.",
+            timer: 3000,
+            timerProgressBar: true,
+            didOpen: () => {
+                Swal.showLoading();
+                const timer = Swal.getPopup().querySelector("b");
+                timerInterval = setInterval(() => {
+                timer.textContent = `${Swal.getTimerLeft()}`;
+                }, 100);
+            },
+            willClose: () => {
+                clearInterval(timerInterval);
+                document.dispatchEvent(new Event("nlLogout")); // logout from nostr-login
+                openURL('/newroom'); // redirect to new room page on logout
+                return;
+            }
+        })
+      }
+      
     const userInfo = JSON.parse(window.localStorage.getItem('__nostrlogin_accounts'));
     if (userInfo && userInfo.length > 0) {
         // Do something with the userInfo
@@ -405,12 +439,10 @@ function checkUserInfo() {
         window.localStorage.peer_url = user.picture;
         window.localStorage.peer_pubkey = user.pubkey;
 
-        // TODO: what do we do here if there is no peer_name?
-        // wait until timer is up in 3 min? and then go back to home page.
-
+        // TODO: what do we do here if there is no peer_name but we have a pubkey?
         // we are assuming peer_name exists. if not, then we need to offer
-        // option to set a username after X period of checking and no username
-
+        // option to set a username after 60 sec period of checking and no username
+        
         if (peer_name && peer_pubkey) {
             console.log("discovery complete: checkUserInfo: ", peer_name, peer_pubkey, peer_url);
             loggedIn = true            
@@ -452,10 +484,6 @@ function continueNostrLogin() {
     
 }
 
-// Check every 500 milliseconds (0.5 second)
-const checkInterval = setInterval(checkUserInfo, 500);
-
-
 function nostrLogin() { 
     console.log('0.1.00 ----> Nostr Login');
 
@@ -484,7 +512,7 @@ function nostrLogin() {
     }).then((result) => {        
             if (result.isConfirmed) {
                 // see checkUserInfo to continue login
-                console.log("NOSTR LOGIN CONFIRMED")
+                console.log("NOSTR LOGIN Selected by User")
 
             } else if (result.isDenied) {
                 setRandomName()
