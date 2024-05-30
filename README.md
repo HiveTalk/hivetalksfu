@@ -8,15 +8,21 @@
 -   add nostr avatar picture, name - done
 -   enable front page - show active public rooms - done
     - ( use built-in API to pull data to front page, see samples in codebase)
--   add npub and link to nostr profile
+-   add link to nostr profile in the chat avatar.  Make this more visible on the dropdown (v2)
 
 #### 2nd release
 
--   add 'talking in room now' per user post to nostr
+-   fix chatroom avatars so that nostr avatars are shown in chat.
+-   add 'Talking in room now' user post to nostr relays. (similar to twitter/X)
+-   Remove items that aren't needed or might have issues like google translate or transcription.
+-   is there a webRTC timeout?
+-   fix any other bugs as needed
+
+#### 3rd release
+
 -   add API keys for different users on request.
 -   enable chatGPT or rather, bitcoiner equiv unleashed.chat
 -   TODO items in the existing code base, and from upstream fork.
--   fix any other bugs as needed
 
 
 <br />
