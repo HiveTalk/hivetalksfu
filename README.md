@@ -238,7 +238,7 @@ $ PORT=3011 npm start
 
 </details>
 
-<details open>
+<details>
 <summary>Docker</summary>
 
 <br/>
@@ -331,44 +331,6 @@ To obtain a [MiroTalk SFU license](https://docs.mirotalk.com/license/licensing-o
 
 </details>
 
-
-## Diving into Additional MiroTalk Projects:
-
-<details>
-<summary>MiroTalk P2P</summary>
-
-<br/>
-
-Try also [MiroTalk P2P](https://github.com/miroslavpejic85/mirotalk) `peer to peer` real-time video conferences, optimized for small groups. `Unlimited time, unlimited concurrent rooms` each having 5-8 participants.
-
-</details>
-
-<details>
-<summary>MiroTalk C2C</summary>
-
-<br>
-
-Try also [MiroTalk C2C](https://github.com/miroslavpejic85/mirotalkc2c) `peer to peer` real-time video conferences, optimized for cam 2 cam. `Unlimited time, unlimited concurrent rooms` each having 2 participants.
-
-</details>
-
-<details>
-<summary>MiroTalk BRO</summary>
-
-<br>
-
-Try also [MiroTalk BRO](https://github.com/miroslavpejic85/mirotalkbro) `Live broadcast` (peer to peer) live video, audio and screen stream to all connected users (viewers). `Unlimited time, unlimited concurrent rooms` each having a broadcast and many viewers.
-
-</details>
-
-<details>
-<summary>MiroTalk WEB</summary>
-
-<br>
-
-Try also [MiroTalk WEB](https://github.com/miroslavpejic85/mirotalkwebrtc) a platform that allows for the management of an `unlimited number of users`. Each user must register with their email, username, and password, after which they gain access to their `personal dashboard`. Within the dashboard, users can `manage their rooms and schedule meetings` using the desired version of MiroTalk on a specified date and time. Invitations to these meetings can be sent via email, shared through the web browser, or sent via SMS.
-
-</details>
 
 ---
 
