@@ -14,12 +14,13 @@
 
 -   fix chatroom avatars so that nostr avatars are shown in chat. (see link to video below)
 -   add 'Talking in room now' user post to nostr relays. (similar to twitter/X)
--   Remove items that aren't needed or might have issues like google translate or transcription.
+-   Add Zap functionality
 -   is there a webRTC timeout?
 -   fix any other bugs as needed
 
 #### 3rd release
 
+-   Remove items that aren't needed or might have issues like google translate or transcription.
 -   add API keys for different users on request.
 -   enable chatGPT or rather, bitcoiner equiv unleashed.chat
 -   TODO items in the existing code base, and from upstream fork.
