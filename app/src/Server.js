@@ -200,6 +200,8 @@ const views = {
     permission: path.join(__dirname, '../../', 'public/views/permission.html'),
     privacy: path.join(__dirname, '../../', 'public/views/privacy.html'),
     room: path.join(__dirname, '../../', 'public/views/Room.html'),
+    donate: path.join(__dirname, '../../', 'public/views/donate.html'),
+
 };
 
 const authHost = new Host(); // Authenticated IP by Login
@@ -534,10 +536,16 @@ function startServer() {
         res.sendFile(views.privacy);
     });
 
-    // mirotalk about
+    // hivetalk about
     app.get(['/about'], (req, res) => {
         res.sendFile(views.about);
     });
+
+    // hivetalk donate
+    app.get(['/donate'], (req, res) => {
+        res.sendFile(views.donate);
+    });
+
 
     // Get stats endpoint
     app.get(['/stats'], (req, res) => {

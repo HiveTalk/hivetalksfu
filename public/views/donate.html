@@ -3,7 +3,7 @@
     <head>
         <!-- Title and Icon -->
 
-        <title id="title">HiveTalk SFU - privacy policy.</title>
+        <title id="title">HiveTalk SFU - Donate.</title>
         <link id="icon" rel="shortcut icon" href="../images/logo.svg" />
         <link id="appleTouchIcon" rel="apple-touch-icon" href="../images/logo.svg" />
 
@@ -49,6 +49,45 @@
 
         <script src="https://unpkg.com/animejs@3.0.1/lib/anime.min.js"></script>
         <script src="https://unpkg.com/scrollreveal@4.0.0/dist/scrollreveal.min.js"></script>
+
+        <!-- xss -->
+
+        <script src="https://cdn.jsdelivr.net/npm/xss/dist/xss.min.js"></script>
+
+        <!-- axios -->
+
+        <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
+        <style>
+            .iframe-container {
+                position: relative;
+                width: 100%;
+                padding-bottom: 133.33%; /* Aspect ratio (height/width * 100%) */
+                height: 0;
+                overflow: hidden;
+            }
+    
+            .iframe-container iframe {
+                position: absolute;
+                top: 0;
+                left: 0;
+                width: 100%;
+                height: 100%;
+                border: 0;
+            }
+            .header-container {
+                display: flex;
+                align-items: center;
+            }
+            
+            .header {
+                display: flex;
+                align-items: center;
+            }
+            
+            .header-logo-image {
+                margin-right: 10px; /* Adjust spacing as needed */
+            }
+        </style>
     </head>
     <body class="is-boxed has-animations">
         <div class="body-wrap">
@@ -56,57 +95,35 @@
                 <div class="container">
                     <div class="site-header-inner">
                         <div class="brand header-brand">
-                            <h1 class="m-0">
-                                <a href="/">
-                                    <img
-                                        class="header-logo-image"
-                                        src="../images/logo.svg"
-                                        alt="mirotalksfu-webrtc-logo"
-                                    />
-                                    <!-- <img
-                                        class="header-logo-image reveal-from-left"
-                                        src="../images/mirotalk-mc.png"
-                                        alt="mirotalksfu-webrtc-logo"
-                                        width="96"
-                                        height="auto"
-                                    /> -->
-                                </a>
-                            </h1>
+                            <div class="header-container">
+                                <h1 class="header m-0">
+                                    <a href="/">
+                                        <img
+                                            class="header-logo-image"
+                                            src="../images/logo.svg"
+                                            alt="hivetalksfu-webrtc-logo"
+                                        />
+                                    </a>
+                                </h1>
+                            </div>
+                            <div>
+                                <h2>Donate to HiveTalk</h2>
+                            </div>
                         </div>
                     </div>
                 </div>
             </header>
-
             <main>
                 <section class="hero">
                     <div class="container">
                         <div class="hero-inner">
                             <div class="hero-copy">
-                                <h1 class="hero-title mt-0">Privacy Policy</h1>
-                                <p class="hero-paragraph" id="message"></p>
-                                <p class="hero-paragraph">
-                                    <strong>HiveTalk</strong> has an integrated
-                                    <a href="https://mediasoup.org/" target="_blank">mediasoup server</a>. Routing is a
-                                    multiparty topology, where each participant sends its media to this server and
-                                    receives all other's media from it. Thanks to the SFU architecture, it allows having
-                                    many users connected in the same room. The media streams are encrypted using Secure
-                                    Real-time Transport Protocol (SRTP).<br /><br />
-                                    If you record a meeting, the recording of the meeting is temporarily stored on
-                                    <strong>Your browser</strong>
-                                    <a href="https://developer.mozilla.org/en-US/docs/Web/API/Blob" target="_blank"
-                                        >Blob</a
-                                    >, then will be downloaded on Your PC/Mobile Device.<br /><br />
-                                    We use Umami to track aggregated usage statistics in order to improve our service.
-                                    The maker of
-                                    <strong>HiveTalk SFU</strong> has no intention of using personally or selling any of
-                                    the above-mentioned data.
-                                </p>
-                                <div>
-                                    <a class="button button-primary button-wide-mobile pulse" href="/newroom">AGREE</a>
+                                <div class="iframe-container">
+                                    <iframe class="donate" src="https://sats.lnaddy.com/tipjar/11" title="HiveTalk SFU" width="600" height="800"></iframe>
                                 </div>
                             </div>
                             <div class="hero-figure anime-element">
-                                <svg class="placeholder" width="528" height="396" viewBox="0 0 528 396">
+                                <svg class="placeholder" width="528" height="596" viewBox="0 0 528 596">
                                     <rect width="528" height="396" style="fill: transparent" />
                                 </svg>
                             </div>
@@ -120,7 +137,7 @@
                     <div class="site-footer-inner">
                         <div class="brand footer-brand">
                             <a href="/">
-                                <img class="header-logo-image" src="../images//hivelogo50x200.svg" alt="Logo" />
+                                <img class="header-logo-image" src="../images/hivelogo50x200.svg" alt="Logo" />
                             </a>
                         </div>
                         <ul class="footer-links list-reset">
@@ -152,6 +169,7 @@
             </footer>
         </div>
 
+        <script defer src="../js/Login.js"></script>
         <script defer src="../js/Landing.js"></script>
         <script async defer src="https://buttons.github.io/buttons.js"></script>
     </body>
