@@ -1500,6 +1500,8 @@ function roomIsReady() {
     if (rc.isValidEmail(peer_name)) {
          myProfileAvatar.style.borderRadius = `50px`;
          myProfileAvatar.setAttribute('src', rc.genGravatar(peer_name));
+    } else if (avatar) { // if nostr avatar is not null
+        myProfileAvatar.setAttribute('src', avatar);
     } else {
         myProfileAvatar.setAttribute('src', rc.genAvatarSvg(peer_name, 64));
     }
