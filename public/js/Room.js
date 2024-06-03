@@ -303,10 +303,10 @@ async function loadUser() {
             if (pubkey) {
                 console.log("LOAD USER --> fetched pubkey", pubkey)
                 peer_pubkey = pubkey        
-                window.localStorage.peer_pubkey = pubkey;
                 peer_npub = nip19.npubEncode(pubkey);
                 console.log('npub: ', peer_npub);
-
+                window.localStorage.peer_pubkey = pubkey;
+                window.localStorage.peer_npub = peer_npub;
                 getDisplayUserInfo();
 
             } 
@@ -333,11 +333,12 @@ function getDisplayUserInfo() {
                 peer_name = user.name;
                 peer_url = user.picture;
                 peer_pubkey = user.pubkey;
-                // peer_npub = nip19.npubEncode(user.pubkey)
+                peer_npub = nip19.npubEncode(user.pubkey)
 
                 window.localStorage.peer_pubkey = user.pubkey;
                 window.localStorage.peer_name = user.name;
                 window.localStorage.peer_url = user.picture;
+                window.localStorage.peer_npub = peer_npub;
             } else {
                 console.log("No user info available (empty array)");
             }
@@ -420,14 +421,16 @@ function checkUserInfo() {
     const userInfo = JSON.parse(window.localStorage.getItem('__nostrlogin_accounts'));
     if (userInfo && userInfo.length > 0) {
         // Do something with the userInfo
-        const user = userInfo[0]                        
-        console.log("checkUserInfo :", user.pubkey, user.name, user.picture);
+        const user = userInfo[0]  
         peer_name = user.name;
         peer_url = user.picture;
         peer_pubkey = user.pubkey;
+        peer_npub = nip19.npubEncode(user.pubkey)
         window.localStorage.peer_name = user.name;
         window.localStorage.peer_url = user.picture;
         window.localStorage.peer_pubkey = user.pubkey;
+        window.localStorage.peer_npub = peer_npub;
+        console.log("checkUserInfo :", user.pubkey, user.name, user.picture, peer_npub);
 
         // TODO: what do we do here if there is no peer_name but we have a pubkey?
         // we are assuming peer_name exists. if not, then we need to offer
@@ -509,6 +512,7 @@ function nostrLogin() {
                 console.log("Set Random Name")
                 // blank out the other values
                 peer_pubkey = ''
+                peer_npub = ''
                 peer_url = ''
                 Swal.fire({
                     allowOutsideClick: false,
@@ -1112,6 +1116,7 @@ function getPeerInfo() {
         peer_id: socket.id,
         peer_name: peer_name,
         peer_pubkey: peer_pubkey,
+        peer_npub: peer_npub,
         peer_url: peer_url,
         peer_token: peer_token,
         peer_presenter: isPresenter,
@@ -3870,7 +3875,8 @@ function getParticipantsList(peers) {
         const peer_sendFile = _PEER.sendFile;
         const peer_id = peer_info.peer_id;
         const peer_pubkey = peer_info.peer_pubkey;
-        let peer_npub = '';
+        let peer_npub = peer_info.peer_npub;
+        // comment out later
         if (peer_pubkey) {
             // only get the npub if there is a nostr pubkey
             peer_npub = nip19.npubEncode(peer_pubkey);

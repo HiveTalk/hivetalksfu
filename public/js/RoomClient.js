@@ -27,6 +27,7 @@ const html = {
     videoOn: 'fas fa-video',
     videoOff: 'fas fa-video-slash',
     userName: 'username',
+    nostrIcon: 'nostr',
     userHand: 'fas fa-hand-paper pulsate',
     pip: 'fas fa-images',
     fullScreen: 'fas fa-expand',
@@ -1766,7 +1767,7 @@ class RoomClient {
                 p = document.createElement('p');
                 p.id = this.peer_id + '__name';
                 p.className = html.userName;
-                p.innerText = (isPresenter ? '⭐️ ' : '') + this.peer_name + ' (me)';
+                p.innerText = (isPresenter ? '⭐️ ' : '') + this.peer_name + ' lala (me)';
                 i = document.createElement('i');
                 i.id = this.peer_id + '__hand';
                 i.className = html.userHand;
@@ -2337,7 +2338,7 @@ class RoomClient {
         //console.log('setVideoOff', peer_info);
         let d, vb, i, h, au, sf, sm, sv, gl, ban, ko, p, pm, pb, pv;
 
-        const { peer_id, peer_name, peer_audio, peer_presenter, peer_url } = peer_info;
+        const { peer_id, peer_name, peer_audio, peer_presenter, peer_npub } = peer_info;
 
         this.removeVideoOff(peer_id);
         d = document.createElement('div');
@@ -2379,10 +2380,21 @@ class RoomClient {
         i = document.createElement('img');
         i.className = 'videoAvatarImage center'; // pulsate
         i.id = peer_id + '__img';
+
+        let nostr_url = "https://njump.me/" + peer_npub;
+        let nurl = filterXSS(nostr_url);
+        let nl = document.createElement('a');
+        const linkText = document.createTextNode("NOSTR");        
+        nl.setAttribute('href', nurl);
+        nl.setAttribute('target', '_blank');
+        nl.className = html.nostrIcon;
+        nl.appendChild(linkText);
+
+        // set peer and present names
         p = document.createElement('p');
         p.id = peer_id + '__name';
         p.className = html.userName;
-        p.innerText = (peer_presenter ? '⭐️ ' : '') + peer_name + (remotePeer ? '' : ' (me) ');
+        p.innerText = (peer_presenter ? '⭐️ ' : '') + peer_name + (remotePeer ? '' : ' foo (me) ');
         h = document.createElement('i');
         h.id = peer_id + '__hand';
         h.className = html.userHand;
@@ -2405,6 +2417,8 @@ class RoomClient {
         }
         vb.appendChild(au);
         d.appendChild(i);
+        // add nostr icon
+        d.appendChild(nl);
         d.appendChild(p);
         d.appendChild(h);
         d.appendChild(pm);

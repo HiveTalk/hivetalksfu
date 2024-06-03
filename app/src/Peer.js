@@ -18,6 +18,7 @@ module.exports = class Peer {
             peer_hand,
             peer_url,
             peer_pubkey,
+            peer_npub,
         } = peer_info;
 
         this.id = socket_id;
@@ -32,6 +33,7 @@ module.exports = class Peer {
         this.peer_hand = peer_hand;
         this.peer_url = peer_url;
         this.peer_pubkey = peer_pubkey;
+        this.peer_npub = peer_npub;
 
         this.transports = new Map();
         this.consumers = new Map();
