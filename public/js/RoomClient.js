@@ -1767,7 +1767,7 @@ class RoomClient {
                 p = document.createElement('p');
                 p.id = this.peer_id + '__name';
                 p.className = html.userName;
-                p.innerText = (isPresenter ? '⭐️ ' : '') + this.peer_name + ' lala (me)';
+                p.innerText = (isPresenter ? '⭐️ ' : '') + this.peer_name + ' (me)';
                 i = document.createElement('i');
                 i.id = this.peer_id + '__hand';
                 i.className = html.userHand;
@@ -2394,7 +2394,7 @@ class RoomClient {
         p = document.createElement('p');
         p.id = peer_id + '__name';
         p.className = html.userName;
-        p.innerText = (peer_presenter ? '⭐️ ' : '') + peer_name + (remotePeer ? '' : ' foo (me) ');
+        p.innerText = (peer_presenter ? '⭐️ ' : '') + peer_name + (remotePeer ? '' : ' (me) ');
         h = document.createElement('i');
         h.id = peer_id + '__hand';
         h.className = html.userHand;
