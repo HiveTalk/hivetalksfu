@@ -2380,15 +2380,21 @@ class RoomClient {
         i = document.createElement('img');
         i.className = 'videoAvatarImage center'; // pulsate
         i.id = peer_id + '__img';
-
-        let nostr_url = "https://njump.me/" + peer_npub;
-        let nurl = filterXSS(nostr_url);
+ 
+        let nostr_url = ""; 
+        let nurl = '';
         let nl = document.createElement('a');
-        const linkText = document.createTextNode("NOSTR");        
-        nl.setAttribute('href', nurl);
-        nl.setAttribute('target', '_blank');
-        nl.className = html.nostrIcon;
-        nl.appendChild(linkText);
+        let linkText = '';
+        console.log("Peer Npub is:  ", peer_npub);
+        if (peer_npub) { // only do this if there is a peer_npub
+            nostr_url = "https://njump.me/" + peer_npub;
+            nurl = filterXSS(nostr_url);
+            linkText =  document.createTextNode("NOSTR");
+            nl.setAttribute('href', nurl);
+            nl.setAttribute('target', '_blank');
+            nl.className = html.nostrIcon;
+            nl.appendChild(linkText);    
+        }
 
         // set peer and present names
         p = document.createElement('p');
@@ -2418,7 +2424,9 @@ class RoomClient {
         vb.appendChild(au);
         d.appendChild(i);
         // add nostr icon
-        d.appendChild(nl);
+        if (peer_npub) {
+            d.appendChild(nl);
+        }
         d.appendChild(p);
         d.appendChild(h);
         d.appendChild(pm);
