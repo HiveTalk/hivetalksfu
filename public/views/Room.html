@@ -1,6 +1,15 @@
 <!doctype html>
 <html lang="en">
     <head>
+        <script type="module">
+            import {onConnected} from 'https://esm.sh/@getalby/bitcoin-connect@3.5.1';
+          
+            onConnected((provider) => {
+              window.webln = provider;
+            });
+          </script>
+          
+
         <!-- Title and Icon -->
 
         <title id="title">HiveTalk SFU - Room Video Calls, Messaging and Screen Sharing.</title>
@@ -897,6 +906,7 @@
 
                     <div id="tabProfile" class="tabcontent">
                         <div>
+                            <!-- Todo fix the avatar to make sure it shows-->
                             <img id="myProfileAvatar" />
                         </div>
                         <table class="settingsTable">
@@ -916,6 +926,15 @@
                                         <p>Presenter:</p>
                                         <p id="isUserPresenter">true</p>
                                     </div>
+                                </td>
+                            </tr>
+                            <tr>
+                                <td>
+                                    <!-- Bitcoin Connect button for Zaps -->
+                                    <div class="title">
+                                        <p>
+                                            <bc-button></bc-button>
+                                        </p>
                                 </td>
                             </tr>
                         </table>
