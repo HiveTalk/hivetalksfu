@@ -27,7 +27,7 @@ const html = {
     videoOn: 'fas fa-video',
     videoOff: 'fas fa-video-slash',
     userName: 'username',
-    nostrIcon: 'nostr',
+    nostrIcon: 'nostr-image-button',
     userHand: 'fas fa-hand-paper pulsate',
     pip: 'fas fa-images',
     fullScreen: 'fas fa-expand',
@@ -71,16 +71,16 @@ const icons = {
 };
 
 const image = {
-    about: '',
     //about: '../images/hivelogo50x200.svg',
-    avatar: '',
     // avatar: '../images/mirotalksfu-logo.png',
+    about: '',
+    avatar: '',
     audio: '../images/audio.gif',
     poster: '../images/loader.gif',
     rec: '../images/rec.png',
     recording: '../images/recording.png',
     delete: '../images/delete.png',
-    locked: '../images/locked.png',
+    locked: '../images/locked.png',    
     mute: '../images/mute.png',
     hide: '../images/hide.png',
     stop: '../images/stop.png',
@@ -155,6 +155,40 @@ const enums = {
 
 // Recording
 let recordedBlobs = [];
+
+
+// ####################################################
+// HANDLE NOSTR
+// ####################################################
+
+// Define the getProfile for Nostr - temporarily get it from njump.me
+function getProfile(eventParam) {
+    var host = "https://njump.me";
+    
+    var width = '100%';  // Set default width
+    var height = 'auto'; // Set default height
+    var iframe = document.createElement('iframe');
+    iframe.src = host + '/' + eventParam + '?embed=yes';
+    iframe.style.width = width;
+    iframe.style.height = height;
+    iframe.style.border = 'none'; // Remove the border
+    
+    // Add a class to easily permit overwriting the styles
+    iframe.classList.add("nostr-embedded");
+
+    // Listen for messages from the iframe
+    window.addEventListener('message', function(event) {
+        console.log("Message received:", event.data);
+            var maxViewportHeight = window.innerHeight * 0.5;            
+            // Adjust the height of the iframe based on the received content height
+            var receivedHeight = Math.min(event.data.height, maxViewportHeight);
+            iframe.style.height = receivedHeight + 'px';
+                const darkModeQuery = window.matchMedia('(prefers-color-scheme: dark)');
+            iframe.contentWindow.postMessage({setDarkMode: true}, '*');
+    });
+
+    return iframe;
+}
 
 class RoomClient {
     constructor(
@@ -2376,26 +2410,11 @@ class RoomClient {
             ko.id = 'remotePeer___' + peer_id + '___kickOut';
             ko.className = html.kickOut;
         }
-        // a href to nostr profile
+        // add nostr profile image here if present
         i = document.createElement('img');
         i.className = 'videoAvatarImage center'; // pulsate
         i.id = peer_id + '__img';
  
-        let nostr_url = ""; 
-        let nurl = '';
-        let nl = document.createElement('a');
-        let linkText = '';
-        console.log("Peer Npub is:  ", peer_npub);
-        if (peer_npub) { // only do this if there is a peer_npub
-            nostr_url = "https://njump.me/" + peer_npub;
-            nurl = filterXSS(nostr_url);
-            linkText =  document.createTextNode("NOSTR");
-            nl.setAttribute('href', nurl);
-            nl.setAttribute('target', '_blank');
-            nl.className = html.nostrIcon;
-            nl.appendChild(linkText);    
-        }
-
         // set peer and present names
         p = document.createElement('p');
         p.id = peer_id + '__name';
@@ -2424,8 +2443,29 @@ class RoomClient {
         vb.appendChild(au);
         d.appendChild(i);
         // add nostr icon
-        if (peer_npub) {
+        let nl = document.createElement('button');
+        // console.log("Peer Npub is:  ", peer_npub); 
+        if (peer_npub) { // only do this if there is a peer_npub
+            nl.id = peer_npub + '__nostr';
+            nl.className = html.nostrIcon;
             d.appendChild(nl);
+            // Add an event listener to the button to trigger SweetAlert2 on click
+            nl.addEventListener('click', function() {
+                let id = this.id;
+                let extractedIdentifier = id.split('__')[0];
+                var iframe = getProfile(extractedIdentifier);
+                Swal.mixin({
+                    background: swalBackground, 
+                    title: 'Nostr Profile',
+                    text: 'Click outside box to close.',
+                    html: '',
+                    showCloseButton: false,
+                    showConfirmButton: false,
+                    didOpen: (popup) => {
+                        popup.appendChild(iframe);
+                    },
+                }).fire();
+            });
         }
         d.appendChild(p);
         d.appendChild(h);
@@ -2688,49 +2728,6 @@ class RoomClient {
     isValidNpub(peerName)  { 
         return True
     }
-
-    // hasNostrImg(peerName) {
-    //     console.log("hasNostrImg?", peerName);
-    //     const peers = new Map(JSON.parse(room.peers));
-    //     for (let peer of Array.from(peers.keys()).filter((id) => id == peerName)) {
-    //         let my_peer_info = peers.get(peer).peer_info;
-    //         console.log('hasNostr PeerInfo: ', my_peer_info);
-    //         let peer_url = my_peer_info.peer_url;
-    //         console.log('hasNostr PeerUrl: ', peer_url);
-    //     }
-
-    //     const userInfo = JSON.parse(localStorage.getItem('__nostrlogin_accounts'));
-    //     if (userInfo && userInfo.length > 0) {
-    //         const user = userInfo[0];
-    //         if (peerName === user.name) {
-    //             if (user.picture){ 
-    //                 console.log('hasNostrImg - user picture: ', user.picture);
-    //                 return true
-    //             } else { return false}       
-    //         } else { return false }
-    //     }
-    //     return false
-    // }
-    
-    // getNostrAvatar(peerName) {
-    //     const userInfo = JSON.parse(localStorage.getItem('__nostrlogin_accounts'));
-    //     let url = null;
-    //     try {
-    //         if (userInfo && userInfo.length > 0) {
-    //             const user = userInfo[0];
-    //             console.log("getNostrAvatar - user from _nostrlogin_accounts: ", user.name, ":", peerName);
-    //             console.log("getNostrAvatar - user picture: ", user.picture);
-    //             url = user.picture; 
-    //             return url;
-    //         } else {
-    //             console.log("getNostrAvatar - No user info available (empty array)");
-    //         }
-    //     } catch (error) {
-    //         console.log("getNostrAvatar - Error parsing userInfo:", error);
-    //     }
-    //     return url
-    // }
-    
 
     genAvatarSvg(peerName, avatarImgSize) {
         const charCodeRed = peerName.charCodeAt(0);
@@ -5852,6 +5849,7 @@ class RoomClient {
         }
     }
 
+   
     // ####################################################
     // HANDLE AUDIO
     // ###################################################
