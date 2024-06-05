@@ -190,11 +190,12 @@ function getProfile(eventParam) {
     var host = "https://njump.me";
     
     var width = '100%';  // Set default width
-    var height = 'auto'; // Set default height
+    var height = '100%'; // Set default height
     var iframe = document.createElement('iframe');
     iframe.src = host + '/' + eventParam + '?embed=yes';
+    //iframe.src = host + '/' + eventParam;
     iframe.style.width = width;
-    iframe.style.height = height;
+    iframe.style.height = 800 + 'px';
     iframe.style.border = 'none'; // Remove the border
     
     // Add a class to easily permit overwriting the styles
@@ -203,12 +204,10 @@ function getProfile(eventParam) {
     // Listen for messages from the iframe
     window.addEventListener('message', function(event) {
         console.log("Message received:", event.data);
-            var maxViewportHeight = window.innerHeight * 0.5;            
-            // Adjust the height of the iframe based on the received content height
-            var receivedHeight = Math.min(event.data.height, maxViewportHeight);
-            iframe.style.height = receivedHeight + 'px';
-                const darkModeQuery = window.matchMedia('(prefers-color-scheme: dark)');
+        iframe.onload = function() {
+            // This code will execute when the iframe content has loaded
             iframe.contentWindow.postMessage({setDarkMode: true}, '*');
+        };
     });
 
     return iframe;
@@ -2647,17 +2646,31 @@ class RoomClient {
                 let id = this.id;
                 let extractedIdentifier = id.split('__')[0];
                 var iframe = getProfile(extractedIdentifier);
-                Swal.mixin({
+               (async ()=>  {        
+                await Swal.fire({
                     background: swalBackground, 
-                    title: 'Nostr Profile',
-                    text: 'Click outside box to close.',
-                    html: '',
-                    showCloseButton: false,
-                    showConfirmButton: false,
-                    didOpen: (popup) => {
-                        popup.appendChild(iframe);
+                    html: iframe.outerHTML,
+                    position: 'top-end',
+                    showClass: {
+                      popup: `
+                      animate__animated
+                      animate__fadeInRight
+                      animate__faster
+                    `,
                     },
-                }).fire();
+                    hideClass: {
+                      popup: `
+                      animate__animated
+                      animate__fadeOutRight
+                      animate__faster
+                    `,
+                    },
+                    grow: 'column',
+                    width: 600,
+                    showCloseButton: true,
+                    showConfirmButton: false,
+                });
+            })();
             });
         }
         d.appendChild(p);
