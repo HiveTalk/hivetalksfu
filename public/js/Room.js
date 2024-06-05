@@ -338,7 +338,7 @@ function getDisplayUserInfo() {
                 console.log("user from _nostrlogin_accounts: ", user.name);
                 console.log("user picture: ", user.picture);
                 peer_name = user.name;
-                if (user.name.length > 30) {
+                if (peer_name.length > 30) {
                     // truncate peer_name to be < 30 chars
                     peer_name = truncateString(user.name, 29);
                 } 
@@ -430,33 +430,37 @@ function checkUserInfo() {
       }
       
     const userInfo = JSON.parse(window.localStorage.getItem('__nostrlogin_accounts'));
-    if (userInfo && userInfo.length > 0) {
-        // Do something with the userInfo
-        const user = userInfo[0]  
-        peer_name = user.name;
-        if (user.name.length > 30) {
-            // truncate peer_name to be < 30 chars
-            peer_name = truncateString(user.name, 29);
-        } 
-        peer_url = user.picture;
-        peer_pubkey = user.pubkey;
-        peer_npub = nip19.npubEncode(user.pubkey)
-        window.localStorage.peer_name = user.name;
-        window.localStorage.peer_url = user.picture;
-        window.localStorage.peer_pubkey = user.pubkey;
-        window.localStorage.peer_npub = peer_npub;
-        console.log("checkUserInfo :", user.pubkey, user.name, user.picture, peer_npub);
+    try {
+        if (userInfo && userInfo.length > 0) {
+            // Do something with the userInfo
+            const user = userInfo[0]  
+            peer_name = user.name;
+            if (peer_name.length > 30) {
+                // truncate peer_name to be < 30 chars
+                peer_name = truncateString(user.name, 29);
+            } 
+            peer_url = user.picture;
+            peer_pubkey = user.pubkey;
+            peer_npub = nip19.npubEncode(user.pubkey)
+            window.localStorage.peer_name = user.name;
+            window.localStorage.peer_url = user.picture;
+            window.localStorage.peer_pubkey = user.pubkey;
+            window.localStorage.peer_npub = peer_npub;
+            console.log("checkUserInfo :", user.pubkey, user.name, user.picture, peer_npub);
 
-        // TODO: what do we do here if there is no peer_name but we have a pubkey?
-        // we are assuming peer_name exists. if not, then we need to offer
-        // option to set a username after 60 sec period of checking and no username
-        
-        if (peer_name && peer_pubkey) {
-            console.log("discovery complete: checkUserInfo: ", peer_name, peer_pubkey, peer_url);
-            loggedIn = true            
-            clearInterval(checkInterval);
-            continueNostrLogin();
+            // TODO: what do we do here if there is no peer_name but we have a pubkey?
+            // we are assuming peer_name exists. if not, then we need to offer
+            // option to set a username after 60 sec period of checking and no username
+            
+            if (peer_name && peer_pubkey) {
+                console.log("discovery complete: checkUserInfo: ", peer_name, peer_pubkey, peer_url);
+                loggedIn = true            
+                clearInterval(checkInterval);
+                continueNostrLogin();
+            }
         }
+    } catch (error) {
+        console.log("Error parsing userInfo:", error);
     }
 }
 
