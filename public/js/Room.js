@@ -330,6 +330,13 @@ async function loadUser() {
 }
 
 
+function truncateString(str, maxLength) {
+    if (str.length > maxLength) {
+        return str.slice(0, maxLength - 3) + '...';
+    }
+    return str;
+}
+
 function getDisplayUserInfo() {
     console.log("getDisplayUserInfo()......")
     setTimeout(() => { // Adding a delay to ensure data is available
@@ -341,6 +348,10 @@ function getDisplayUserInfo() {
                 console.log("user from _nostrlogin_accounts: ", user.name);
                 console.log("user picture: ", user.picture);
                 peer_name = user.name;
+                if (user.name.length > 30) {
+                    // truncate peer_name to be < 30 chars
+                    peer_name = truncateString(user.name, 29);
+                } 
                 peer_url = user.picture;
                 peer_pubkey = user.pubkey;
                 peer_npub = nip19.npubEncode(user.pubkey)
@@ -433,6 +444,10 @@ function checkUserInfo() {
         // Do something with the userInfo
         const user = userInfo[0]  
         peer_name = user.name;
+        if (user.name.length > 30) {
+            // truncate peer_name to be < 30 chars
+            peer_name = truncateString(user.name, 29);
+        } 
         peer_url = user.picture;
         peer_pubkey = user.pubkey;
         peer_npub = nip19.npubEncode(user.pubkey)
