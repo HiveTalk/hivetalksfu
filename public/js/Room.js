@@ -260,7 +260,6 @@ let transcription;
 // ####################################################
 
 
-
 document.addEventListener('DOMContentLoaded', function () {
     // show nostr dialog on click in profile settings, only show if logged in
     document.getElementById('nostrButton').addEventListener('click', function() {
