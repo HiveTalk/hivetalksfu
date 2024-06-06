@@ -28,6 +28,7 @@ const html = {
     videoOff: 'fas fa-video-slash',
     userName: 'username',
     nostrIcon: 'nostr-image-button',
+    zapIcon: 'zap-image-button',
     userHand: 'fas fa-hand-paper pulsate',
     pip: 'fas fa-images',
     fullScreen: 'fas fa-expand',
@@ -2634,6 +2635,16 @@ class RoomClient {
         }
         vb.appendChild(au);
         d.appendChild(i);
+
+        // add lightning address or lnurl for zaps
+        let zp = document.createElement('button');
+        if(peer_npub) { 
+            // only do this if there is a lightning address
+            zp.id = peer_npub + '__zap';
+            zp.className = html.zapIcon;
+            d.appendChild(zp);
+        }
+
         // add nostr icon
         let nl = document.createElement('button');
         // console.log("Peer Npub is:  ", peer_npub); 

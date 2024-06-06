@@ -105,10 +105,10 @@
 }
 
 .nostr-image-button {
-    background-image: url('../images/nostr.png');
+    background-image: url('../images/nostrg.png');
     z-index: 1;
     position: absolute;
-    right: 50px;
+    right: 30px;
     bottom: 50px;
     align-items: center;
     padding: 5px;
@@ -120,6 +120,21 @@
     cursor: pointer; /* Add pointer cursor on hover */
 }
 
+.zap-image-button {
+    background-image: url('../images/lngradient.png');
+    z-index: 1;
+    position: absolute;
+    right: 70px;
+    bottom: 50px;
+    align-items: center;
+    padding: 5px;
+    margin: 5px; 
+    width: 45px;  /* Set your image width */
+    height: 45px;  /* Set your image height */
+    border-radius: 5px; /* Remove button border */
+    background-size: cover;  /* Ensure the image covers the button */
+    cursor: pointer; /* Add pointer cursor on hover */
+}
 
 .username {
     z-index: 1;
