@@ -272,10 +272,16 @@ let quill = null;
 
 
 document.addEventListener('DOMContentLoaded', function () {
+    // show nostr dialog on click in profile settings, only show if logged in
+    document.getElementById('nostrButton').addEventListener('click', function() {
+        document.dispatchEvent(new CustomEvent('nlLaunch', { detail: 'switch-account' }));
+    });
+
     console.log('00 ----> init Nostr Login');
     hide(loadingDiv);
     nostrLogin();
 });
+
 
 // nostr-login auth
 document.addEventListener('nlAuth', (e) => {
@@ -287,9 +293,6 @@ document.addEventListener('nlAuth', (e) => {
               // get pubkey with window.nostr and show user profile
               //const login = window.localStorage.getItem('login');
               console.log("NLAUTH -->  login info: ", e.detail.type)  // , login)
-            //   setTimeout(function() {
-            //     loadUser();
-            // }, 200);
         }
     } else {
     // clear local user data, hide profile info 
@@ -348,7 +351,7 @@ function getDisplayUserInfo() {
                 console.log("user from _nostrlogin_accounts: ", user.name);
                 console.log("user picture: ", user.picture);
                 peer_name = user.name;
-                if (peer_name.length > 30) {
+                if (peer_name !== undefined && peer_name.length > 30) {
                     // truncate peer_name to be < 30 chars
                     peer_name = truncateString(user.name, 29);
                 } 
@@ -445,7 +448,7 @@ function checkUserInfo() {
             // Do something with the userInfo
             const user = userInfo[0]  
             peer_name = user.name;
-            if (peer_name.length > 30) {
+            if (peer_name !== undefined && peer_name.length > 30) {
                 // truncate peer_name to be < 30 chars
                 peer_name = truncateString(user.name, 29);
             } 
