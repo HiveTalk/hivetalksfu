@@ -23,8 +23,18 @@ console.log('Window Location', window.location);
 var loggedIn = false
 
 // Access the functions from the global object
-const { generateSecretKey, getPublicKey } = NostrTools;
+const { relayInit, generateSecretKey, getPublicKey, SimplePool } = NostrTools;
+
 const nip19 = NostrTools.nip19;
+const pool = new SimplePool();
+
+// default fall back relays
+let defaultRelays = [
+    'wss://relay.nostr.band',
+    'wss://relay.primal.net',
+    'wss://relay.nos.social'
+];
+
 
 const socket = io({ transports: ['websocket'] });
 
@@ -202,6 +212,7 @@ isPresenter = isPeerPresenter();
 let peer_url = null;
 let peer_pubkey = null;
 let peer_npub = null;
+let peer_lnaddress = null;
 
 let peer_info = null;
 
@@ -304,6 +315,97 @@ function setRandomName() {
     peer_name = name;
 }
 
+async function getPreferredRelays(pubkey) {            
+    return new Promise((resolve, reject) => {
+    let preferredRelays = null;
+    console.log("inside getPreferredRelays with pubkey: ", pubkey);
+    let h = pool.subscribeMany(
+      defaultRelays,
+      [
+        {
+          kinds: [3],
+          authors: [pubkey]
+        }
+      ],
+      {
+        onevent(event) {
+          if (event && event.kind === 3 && event.pubkey === pubkey) {
+            const content = JSON.parse(event.content);
+            preferredRelays = Object.keys(content);
+            console.log(`Preferred Relays: ${preferredRelays}`);
+            resolve(preferredRelays);
+            h.close();
+          }
+        },
+        onclose() {
+          if (!preferredRelays) {
+            console.log('No preferred relays found, using default relays.');
+            resolve(defaultRelays);
+            h.close();
+          }
+        }
+      }
+    );
+     // If no preferred relays found after a timeout, use default relays
+    setTimeout(() => {
+        if (!preferredRelays) {
+            console.log('No preferred relays found, using default relays.');
+            resolve(defaultRelays);
+            h.close();
+       }
+   }, 3000); // Wait 3 seconds for preferred relays
+});
+}
+
+async function getNostrProfile(pubkey, relays) {       
+    return new Promise((resolve, reject) => { 
+    let h = pool.subscribeMany(
+      relays,
+      [
+        {
+          kinds: [0],
+          authors: [pubkey]
+        }
+      ],
+      {
+        onevent(event) {
+          if (event && event.kind === 0 && event.pubkey === pubkey) {
+            const content = JSON.parse(event.content);
+            const lightningAddress = content.lud16 || content.lud06;
+            console.log("relays: ", relays);
+            if (lightningAddress) {
+              console.log(`User's Lightning Address: ${lightningAddress}`);
+              peer_lnaddress  = lightningAddress;
+              window.localStorage.peer_lnaddress = lightningAddress;
+            } else {
+              console.log('Lightning Address not found in the profile.');
+            }          
+            h.close();
+          }
+        },
+        onclose() {
+          h.close();
+        }
+      }
+    );
+  });
+}
+
+async function getRelaysAndLN(pubkey) {
+    try {
+        getPreferredRelays(pubkey)
+        .then(preferredRelays => {
+          return getNostrProfile(pubkey, preferredRelays);
+        })
+        .catch(error => {
+          console.error('Error in getRelaysAndLN:', error);
+        });
+    } catch (error) {
+        console.error('Error in getRelaysAndLN, outer catch:', error);
+    }
+}
+
+
 // nostr-login auth
 document.addEventListener('nlAuth', (e) => {
     console.log("nlauth", e)
@@ -329,8 +431,6 @@ document.addEventListener('nlAuth', (e) => {
     }
 })
 
-// default fall back relays
-let app_relays = ['wss://relay.nostr.band','wss://relay.primal.net','wss://relay.nos.social'];
 
 async function loadUser() {
     if (window.nostr) {
@@ -455,11 +555,11 @@ function checkUserInfo() {
             
             if (peer_name && peer_pubkey) {
                 console.log("discovery complete: checkUserInfo: ", peer_name, peer_pubkey, peer_url);
-                // try to grab nprofile data preferred relays and grab lighting address or lnurl
-                
-
                 loggedIn = true            
                 clearInterval(checkInterval);
+                // Get preferred relays and then the LN address
+                getRelaysAndLN(peer_pubkey);
+                // notify user polling in progress, as it takes up to 5 seconds
                 continueNostrLogin();
             }
         }
