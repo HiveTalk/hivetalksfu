@@ -271,6 +271,38 @@ document.addEventListener('DOMContentLoaded', function () {
     nostrLogin();
 });
 
+// helper methods
+function generateRandomName() {
+    // Define some syllables to combine into a name
+    const syllables = [
+        'la', 'ma', 'ra', 'sa', 'ta', 'na', 'ka', 'pa', 'fa', 'zi', 'li', 'mi', 
+        'nu', 'ke', 'jo', 'lu', 'vi', 'ri', 'si', 'di', 'bi', 'ti', 'mo', 'no'
+    ];
+    let name = '';
+    const maxLength = 10;  // Ensure the name length is < 30 chars
+    while (name.length < maxLength) {
+        const randomIndex = Math.floor(Math.random() * syllables.length);
+        const newSyllable = syllables[randomIndex];        
+        // Check if adding the new syllable would exceed the maxLength
+        if (name.length + newSyllable.length >= maxLength) break;        
+        name += newSyllable;
+    }
+    // Capitalize the first letter of the generated name
+    name = name.charAt(0).toUpperCase() + name.slice(1);
+    return name;
+}
+
+function setRandomName() { 
+    let name = generateRandomName()
+    console.log("just set a peer name")
+    name = filterXSS(name);
+    // if (!getCookie(room_id + '_name')) {
+    //     window.localStorage.peer_name = name;
+    // }
+    // TODO - deal with cookies on leave room
+    // setCookie(room_id + '_name', name, 30);
+    peer_name = name;
+}
 
 // nostr-login auth
 document.addEventListener('nlAuth', (e) => {
@@ -297,6 +329,7 @@ document.addEventListener('nlAuth', (e) => {
     }
 })
 
+// default fall back relays
 let app_relays = ['wss://relay.nostr.band','wss://relay.primal.net','wss://relay.nos.social'];
 
 async function loadUser() {
@@ -309,8 +342,8 @@ async function loadUser() {
                 console.log('npub: ', peer_npub);
                 window.localStorage.peer_pubkey = pubkey;
                 window.localStorage.peer_npub = peer_npub;
+                // first attempt to grab user info from nostr-login if logged in
                 getDisplayUserInfo();
-
             } 
         }).catch((err) => {
             console.log("LoadUser Err", err);
@@ -359,40 +392,6 @@ function getDisplayUserInfo() {
             console.log("Error parsing userInfo:", error);
         }
     }, 200); // Delay to ensure data is loaded
-}
-
-function generateRandomName() {
-    // Define some syllables to combine into a name
-    const syllables = [
-        'la', 'ma', 'ra', 'sa', 'ta', 'na', 'ka', 'pa', 'fa', 'zi', 'li', 'mi', 
-        'nu', 'ke', 'jo', 'lu', 'vi', 'ri', 'si', 'di', 'bi', 'ti', 'mo', 'no'
-    ];
-    let name = '';
-    const maxLength = 10;  // Ensure the name length is < 30 chars
-    while (name.length < maxLength) {
-        const randomIndex = Math.floor(Math.random() * syllables.length);
-        const newSyllable = syllables[randomIndex];        
-        // Check if adding the new syllable would exceed the maxLength
-        if (name.length + newSyllable.length >= maxLength) break;        
-        name += newSyllable;
-    }
-    // Capitalize the first letter of the generated name
-    name = name.charAt(0).toUpperCase() + name.slice(1);
-    return name;
-}
-
-
-function setRandomName() { 
-    let name = generateRandomName()
-    console.log("just set a peer name")
-    name = filterXSS(name);
-    // if (!getCookie(room_id + '_name')) {
-    //     window.localStorage.peer_name = name;
-    // }
-    // TODO - deal with cookies on leave room
-    // setCookie(room_id + '_name', name, 30);
-    peer_name = name;
-
 }
 
 // Check every 500 milliseconds (0.5 second)
@@ -456,6 +455,9 @@ function checkUserInfo() {
             
             if (peer_name && peer_pubkey) {
                 console.log("discovery complete: checkUserInfo: ", peer_name, peer_pubkey, peer_url);
+                // try to grab nprofile data preferred relays and grab lighting address or lnurl
+                
+
                 loggedIn = true            
                 clearInterval(checkInterval);
                 continueNostrLogin();
@@ -514,6 +516,7 @@ function nostrLogin() {
         preConfirm: async () => {
             try {
                 setTimeout(() => {
+                    // triggers nostr login extension
                     loadUser();
                 }, 500);
             } catch (error) {
