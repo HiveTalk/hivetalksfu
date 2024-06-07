@@ -210,7 +210,6 @@ function getProfile(eventParam) {
             iframe.contentWindow.postMessage({setDarkMode: true}, '*');
         };
     });
-
     return iframe;
 }
 
@@ -2638,13 +2637,13 @@ class RoomClient {
 
         // add lightning address or lnurl for zaps
         let zp = document.createElement('button');
-        if(peer_npub) { 
+        let peer_lnaddress = window.localStorage.getItem('peer_lnaddress');
+        if(peer_lnaddress) { 
             // only do this if there is a lightning address
-            zp.id = peer_npub + '__zap';
+            zp.id = peer_lnaddress + '__zap';
             zp.className = html.zapIcon;
             d.appendChild(zp);
         }
-
         // add nostr icon
         let nl = document.createElement('button');
         // console.log("Peer Npub is:  ", peer_npub); 
