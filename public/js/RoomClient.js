@@ -2648,7 +2648,7 @@ class RoomClient {
                 let extractedIdentifier = id.split('__')[0];
                 Swal.fire({
                     background: swalBackground, 
-                    title: `Pay to ${extractedIdentifier}`,
+                    title: `Zap ${extractedIdentifier}`,
                     html: `
                         <label for="amount" style="font-size: 1.2em;">Amount (sats): </label>
                         <input type="number" id="amount" class="swal2-input" placeholder="Enter amount" value="21">
@@ -2658,9 +2658,12 @@ class RoomClient {
                         <button id="preset-1000" class="swal2-confirm swal2-styled">1000</button>
                     `,
                     showCancelButton: true,
-                    confirmButtonText: 'Submit',
+                    confirmButtonText: 'OK',
+                    confirmButtonColor: 'green',
+                    cancelButtonColor: 'red',
                     preConfirm: () => {
                         const amount = document.getElementById('amount').value;
+                        // adjust amount to ln address specified range
                         if (!amount || amount <= 0) {
                             Swal.showValidationMessage('Please enter a valid amount');
                             return false;
@@ -2671,13 +2674,10 @@ class RoomClient {
                     if (result.isConfirmed) {
                         console.log('Amount:', result.value);
                         console.log('lightning address:', extractedIdentifier);
-                        // handleDonation(buttonId, result.value);
-                        Swal.fire({
-                            background: swalBackground, 
-                            title: 'Payment amount',
-                            text: `You have entered: ${result.value} sats`,
-                            confirmButtonText: 'success'
-                        });
+
+                        let peer_name = window.localStorage.getItem('peer_name');
+                        moduleFunctions.handleDonation(peer_name, extractedIdentifier, result.value);
+                        console.log("Payment Sent");
                     }
                 });
                 document.getElementById('preset-21').addEventListener('click', function() {
@@ -3997,11 +3997,13 @@ class RoomClient {
     }
 
     sendMessage() {
-        if (!this.thereAreParticipants() && !isChatGPTOn) {
-            this.cleanMessage();
-            isChatPasteTxt = false;
-            return this.userLog('info', 'No participants in the room', 'top-end');
-        }
+ 
+        // comment out for testing,  allow send if no participants
+        // if (!this.thereAreParticipants() && !isChatGPTOn) {
+        //     this.cleanMessage();
+        //     isChatPasteTxt = false;
+        //     return this.userLog('info', 'No participants in the room', 'top-end');
+        // }
 
         // Prevent long messages
         if (this.chatMessageLengthCheck && chatMessage.value.length > this.chatMessageLength) {
@@ -4093,6 +4095,8 @@ class RoomClient {
                     console.log('ChatGPT error:', err);
                 });
         } else {
+            // send message to group chat room
+            console.log("send msg to group room")
             const participantsList = this.getId('participantsList');
             const participantsListItems = participantsList.getElementsByTagName('li');
             for (let i = 0; i < participantsListItems.length; i++) {
@@ -4205,9 +4209,10 @@ class RoomClient {
         }
     }
 
-    setMsgAvatar(avatar, peerName) {        
-        let avatarImg = rc.isValidEmail(peerName) ? this.genGravatar(peerName) : this.genAvatarSvg(peerName, 32);
-       // avatarImg = peer_url ? peer_url : avatarImg;
+    setMsgAvatar(avatar, peerName) {
+        // we assume no usage of gravatar for now
+        //let avatarImg = rc.isValidEmail(peerName) ? this.genGravatar(peerName) : this.genAvatarSvg(peerName, 32);
+        let avatarImg = peer_url ? peer_url : this.genAvatarSvg(peerName, 32);
         avatar === 'left' ? (this.leftMsgAvatar = avatarImg) : (this.rightMsgAvatar = avatarImg);
     }
 
