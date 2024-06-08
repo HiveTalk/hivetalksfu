@@ -2,11 +2,65 @@
 <html lang="en">
     <head>
         <script type="module">
-            import {onConnected} from 'https://esm.sh/@getalby/bitcoin-connect@3.5.1';
+            import {onConnected, requestProvider, launchPaymentModal} from 'https://esm.sh/@getalby/bitcoin-connect@3.5.1';
+            import { LightningAddress } from "https://esm.sh/@getalby/lightning-tools@5.0.0"; 
 
             onConnected((provider) => {
               window.webln = provider;
             });
+
+            window.moduleFunctions = {
+                sayHello: function() {
+                  console.log("Hello from module!");
+                },
+                handleDonation: async (peer_name, address, amount) => {
+                    if (!address || !amount) {
+                        alert("Please fill in both Lightning Address and Amount.");
+                        return;
+                    }
+                    const ln = new LightningAddress(address);
+                    await ln.fetch();
+                    const invoice = await ln.requestInvoice({ satoshi: amount });
+            
+                    let checkPaymentInterval; 
+
+                    const { setPaid } = launchPaymentModal({
+                        invoice: invoice.paymentRequest,
+                        onPaid: ({ preimage }) => {
+                            clearInterval(checkPaymentInterval);
+                            alert(
+                                "Paid to:  " +
+                                address +
+                                " amount: " +
+                                amount +
+                                " sats \n " +
+                                " preimage: " +
+                                preimage,
+                            );
+                            let result = peer_name +  " zapped " +  address + " " + amount + " sats";
+                            console.log(result);                        
+                        },
+                        onCancelled: () => {
+                            clearInterval(checkPaymentInterval); // Clear the interval on cancel
+                            alert("Payment cancelled");
+                        },
+                });
+                 checkPaymentInterval = setInterval(async () => {
+                            try {
+                                const paid = await invoice.verifyPayment();
+                                if (paid && invoice.preimage) {
+                                    setPaid({
+                                        preimage: invoice.preimage,
+                                    });
+                                }
+                            } catch (error) {
+                                console.log("waiting  inside check payment interval....")
+                                // console.error(error);
+                            }
+                        }, 1000);
+                },
+            };
+        
           </script>
           <script src="https://www.unpkg.com/nostr-login@latest/dist/unpkg.js" data-methods="extension,connect"  data-no-banner="true"  data-perms="sign_event:1,sign_event:0,nip04_encrypt" data-theme="default" data-dark-mode="true"></script> 
             <!-- for nostr-login: data-no-banner="true" removes banner-->
