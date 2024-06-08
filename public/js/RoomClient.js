@@ -2643,6 +2643,56 @@ class RoomClient {
             zp.id = peer_lnaddress + '__zap';
             zp.className = html.zapIcon;
             d.appendChild(zp);
+            zp.addEventListener('click', function() {
+                let id = this.id;
+                let extractedIdentifier = id.split('__')[0];
+                Swal.fire({
+                    background: swalBackground, 
+                    title: `Pay to ${extractedIdentifier}`,
+                    html: `
+                        <label for="amount" style="font-size: 1.2em;">Amount (sats): </label>
+                        <input type="number" id="amount" class="swal2-input" placeholder="Enter amount" value="21">
+                        <button id="preset-21" class="swal2-confirm swal2-styled" style="margin-right: 10px;">21</button>
+                        <button id="preset-100" class="swal2-confirm swal2-styled" style="margin-right: 10px;">100</button>
+                        <button id="preset-500" class="swal2-confirm swal2-styled" style="margin-right: 10px;">500</button>
+                        <button id="preset-1000" class="swal2-confirm swal2-styled">1000</button>
+                    `,
+                    showCancelButton: true,
+                    confirmButtonText: 'Submit',
+                    preConfirm: () => {
+                        const amount = document.getElementById('amount').value;
+                        if (!amount || amount <= 0) {
+                            Swal.showValidationMessage('Please enter a valid amount');
+                            return false;
+                        }
+                        return amount;
+                    }
+                }).then((result) => {
+                    if (result.isConfirmed) {
+                        console.log('Amount:', result.value);
+                        console.log('lightning address:', extractedIdentifier);
+                        // handleDonation(buttonId, result.value);
+                        Swal.fire({
+                            background: swalBackground, 
+                            title: 'Payment amount',
+                            text: `You have entered: ${result.value} sats`,
+                            confirmButtonText: 'success'
+                        });
+                    }
+                });
+                document.getElementById('preset-21').addEventListener('click', function() {
+                    document.getElementById('amount').value = 21;
+                });
+                document.getElementById('preset-100').addEventListener('click', function() {
+                    document.getElementById('amount').value = 100;
+                });
+                document.getElementById('preset-500').addEventListener('click', function() {
+                    document.getElementById('amount').value = 500;
+                });
+                document.getElementById('preset-1000').addEventListener('click', function() {
+                    document.getElementById('amount').value = 1000;
+                });
+            })
         }
         // add nostr icon
         let nl = document.createElement('button');
