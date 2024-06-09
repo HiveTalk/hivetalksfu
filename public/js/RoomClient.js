@@ -2676,7 +2676,16 @@ class RoomClient {
                         console.log('lightning address:', extractedIdentifier);
 
                         let peer_name = window.localStorage.getItem('peer_name');
-                        moduleFunctions.handleDonation(peer_name, extractedIdentifier, result.value);
+                        //moduleFunctions.handleDonation(peer_name, extractedIdentifier, result.value);
+                        window.moduleFunctions.handleDonation(peer_name, extractedIdentifier, result.value)
+                            .then(result => {
+                                console.log("handleDonationResult:", result);
+                                // confetti and show in main chat room
+                            })
+                            .catch(error => {
+                                console.log("Error:", error);
+                            });
+
                         console.log("Payment Sent");
                     }
                 });

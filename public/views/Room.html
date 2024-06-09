@@ -14,38 +14,45 @@
                   console.log("Hello from module!");
                 },
                 handleDonation: async (peer_name, address, amount) => {
-                    if (!address || !amount) {
-                        alert("Please fill in both Lightning Address and Amount.");
-                        return;
-                    }
-                    const ln = new LightningAddress(address);
-                    await ln.fetch();
-                    const invoice = await ln.requestInvoice({ satoshi: amount });
+                    return new Promise(async (resolve, reject) => {
+                        if (!address || !amount) {
+                            alert("Please fill in both Lightning Address and Amount.");
+                            reject("Missing address or amount");
+                            return;
+                        }
+                        const ln = new LightningAddress(address);
+                        await ln.fetch();
+                        const invoice = await ln.requestInvoice({ satoshi: amount });
             
-                    let checkPaymentInterval; 
-
-                    const { setPaid } = launchPaymentModal({
-                        invoice: invoice.paymentRequest,
-                        onPaid: ({ preimage }) => {
-                            clearInterval(checkPaymentInterval);
-                            alert(
-                                "Paid to:  " +
-                                address +
-                                " amount: " +
-                                amount +
-                                " sats \n " +
-                                " preimage: " +
-                                preimage,
-                            );
-                            let result = peer_name +  " zapped " +  address + " " + amount + " sats";
-                            console.log(result);                        
-                        },
-                        onCancelled: () => {
-                            clearInterval(checkPaymentInterval); // Clear the interval on cancel
-                            alert("Payment cancelled");
-                        },
-                });
-                 checkPaymentInterval = setInterval(async () => {
+                        let checkPaymentInterval;
+            
+                        const { setPaid } = launchPaymentModal({
+                            invoice: invoice.paymentRequest,
+                            onPaid: ({ preimage }) => {
+                                clearInterval(checkPaymentInterval);
+                                // todo make alert pretty
+                                alert(
+                                    "Paid to:  " +
+                                    address +
+                                    " amount: " +
+                                    amount +
+                                    " sats \n " +
+                                    " preimage: " +
+                                    preimage,
+                                );
+                                let result = peer_name +  " zapped " +  address + " " + amount + " sats";
+                                console.log(result);
+                                resolve(result); // Resolve the promise with the result string
+                            },
+                            onCancelled: () => {
+                                clearInterval(checkPaymentInterval); // Clear the interval on cancel
+                                // todo: make alert pretty
+                                alert("Payment cancelled");
+                                reject("Payment cancelled");
+                            },
+                        });
+            
+                        checkPaymentInterval = setInterval(async () => {
                             try {
                                 const paid = await invoice.verifyPayment();
                                 if (paid && invoice.preimage) {
@@ -54,12 +61,14 @@
                                     });
                                 }
                             } catch (error) {
-                                console.log("waiting  inside check payment interval....")
+                                console.log("waiting  inside check payment interval....");
                                 // console.error(error);
                             }
                         }, 1000);
+                    });
                 },
             };
+            
         
           </script>
           <script src="https://www.unpkg.com/nostr-login@latest/dist/unpkg.js" data-methods="extension,connect"  data-no-banner="true"  data-perms="sign_event:1,sign_event:0,nip04_encrypt" data-theme="default" data-dark-mode="true"></script> 
