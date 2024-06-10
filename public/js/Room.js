@@ -31,8 +31,7 @@ const pool = new SimplePool();
 // default fall back relays
 let defaultRelays = [
     'wss://relay.nostr.band',
-    'wss://relay.primal.net',
-    'wss://relay.nos.social'
+    'wss://relay.primal.net'
 ];
 
 
@@ -568,10 +567,11 @@ function checkUserInfo() {
             if (peer_name && peer_pubkey) {
                 console.log("discovery complete: checkUserInfo: ", peer_name, peer_pubkey, peer_url);
                 loggedIn = true            
-                clearInterval(checkInterval);
                 // Get preferred relays and then the LN address
                 getRelaysAndLN(peer_pubkey);
+                // wait for the above to return
                 // notify user polling in progress, as it takes up to 5 seconds
+                clearInterval(checkInterval);
                 continueNostrLogin();
             }
         }
@@ -1708,7 +1708,7 @@ function joinRoom(peer_name, room_id) {
 
 function roomIsReady() {
     console.log('06 ----> roomIsReady');
-    console.log("TODO set nostr avatar here in roomIsReady");
+    console.log("Set nostr avatar here in roomIsReady");
     let avatar = peer_info.peer_url
     console.log("roomIsReady - nostr avatar", avatar)
     // set Nostr Avatar here
@@ -3154,6 +3154,19 @@ function handleRoomEmojiPicker() {
         }
     }
 }
+
+
+// function boltEmoji() {
+//     console.log('bolt Emoji');
+//     const cmd = {
+//         type: 'roomEmoji',
+//         peer_name: peer_name,
+//         emoji: '🔥',
+//         broadcast: true,
+//     };
+//     rc.emitCmd(cmd);
+// }
+
 
 // ####################################################
 // ROOM EDITOR

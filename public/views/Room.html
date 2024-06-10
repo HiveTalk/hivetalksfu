@@ -4,6 +4,7 @@
         <script type="module">
             import {onConnected, requestProvider, launchPaymentModal} from 'https://esm.sh/@getalby/bitcoin-connect@3.5.1';
             import { LightningAddress } from "https://esm.sh/@getalby/lightning-tools@5.0.0"; 
+            import confetti from 'https://cdn.skypack.dev/canvas-confetti';
 
             onConnected((provider) => {
               window.webln = provider;
@@ -13,8 +14,13 @@
                 sayHello: function() {
                   console.log("Hello from module!");
                 },
+                throwConfetti: function() { 
+                    confetti();
+                },
                 handleDonation: async (peer_name, address, amount) => {
                     return new Promise(async (resolve, reject) => {
+                        console.log("handleDonation called with peer_name: " + peer_name + " LN: " + address + " amount: " + amount);
+
                         if (!address || !amount) {
                             alert("Please fill in both Lightning Address and Amount.");
                             reject("Missing address or amount");
@@ -36,13 +42,14 @@
                                     address +
                                     " amount: " +
                                     amount +
-                                    " sats \n " +
-                                    " preimage: " +
+                                    " sats \n\n " +
+                                    "preimage: " +
                                     preimage
                                 );
-                                let result = peer_name +  " zapped " +  address + " " + amount + " sats";
+                                let result =  " zapped " +  address + " " + amount + " sats";
                                 console.log(result);
                                 resolve(result); // Resolve the promise with the result string
+                                
                             },
                             onCancelled: () => {
                                 clearInterval(checkPaymentInterval); // Clear the interval on cancel
