@@ -2444,8 +2444,9 @@ class RoomClient {
 
         // add lightning address or lnurl for zaps
         let zp = document.createElement('button');
-        // let peer_lnaddress = window.localStorage.getItem('peer_lnaddress');
-        if(peer_lnaddress) { 
+        console.log("peer_info lnaddress: ", peer_lnaddress);
+        //  peer_lnaddress = window.localStorage.getItem('peer_lnaddress');
+        if (peer_lnaddress) { 
             console.log("peer lnaddress: ", peer_lnaddress);
             // only do this if there is a lightning address
             zp.id = peer_lnaddress + '__zap';
@@ -2483,18 +2484,16 @@ class RoomClient {
                         console.log('Amount:', result.value);
                         console.log('lightning address:', extractedIdentifier);
 
-                        let peer_name = window.localStorage.getItem('peer_name');
-                        //moduleFunctions.handleDonation(peer_name, extractedIdentifier, result.value);
                         window.moduleFunctions.handleDonation(peer_name, extractedIdentifier, result.value)
                             .then(result => {
                                 console.log("handleDonationResult:", result);
-                                // confetti and show in main chat room
+                                rc.broadcastMessage(result);
+                                window.moduleFunctions.throwConfetti();
+                                // try to replace above with ln bolts.
                             })
                             .catch(error => {
                                 console.log("Error:", error);
                             });
-
-                        console.log("Payment Sent");
                     }
                 });
                 document.getElementById('preset-21').addEventListener('click', function() {
@@ -3755,6 +3754,40 @@ class RoomClient {
             });
     }
 
+    broadcastMessage(msg) { 
+        // chatMessage.value = "broadcast this message"
+        const peer_msg = this.formatMsg(this.peer_name + " " + msg);
+
+        const data = {
+            room_id: this.room_id,
+            peer_name: this.peer_name,
+            peer_id: this.peer_id,
+            peer_msg: peer_msg,
+        };
+        const participantsList = this.getId('participantsList');
+        const participantsListItems = participantsList.getElementsByTagName('li');
+        for (let i = 0; i < participantsListItems.length; i++) {
+            const li = participantsListItems[i];
+            if (li.classList.contains('active')) {
+                data.to_peer_id = li.getAttribute('data-to-id');
+                data.to_peer_name = li.getAttribute('data-to-name');
+                console.log('Send message:', data);
+                this.socket.emit('message', data);
+                this.setMsgAvatar('left', this.peer_name);
+                this.appendMessage(
+                    'left',
+                    this.leftMsgAvatar,
+                    this.peer_name,
+                    this.peer_id,
+                    peer_msg,
+                    data.to_peer_id,
+                    data.to_peer_name,
+                );
+                this.cleanMessage();
+            }
+        }
+    }
+
     sendMessage() {
  
         // comment out for testing,  allow send if no participants
@@ -3959,9 +3992,9 @@ class RoomClient {
     }
 
     setMsgAvatar(avatar, peerName) {
-        // we assume no usage of gravatar for now
-        //let avatarImg = rc.isValidEmail(peerName) ? this.genGravatar(peerName) : this.genAvatarSvg(peerName, 32);
-        let avatarImg = peer_url ? peer_url : this.genAvatarSvg(peerName, 32);
+        let avatarImg = rc.isValidEmail(peerName) ? this.genGravatar(peerName) : this.genAvatarSvg(peerName, 32);
+        // this line below doesn't work
+        // let avatarImg = peer_url ? peer_url : this.genAvatarSvg(peerName, 32);
         avatar === 'left' ? (this.leftMsgAvatar = avatarImg) : (this.rightMsgAvatar = avatarImg);
     }
 
