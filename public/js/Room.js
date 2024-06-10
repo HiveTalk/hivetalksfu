@@ -388,6 +388,8 @@ async function getNostrProfile(pubkey, relays) {
               peer_lnaddress  = lightningAddress;
               window.localStorage.peer_lnaddress = lightningAddress;
             } else {
+              peer_lnaddress = '';
+              window.localStorage.peer_lnaddress = '';
               console.log('Lightning Address not found in the profile.');
             }          
             h.close();
@@ -647,6 +649,7 @@ function nostrLogin() {
                 // blank out the other values
                 peer_pubkey = ''
                 peer_npub = ''
+                peer_lnaddress = ''
                 peer_url = ''
                 Swal.fire({
                     allowOutsideClick: false,
@@ -1268,6 +1271,7 @@ function getPeerInfo() {
         peer_name: peer_name,
         peer_pubkey: peer_pubkey,
         peer_npub: peer_npub,
+        peer_lnaddress: peer_lnaddress,
         peer_url: peer_url,
         peer_token: peer_token,
         peer_presenter: isPresenter,

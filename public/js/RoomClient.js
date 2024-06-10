@@ -2564,7 +2564,7 @@ class RoomClient {
         //console.log('setVideoOff', peer_info);
         let d, vb, i, h, au, sf, sm, sv, gl, ban, ko, p, pm, pb, pv;
 
-        const { peer_id, peer_name, peer_audio, peer_presenter, peer_npub } = peer_info;
+        const { peer_id, peer_name, peer_audio, peer_presenter, peer_npub, peer_lnaddress } = peer_info;
 
         this.removeVideoOff(peer_id);
         d = document.createElement('div');
@@ -2637,8 +2637,9 @@ class RoomClient {
 
         // add lightning address or lnurl for zaps
         let zp = document.createElement('button');
-        let peer_lnaddress = window.localStorage.getItem('peer_lnaddress');
+        // let peer_lnaddress = window.localStorage.getItem('peer_lnaddress');
         if(peer_lnaddress) { 
+            console.log("peer lnaddress: ", peer_lnaddress);
             // only do this if there is a lightning address
             zp.id = peer_lnaddress + '__zap';
             zp.className = html.zapIcon;
