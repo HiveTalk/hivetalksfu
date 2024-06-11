@@ -2674,19 +2674,22 @@ class RoomClient {
                     }
                 }).then((result) => {
                     if (result.isConfirmed) {
-                        console.log('Amount:', result.value);
+                        let amt = result.value
+                        console.log('Amount:', amt);
                         console.log('lightning address:', extractedIdentifier);
 
-                        window.moduleFunctions.handleDonation(peer_name, extractedIdentifier, result.value)
+                        window.moduleFunctions.handleDonation(peer_name, extractedIdentifier, amt)
                             .then(result => {
                                 console.log("handleDonationResult:", result);
+                                // send zap msg to chat emoji pop up
+                                boltEmoji(extractedIdentifier + ' ' + amt + ' sats');
+                                // send zap message to chatroom if open
                                 rc.broadcastMessage(result);
-                                window.moduleFunctions.throwConfetti();
-                                // try to replace above with ln bolts.
                             })
                             .catch(error => {
                                 console.log("Error:", error);
                             });
+
                     }
                 });
                 document.getElementById('preset-21').addEventListener('click', function() {
@@ -7084,6 +7087,9 @@ class RoomClient {
             case 'roomEmoji':
                 this.handleRoomEmoji(cmd);
                 break;
+            case 'zapEmoji':
+                this.handleZapEmoji(cmd);
+                break;
             case 'transcript':
                 this.transcription.handleTranscript(cmd);
                 break;
@@ -7103,6 +7109,24 @@ class RoomClient {
             default:
                 break;
             //...
+        }
+    }
+
+    handleZapEmoji(cmd, duration = 5000) {
+        const userEmoji = document.getElementById(`userEmoji`);
+        if (userEmoji) {
+            const emojiDisplay = document.createElement('div');
+            emojiDisplay.className = 'animate__animated animate__backInUp';
+            emojiDisplay.style.padding = '10px';
+            emojiDisplay.style.fontSize = '3vh';
+            emojiDisplay.style.color = '#FFF';
+            emojiDisplay.style.backgroundColor = 'rgba(0, 0, 0, 0.2)';
+            emojiDisplay.style.borderRadius = '10px';
+            emojiDisplay.innerText = `${cmd.peer_name} zapped ${cmd.emoji}!`;
+            userEmoji.appendChild(emojiDisplay);
+            setTimeout(() => {
+                emojiDisplay.remove();
+            }, duration);
         }
     }
 
