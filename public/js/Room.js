@@ -30,10 +30,10 @@ const pool = new SimplePool();
 
 // default fall back relays
 let defaultRelays = [
-    'wss://relay.nostr.band',
-    'wss://relay.primal.net'
+    'wss://relay.nostr.band/all',
+    'wss://purplepag.es',
+    'wss://relay.snort.social',
 ];
-
 
 const socket = io({ transports: ['websocket'] });
 
@@ -314,48 +314,6 @@ function setRandomName() {
     peer_name = name;
 }
 
-async function getPreferredRelays(pubkey) {            
-    return new Promise((resolve, reject) => {
-    let preferredRelays = null;
-    console.log("inside getPreferredRelays with pubkey: ", pubkey);
-    let h = pool.subscribeMany(
-      defaultRelays,
-      [
-        {
-          kinds: [3],
-          authors: [pubkey]
-        }
-      ],
-      {
-        onevent(event) {
-          if (event && event.kind === 3 && event.pubkey === pubkey) {
-            const content = JSON.parse(event.content);
-            preferredRelays = Object.keys(content);
-            console.log(`Preferred Relays: ${preferredRelays}`);
-            resolve(preferredRelays);
-            h.close();
-          }
-        },
-        onclose() {
-          if (!preferredRelays) {
-            console.log('No preferred relays found, using default relays.');
-            resolve(defaultRelays);
-            h.close();
-          }
-        }
-      }
-    );
-     // If no preferred relays found after a timeout, use default relays
-    setTimeout(() => {
-        if (!preferredRelays) {
-            console.log('No preferred relays found, using default relays.');
-            resolve(defaultRelays);
-            h.close();
-       }
-   }, 3000); // Wait 3 seconds for preferred relays
-});
-}
-
 async function getNostrProfile(pubkey, relays) {       
     return new Promise((resolve, reject) => { 
     let h = pool.subscribeMany(
@@ -377,11 +335,14 @@ async function getNostrProfile(pubkey, relays) {
               peer_lnaddress  = lightningAddress;
               window.localStorage.peer_lnaddress = lightningAddress;
             } else {
+            // so if we can't find the lightning address, let the user set it later
               peer_lnaddress = '';
               window.localStorage.peer_lnaddress = '';
               console.log('Lightning Address not found in the profile.');
             }          
             h.close();
+            // login fetch info now complete, set it to be true to exit login loop
+            loggedIn = true
           }
         },
         onclose() {
@@ -392,18 +353,17 @@ async function getNostrProfile(pubkey, relays) {
   });
 }
 
-async function getRelaysAndLN(pubkey) {
+async function getInfoAndContinue() {
     try {
-        getPreferredRelays(pubkey)
-        .then(preferredRelays => {
-          return getNostrProfile(pubkey, preferredRelays);
-        })
-        .catch(error => {
-          console.error('Error in getRelaysAndLN:', error);
-        });
+        // Use default relays instead of fetching preferred relays
+        let defaultRelays = [
+            'wss://relay.nostr.band/all',
+        ];        
+        await getNostrProfile(peer_pubkey, defaultRelays); // Wait for getNostrProfile to complete
+        return true;
     } catch (error) {
-        console.error('Error in getRelaysAndLN, outer catch:', error);
-    }
+        console.error('Error in getInfo:', error);
+    }    
 }
 
 
@@ -413,7 +373,7 @@ document.addEventListener('nlAuth', (e) => {
     if (e.detail.type === 'login' || e.detail.type === 'signup') {
         if (!loggedIn) {
             console.log("Logging In")
-            loggedIn = true
+            // loggedIn = true
               // get pubkey with window.nostr and show user profile
               //const login = window.localStorage.getItem('login');
               console.log("NLAUTH -->  login info: ", e.detail.type)  // , login)
@@ -556,13 +516,15 @@ function checkUserInfo() {
             
             if (peer_name && peer_pubkey) {
                 console.log("discovery complete: checkUserInfo: ", peer_name, peer_pubkey, peer_url);
-                loggedIn = true            
-                // Get preferred relays and then the LN address
-                getRelaysAndLN(peer_pubkey);
-                // wait for the above to return
-                // notify user polling in progress, as it takes up to 5 seconds
-                clearInterval(checkInterval);
-                continueNostrLogin();
+
+                getInfoAndContinue();
+
+                console.log("checking if loggedIn pre clearInteraval: ", loggedIn);
+
+                if (loggedIn) {
+                    clearInterval(checkInterval);      // Then clear the interval
+                    continueNostrLogin();              // And continue with the next step    
+                }            
             }
         }
     } catch (error) {
@@ -2906,16 +2868,18 @@ function handleRoomEmojiPicker() {
 }
 
 
-// function boltEmoji() {
-//     console.log('bolt Emoji');
-//     const cmd = {
-//         type: 'roomEmoji',
-//         peer_name: peer_name,
-//         emoji: '🔥',
-//         broadcast: true,
-//     };
-//     rc.emitCmd(cmd);
-// }
+function boltEmoji(msg) {
+    console.log('bolt Emoji: ' , msg);
+    const cmd = {
+        type: 'zapEmoji',
+        peer_name: peer_name,
+        emoji: '⚡️ ' + msg,
+        broadcast: true,
+    };
+    console.log(cmd)
+    rc.emitCmd(cmd);
+    rc.handleCmd(cmd);
+}
 
 
 // ####################################################
