@@ -2706,45 +2706,45 @@ class RoomClient {
                 });
             })
         }
-        // add nostr icon
-        let nl = document.createElement('button');
+        // add nostr icon - temporary disabled until we find a better place for it
+        // let nl = document.createElement('button');
         // console.log("Peer Npub is:  ", peer_npub); 
-        if (peer_npub) { // only do this if there is a peer_npub
-            nl.id = peer_npub + '__nostr';
-            nl.className = html.nostrIcon;
-            d.appendChild(nl);
-            // Add an event listener to the button to trigger SweetAlert2 on click
-            nl.addEventListener('click', function() {
-                let id = this.id;
-                let extractedIdentifier = id.split('__')[0];
-                var iframe = getProfile(extractedIdentifier);
-               (async ()=>  {        
-                await Swal.fire({
-                    background: swalBackground, 
-                    html: iframe.outerHTML,
-                    position: 'top-end',
-                    showClass: {
-                      popup: `
-                      animate__animated
-                      animate__fadeInRight
-                      animate__faster
-                    `,
-                    },
-                    hideClass: {
-                      popup: `
-                      animate__animated
-                      animate__fadeOutRight
-                      animate__faster
-                    `,
-                    },
-                    grow: 'column',
-                    width: 600,
-                    showCloseButton: true,
-                    showConfirmButton: false,
-                });
-            })();
-            });
-        }
+        // if (peer_npub) { // only do this if there is a peer_npub
+        //     nl.id = peer_npub + '__nostr';
+        //     nl.className = html.nostrIcon;
+        //     d.appendChild(nl);
+        //     // Add an event listener to the button to trigger SweetAlert2 on click
+        //     nl.addEventListener('click', function() {
+        //         let id = this.id;
+        //         let extractedIdentifier = id.split('__')[0];
+        //         var iframe = getProfile(extractedIdentifier);
+        //        (async ()=>  {
+        //         await Swal.fire({
+        //             background: swalBackground,
+        //             html: iframe.outerHTML,
+        //             position: 'top-end',
+        //             showClass: {
+        //               popup: `
+        //               animate__animated
+        //               animate__fadeInRight
+        //               animate__faster
+        //             `,
+        //             },
+        //             hideClass: {
+        //               popup: `
+        //               animate__animated
+        //               animate__fadeOutRight
+        //               animate__faster
+        //             `,
+        //             },
+        //             grow: 'column',
+        //             width: 600,
+        //             showCloseButton: true,
+        //             showConfirmButton: false,
+        //         });
+        //     })();
+        //     });
+        // }
         d.appendChild(p);
         d.appendChild(h);
         d.appendChild(pm);
