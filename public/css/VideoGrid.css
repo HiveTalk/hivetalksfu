@@ -107,13 +107,14 @@
     background-image: url('../images/nostrg.png');
     z-index: 1;
     position: absolute;
-    right: 30px;
-    bottom: 50px;
+    right: 10px;
+    bottom: 65px;
+    display: flex;
     align-items: center;
     padding: 5px;
     margin: 5px; 
-    width: 45px;  /* Set your image width */
-    height: 45px;  /* Set your image height */
+    width: 40px;  /* Set your image width */
+    height: 40px;  /* Set your image height */
     border-radius: 5px; /* Remove button border */
     background-size: cover;  /* Ensure the image covers the button */
     cursor: pointer; /* Add pointer cursor on hover */
@@ -123,13 +124,14 @@
     background-image: url('../images/lngradient.png');
     z-index: 1;
     position: absolute;
-    right: 70px;
-    bottom: 50px;
+    right: 10px;
+    bottom: 25px;
+    display: flex;
     align-items: center;
     padding: 5px;
     margin: 5px; 
-    width: 45px;  /* Set your image width */
-    height: 45px;  /* Set your image height */
+    width: 40px;  /* Set your image width */
+    height: 40px;  /* Set your image height */
     border-radius: 5px; /* Remove button border */
     background-size: cover;  /* Ensure the image covers the button */
     cursor: pointer; /* Add pointer cursor on hover */
