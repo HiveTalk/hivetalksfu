@@ -39,7 +39,7 @@ const socket = io({ transports: ['websocket'] });
 
 let survey = {
     enabled: true,
-    url: 'https://airtable.com/appVEKIEmgTd6LJYH/pagUdn2jQ37n0i8TI/form',
+    url: 'https://t.me/+2Ll1IFwXwCJlMGFl', // telegram link
 };
 
 let redirect = {
@@ -1436,6 +1436,58 @@ function checkMedia() {
     });
 }
 
+
+// ####################################################
+// SHARE ROOM ON NOSTR - initial scaffolding
+// ####################################################
+
+// 1. create an event and sign and post to relays
+// assume preferred relays are captured, else post to default relays
+// do we allow user to select relays?
+// do we allow user to customize message?
+
+async function shareRoomOnNostr(useNavigator = false) {
+    if (navigator.share && useNavigator) {
+        try {
+            await navigator.share({ url: RoomURL });
+            userLog('info', 'Room Shared on Nostr', 'top-end');
+        } catch (err) {
+            share();
+        }
+    } else {
+       console.log("share room info on button click")
+       share();
+      // share this room on nostr - TODO
+    }
+    function share() {
+        sound('open');
+
+        Swal.fire({
+            background: swalBackground,
+            position: 'center',
+            title: 'Share Room on Nostr',
+            html: `
+            <p style="background:transparent; color:rgb(8, 189, 89);">${RoomURL}</p>`,
+            showDenyButton: false,
+            showCancelButton: true,
+            cancelButtonColor: 'red',
+            confirmButtonText: `Copy URL`,
+            cancelButtonText: `Close`,
+            showClass: { popup: 'animate__animated animate__fadeInDown' },
+            hideClass: { popup: 'animate__animated animate__fadeOutUp' },
+        }).then((result) => {
+            if (result.isConfirmed) {
+                copyRoomURL();
+            }
+            // if (isScreenAllowed) {
+            //     rc.shareScreen();
+            // }
+        });
+       // makeRoomQR();
+    }
+}
+
+
 // ####################################################
 // SHARE ROOM
 // ####################################################
@@ -1449,8 +1501,9 @@ async function shareRoom(useNavigator = false) {
             share();
         }
     } else {
-       console.log("share room info is omitted on launch")
+       console.log("share room info on button click")
        share();
+      // share this room on nostr - TODO
     }
     function share() {
         sound('open');
