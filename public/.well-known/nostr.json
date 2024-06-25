@@ -1,10 +1,12 @@
 {
     "names": {
       "bitkarrot": "3878d95db7b854c3a0d3b2d6b7bf9bf28b36162be64326f5521ba71cf3b45a69",
-      "new1": "df0aed92dff00d4ffeda2f4cd88d967dc576b5549400b92afb98a419aa06e6f5"
+      "new1": "df0aed92dff00d4ffeda2f4cd88d967dc576b5549400b92afb98a419aa06e6f5",
+      "soc": "a5f079b90998871139ccfcefab35d49751bcea6a57ecb95d1a0ef2987f398b06"
 
     },
      "relays": {
+      "a5f079b90998871139ccfcefab35d49751bcea6a57ecb95d1a0ef2987f398b06": ["wss://testnet.plebnet.dev/nostrrelay/1"],
       "3878d95db7b854c3a0d3b2d6b7bf9bf28b36162be64326f5521ba71cf3b45a69": [ "wss://relay.primal.net", "wss://relay.damus.io/","wss://relay.minds.com", "wss://relay.snort.social" ],
       "df0aed92dff00d4ffeda2f4cd88d967dc576b5549400b92afb98a419aa06e6f5": [
           "wss://adre.su/",
