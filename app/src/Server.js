@@ -155,7 +155,7 @@ if (sentryEnabled) {
 const defaultStats = {
     enabled: true,
     src: 'https://analytics.eu.umami.is/script.js',
-    id: 'e5c89e94-0143-447e-b79d-052fc6cf078b',
+    id: '48ea155e-7570-43bc-84da-38197b40ee69',
 };
 
 // OpenAI/ChatGPT
