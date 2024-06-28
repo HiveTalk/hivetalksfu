@@ -12,10 +12,10 @@
 
 #### 2nd release
 
+-   Add Zap functionality - basic one done
 -   fix chatroom avatars so that nostr avatars are shown in chat. (see link to video below)
 -   add 'Talking in room now' user post to nostr relays. (similar to twitter/X)
--   Add Zap functionality
--   is there a webRTC timeout?
+-   is there a webRTC timeout? odd bug.
 -   fix any other bugs as needed
 
 #### 3rd release
