@@ -1234,7 +1234,8 @@ function startServer() {
 
             const data = checkXSS(dataObject);
 
-            log.info('User joined', data);
+            // Don't log any user data
+            //log.info('User joined', data);
 
             if (!Validator.isValidRoomName(socket.room_id)) {
                 log.warn('[Join] - Invalid room name', socket.room_id);
