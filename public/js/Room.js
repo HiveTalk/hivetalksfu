@@ -348,7 +348,6 @@ document.addEventListener('DOMContentLoaded', function () {
         checkInterval = setInterval(checkUserInfo, 1000);
         nostrLogin();
     }
-    //  OLD call here nostrLogin();
 });
 
 
@@ -600,6 +599,12 @@ function checkUserInfo() {
     }
 }
 
+function isValidLightningAddress(address) {
+    // Regular expression for Lightning Address format validation
+    const regex = /^[a-zA-Z0-9]+@[a-zA-Z0-9.-]+$/;
+    return regex.test(address);
+  }
+
 function nostrLogin() { 
     console.log('0.1.00 ----> Nostr or Other Login');
 
@@ -609,7 +614,7 @@ function nostrLogin() {
         background: swalBackground,
         title: 'Welcome to HiveTalk',        
         showDenyButton: true,
-        denyButtonText: `Just set a random name`,
+        denyButtonText: `Just set a Name`,
         denyButtonColor: "green",
         confirmButtonText: "Login with Nostr",
         confirmButtonColor: "#3085d6",
@@ -633,8 +638,8 @@ function nostrLogin() {
 
             } else if (result.isDenied) {
                 setRandomName()
-                console.log("Set Random Name")
-                // blank out the other values
+                //console.log("Set Random Name")
+                // blank out the other values (might not need this)
                 peer_pubkey = ''
                 peer_npub = ''
                 peer_lnaddress = ''
@@ -643,9 +648,31 @@ function nostrLogin() {
                     allowOutsideClick: false,
                     allowEscapeKey: false,
                     background: swalBackground,
-                    title: "Your Random Name is:",
-                    text: peer_name,
-                    icon: "question"
+                    title: "Set Name or Lightning Address",
+                    inputValue: peer_name,
+                    input: "text",
+                    inputAttributes : {
+                        maxlength: 30,
+                        autocapitalize: "off",
+                        autocorrect: "off",
+                        placeholder: peer_name,
+                    },
+                    icon: "question",
+                    showCancelButton: true,
+                    showConfirmButton: true,
+                    reverseButtons: true,
+                    confirmButtonColor: "#28a745",
+                    cancelButtonColor: "#d33",
+                    confirmButtonText: "OK",
+                    cancelButtonText: "Cancel",
+                    preConfirm: async(name) => {
+                        peer_name = name
+                        window.localStorage.peer_name = name
+                        if (isValidLightningAddress(peer_name)) {
+                            peer_lnaddress = peer_name
+                            window.localStorage.peer_lnaddress = peer_name
+                        }
+                    },
                   }).then((result) => {
                     if (result.isConfirmed) {
                         console.log("nostrLogin: user confirmed")
@@ -657,6 +684,9 @@ function nostrLogin() {
                                 initClient();
                                 console.log("init client.......")
                             }, 200);
+                    } else {
+                        console.log("Random Name: user canceled")
+                        openURL('/');
                     }
                   })
             }  else { 
@@ -673,7 +703,7 @@ function continueNostrLogin(type) {
     let info = ""
     let exitinfo  = ""
     if (type === "priorlocalStorage") {
-        info = "Nostr login expired, using cached local data"
+        info = "Using cached local data"
         exitinfo = " and Flush"
     } else if (type === "nostr") {
         info = "Logged in with Nostr"
