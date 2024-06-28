@@ -13,8 +13,9 @@
 #### 2nd release
 
 -   Add Zap functionality - basic one done
+-   write section for sign and send nostr events.
+-   add 'Talking in room now' user post to nostr relays. only for nostr users.
 -   fix chatroom avatars so that nostr avatars are shown in chat. (see link to video below)
--   add 'Talking in room now' user post to nostr relays. (similar to twitter/X)
 -   is there a webRTC timeout? odd bug.
 -   fix any other bugs as needed
 
