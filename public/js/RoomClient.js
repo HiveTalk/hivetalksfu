@@ -2663,6 +2663,7 @@ class RoomClient {
                         <button id="preset-1000" class="swal2-confirm swal2-styled">1000</button>
                     `,
                     showCancelButton: true,
+                    reverseButtons: true,
                     confirmButtonText: 'OK',
                     confirmButtonColor: 'green',
                     cancelButtonColor: 'red',
