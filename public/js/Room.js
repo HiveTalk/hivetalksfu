@@ -30,9 +30,10 @@ const pool = new SimplePool();
 
 // default fall back relays
 let defaultRelays = [
+    'wss://relay.primal.net',
+    'wss://relay.damus.io/',
     'wss://relay.nostr.band/all',
-    'wss://purplepag.es',
-    'wss://relay.snort.social',
+   // 'wss://nos.lol'
 ];
 
 const socket = io({ transports: ['websocket'] });
@@ -275,11 +276,83 @@ document.addEventListener('DOMContentLoaded', function () {
     document.getElementById('nostrButton').addEventListener('click', function() {
         document.dispatchEvent(new CustomEvent('nlLaunch', { detail: 'switch-account' }));
     });
-
     console.log('00 ----> init Nostr Login');
     hide(loadingDiv);
-    nostrLogin();
+    // check localstorage if actually logged in before
+    console.log("TRY TO SEE IF USER IS ALREADY LOGGED IN ON NOSTR or Previously on Manual")
+
+    try {
+        const userInfo = JSON.parse(window.localStorage.getItem('__nostrlogin_accounts'));
+        if (userInfo && userInfo.length > 0) {
+            // Do something with the userInfo
+            const user = userInfo[0]
+            peer_name = user.name;
+            if (user.name !== undefined && user.name.length > 30) {
+                // truncate peer_name to be < 30 chars
+                peer_name = truncateString(user.name, 29);
+            }
+            peer_url = user.picture;
+            peer_pubkey = user.pubkey;
+            peer_npub = nip19.npubEncode(user.pubkey)
+            window.localStorage.peer_name = user.name;
+            window.localStorage.peer_url = user.picture;
+            window.localStorage.peer_pubkey = user.pubkey;
+            window.localStorage.peer_npub = peer_npub;
+            console.log("checkUserInfo :", user.pubkey, user.name, user.picture, peer_npub);
+
+            // TODO: what do we do here if there is no peer_name but we have a pubkey?
+            // we are assuming peer_name exists. if not, then we need to offer
+            // option to set a username after 60 sec period of checking and no username
+            if (peer_name && peer_pubkey) {
+                console.log("discovery complete: checkUserInfo: ", peer_name, peer_pubkey, peer_url);
+
+                // try to get lightning address
+                loggedIn = getInfoAndContinue();
+                console.log("checking if loggedIn pre clearInterval: ", loggedIn);
+
+                if (loggedIn) {
+                    // clearInterval(checkInterval);      // Then clear the interval
+                    continueNostrLogin("nostr"); // And continue with the next step
+                }
+            }
+        } else {
+            // look for peer_name and peer lnaddress from previous local storage session
+            // if not found, offer to set a username
+            if (window.localStorage.peer_name) {
+                peer_name =  window.localStorage.peer_name;
+                if (window.localStorage.peer_url) {
+                    peer_url =  window.localStorage.peer_url;
+                }
+                if (window.localStorage.peer_lnaddress) {
+                    peer_lnaddress =  window.localStorage.peer_lnaddress;
+                }
+                console.log("adopt prior localStorage ", peer_name, peer_pubkey, peer_url);
+                loggedIn = true; // set logged in is now true
+                continueNostrLogin("priorlocalStorage"); // And continue with the next step
+                // if the user doesn't want the above settings, they can change it
+                // during the continueNostrLogin() flow
+            }
+
+        }
+    } catch (error) {
+        console.log("Error parsing userInfo:", error);
+    }
+    // if both of the above methods fail then we try nostr or random login
+    if (!loggedIn) {
+        console.log(" no priornostr login, try setting random username")
+        checkInterval = setInterval(checkUserInfo, 1000);
+        nostrLogin();
+    }
+    //  OLD call here nostrLogin();
 });
+
+
+// Check every 500 milliseconds (0.5 second)
+let checkInterval = null;
+// checkInterval = setInterval(checkUserInfo, 1000);
+let cycleCount = 0;
+const maxCycles = 24;  // 240 cycles, 120 seconds = 2 minutes to login with Nostr before redirecting to Home Page
+
 
 // helper methods
 function generateRandomName() {
@@ -314,7 +387,9 @@ function setRandomName() {
     peer_name = name;
 }
 
-async function getNostrProfile(pubkey, relays) {       
+// try to get the lightning address associated with profile
+// and/or grab NIP-05 or Nprofile info
+async function getNostrProfile(pubkey, relays) {
     return new Promise((resolve, reject) => { 
     let h = pool.subscribeMany(
       relays,
@@ -342,6 +417,7 @@ async function getNostrProfile(pubkey, relays) {
             }          
             h.close();
             // login fetch info now complete, set it to be true to exit login loop
+            // even if there is no lightning address, that's ok, we are logged in.
             loggedIn = true
           }
         },
@@ -353,19 +429,17 @@ async function getNostrProfile(pubkey, relays) {
   });
 }
 
+// get nostr profile info based on default or preferred relays
 async function getInfoAndContinue() {
     try {
-        // Use default relays instead of fetching preferred relays
-        let defaultRelays = [
-            'wss://relay.nostr.band/all',
-        ];        
+        // fetch preferred relays as an option
+        // for now, we usedefault relays instead of fetching preferred relays
         await getNostrProfile(peer_pubkey, defaultRelays); // Wait for getNostrProfile to complete
         return true;
     } catch (error) {
         console.error('Error in getInfo:', error);
     }    
 }
-
 
 // nostr-login auth
 document.addEventListener('nlAuth', (e) => {
@@ -386,13 +460,14 @@ document.addEventListener('nlAuth', (e) => {
             loggedIn = false
             //  clear user info from the local storage
             document.dispatchEvent(new Event("nlLogout")); // logout from nostr-login
-            openURL('/newroom'); // redirect to new room page on logout
+            openURL('/'); // redirect to front page on logout
         }, 200);
     }
     }
 })
 
 
+// load nostr user from nostr-login dialog pop up
 async function loadUser() {
     if (window.nostr) {
         window.nostr.getPublicKey().then(function (pubkey) {
@@ -404,7 +479,32 @@ async function loadUser() {
                 window.localStorage.peer_pubkey = pubkey;
                 window.localStorage.peer_npub = peer_npub;
                 // first attempt to grab user info from nostr-login if logged in
-                getDisplayUserInfo();
+                //getDisplayUserInfo();
+                const userInfo = JSON.parse(window.localStorage.getItem('__nostrlogin_accounts'));
+                try {
+                    if (userInfo && userInfo.length > 0) {
+                        const user = userInfo[0];
+                        console.log("user from _nostrlogin_accounts: ", user.name);
+                        console.log("user picture: ", user.picture);
+                        peer_name = user.name;
+                        if (peer_name !== undefined && peer_name.length > 30) {
+                            // truncate peer_name to be < 30 chars
+                            peer_name = truncateString(user.name, 29);
+                        }
+                        peer_url = user.picture;
+                        peer_pubkey = user.pubkey;
+                        peer_npub = nip19.npubEncode(user.pubkey)
+
+                        window.localStorage.peer_pubkey = user.pubkey;
+                        window.localStorage.peer_name = user.name;
+                        window.localStorage.peer_url = user.picture;
+                        window.localStorage.peer_npub = peer_npub;
+                    } else {
+                        console.log("No user info available (empty array)");
+                    }
+                } catch (error) {
+                    console.log("Error parsing userInfo:", error);
+                }
             } 
         }).catch((err) => {
             console.log("LoadUser Err", err);
@@ -423,42 +523,38 @@ function truncateString(str, maxLength) {
     return str;
 }
 
-function getDisplayUserInfo() {
-    console.log("getDisplayUserInfo()......")
-    setTimeout(() => { // Adding a delay to ensure data is available
-        // Assuming userInfo is stored in localStorage or accessible through the event
-        const userInfo = JSON.parse(window.localStorage.getItem('__nostrlogin_accounts'));
-        try {
-            if (userInfo && userInfo.length > 0) {
-                const user = userInfo[0];
-                console.log("user from _nostrlogin_accounts: ", user.name);
-                console.log("user picture: ", user.picture);
-                peer_name = user.name;
-                if (peer_name !== undefined && peer_name.length > 30) {
-                    // truncate peer_name to be < 30 chars
-                    peer_name = truncateString(user.name, 29);
-                } 
-                peer_url = user.picture;
-                peer_pubkey = user.pubkey;
-                peer_npub = nip19.npubEncode(user.pubkey)
+// function getDisplayUserInfo() {
+//     console.log("getDisplayUserInfo()......")
+//     setTimeout(() => { // Adding a delay to ensure data is available
+//         // Assuming userInfo is stored in localStorage or accessible through the event
+//         const userInfo = JSON.parse(window.localStorage.getItem('__nostrlogin_accounts'));
+//         try {
+//             if (userInfo && userInfo.length > 0) {
+//                 const user = userInfo[0];
+//                 console.log("user from _nostrlogin_accounts: ", user.name);
+//                 console.log("user picture: ", user.picture);
+//                 peer_name = user.name;
+//                 if (peer_name !== undefined && peer_name.length > 30) {
+//                     // truncate peer_name to be < 30 chars
+//                     peer_name = truncateString(user.name, 29);
+//                 } 
+//                 peer_url = user.picture;
+//                 peer_pubkey = user.pubkey;
+//                 peer_npub = nip19.npubEncode(user.pubkey)
 
-                window.localStorage.peer_pubkey = user.pubkey;
-                window.localStorage.peer_name = user.name;
-                window.localStorage.peer_url = user.picture;
-                window.localStorage.peer_npub = peer_npub;
-            } else {
-                console.log("No user info available (empty array)");
-            }
-        } catch (error) {
-            console.log("Error parsing userInfo:", error);
-        }
-    }, 200); // Delay to ensure data is loaded
-}
+//                 window.localStorage.peer_pubkey = user.pubkey;
+//                 window.localStorage.peer_name = user.name;
+//                 window.localStorage.peer_url = user.picture;
+//                 window.localStorage.peer_npub = peer_npub;
+//             } else {
+//                 console.log("No user info available (empty array)");
+//             }
+//         } catch (error) {
+//             console.log("Error parsing userInfo:", error);
+//         }
+//     }, 200); // Delay to ensure data is loaded
+// }
 
-// Check every 500 milliseconds (0.5 second)
-const checkInterval = setInterval(checkUserInfo, 500);
-let cycleCount = 0;
-const maxCycles = 24;  // 240 cycles, 120 seconds = 2 minutes to login with Nostr before redirecting to Home Page
 
 function checkUserInfo() {
     console.log("....inside checkUserInfo...." + cycleCount)
@@ -497,7 +593,7 @@ function checkUserInfo() {
             // Do something with the userInfo
             const user = userInfo[0]  
             peer_name = user.name;
-            if (peer_name !== undefined && peer_name.length > 30) {
+            if (user.name !== undefined && user.name.length > 30) {
                 // truncate peer_name to be < 30 chars
                 peer_name = truncateString(user.name, 29);
             } 
@@ -517,13 +613,13 @@ function checkUserInfo() {
             if (peer_name && peer_pubkey) {
                 console.log("discovery complete: checkUserInfo: ", peer_name, peer_pubkey, peer_url);
 
+                // try to get lightning address
                 getInfoAndContinue();
-
                 console.log("checking if loggedIn pre clearInteraval: ", loggedIn);
 
                 if (loggedIn) {
                     clearInterval(checkInterval);      // Then clear the interval
-                    continueNostrLogin();              // And continue with the next step    
+                    continueNostrLogin("nostr");    // And continue with the next step
                 }            
             }
         }
@@ -532,40 +628,8 @@ function checkUserInfo() {
     }
 }
 
-
-function continueNostrLogin() { 
-    console.log('0.2.00 ----> Continue Nostr Login');
-
-    Swal.fire({
-        background: swalBackground, 
-        title: "Let's Go ",
-        text: "Hello " + peer_name,
-        imageUrl:  peer_url || '', // only if peer_url is not null
-        imageWidth: 100,
-        imageHeight: 100,
-        confirmButtonText: 'OK',
-        cancelButtonText: 'Exit',
-        cancelButtonColor: "#d33",
-        showCancelButton: true,
-    }).then((result) => {
-        if (result.isConfirmed) {
-            console.log("nostrLogin: user confirmed")
-            clearInterval(checkInterval);
-            setTimeout(function() {
-                show(loadingDiv);
-                initClient();
-                console.log("init client.......")
-            }, 200);
-        } else {
-            console.log("nostrLogin: user canceled")
-            openURL('/');
-        }
-    }); 
-    
-}
-
 function nostrLogin() { 
-    console.log('0.1.00 ----> Nostr Login');
+    console.log('0.1.00 ----> Nostr or Other Login');
 
     Swal.fire({
         allowOutsideClick: false,
@@ -633,7 +697,44 @@ function nostrLogin() {
 }
 
 
+function continueNostrLogin(type) {
+    let info = ""
+    if (type === "priorlocalStorage") {
+        info = "Nostr login expired, using local data"
+    } else if (type === "nostr") {
+        info = "Logged in with Nostr"
+    }
+    console.log('0.2.00 ----> Continue Nostr Login');
+
+    Swal.fire({
+        background: swalBackground,
+        title: "Hello " + peer_name,
+        text: info,
+        imageUrl:  peer_url || '', // only if peer_url is not null
+        imageWidth: 100,
+        imageHeight: 100,
+        confirmButtonText: 'OK',
+        cancelButtonText: 'Exit',
+        cancelButtonColor: "#d33",
+        showCancelButton: true,
+    }).then((result) => {
+        if (result.isConfirmed) {
+            console.log("nostrLogin: user confirmed")
+           // clearInterval(checkInterval);
+            setTimeout(function() {
+                show(loadingDiv);
+                initClient();
+                console.log("init client.......")
+            }, 200);
+        } else {
+            console.log("nostrLogin: user canceled")
+            openURL('/');
+        }
+    });
+}
+
 function initClient() {
+    console.log("Starting InitClient() sequence .....")
     setTheme();
 
     // Transcription
@@ -3208,8 +3309,8 @@ function leaveFeedback() {
 function redirectOnLeave() {
     loggedIn = false;
     console.log('Room event: Client leave room');
-    document.dispatchEvent(new Event("nlLogout")); // logout from nostr-login
-    redirect && redirect.enabled ? openURL(redirect.url) : openURL('/newroom');
+   // document.dispatchEvent(new Event("nlLogout")); // logout from nostr-login
+    redirect && redirect.enabled ? openURL(redirect.url) : openURL('/');
 }
 
 function userLog(icon, message, position, timer = 3000) {
