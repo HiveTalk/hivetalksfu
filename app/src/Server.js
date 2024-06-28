@@ -1046,7 +1046,8 @@ function startServer() {
 
             const data = checkXSS(dataObject);
 
-            log.info('User joined', data);
+            // Don't log any user data
+            //log.info('User joined', data);
 
             const room = roomList.get(socket.room_id);
 
