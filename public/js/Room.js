@@ -289,7 +289,7 @@ document.addEventListener('DOMContentLoaded', function () {
     console.log('00 ----> init Nostr Login');
     hide(loadingDiv);
     // check localstorage if actually logged in before
-    console.log("TRY TO SEE IF USER IS ALREADY LOGGED IN ON NOSTR or Previously on Manual")
+    console.log("CHECK IF LOGGED IN on Nostr or Previously in LocalStorage");
 
     try {
         const userInfo = JSON.parse(window.localStorage.getItem('__nostrlogin_accounts'));
@@ -301,18 +301,23 @@ document.addEventListener('DOMContentLoaded', function () {
                 // truncate peer_name to be < 30 chars
                 peer_name = truncateString(user.name, 29);
             }
-            peer_url = user.picture;
             peer_pubkey = user.pubkey;
-            peer_npub = nip19.npubEncode(user.pubkey)
-            window.localStorage.peer_name = user.name;
-            window.localStorage.peer_url = user.picture;
             window.localStorage.peer_pubkey = user.pubkey;
+
+            peer_npub = nip19.npubEncode(user.pubkey)
             window.localStorage.peer_npub = peer_npub;
+
+            // if there is no peer_name but we have a pubkey, use first 5 chars
+            if (user.name === undefined) {
+                // offer to set a username as the first 5 chars of peer_npub
+                peer_name = truncateString(peer_npub + "...", 5);
+            }
+            window.localStorage.peer_name = user.name;
+
+            peer_url = user.picture;
+            window.localStorage.peer_url = user.picture;
             console.log("checkUserInfo :", user.pubkey, user.name, user.picture, peer_npub);
 
-            // TODO: what do we do here if there is no peer_name but we have a pubkey?
-            // we are assuming peer_name exists. if not, then we need to offer
-            // option to set a username after 60 sec period of checking and no username
             if (peer_name && peer_pubkey) {
                 console.log("discovery complete: checkUserInfo: ", peer_name, peer_pubkey, peer_url);
 
@@ -533,39 +538,6 @@ function truncateString(str, maxLength) {
     return str;
 }
 
-// function getDisplayUserInfo() {
-//     console.log("getDisplayUserInfo()......")
-//     setTimeout(() => { // Adding a delay to ensure data is available
-//         // Assuming userInfo is stored in localStorage or accessible through the event
-//         const userInfo = JSON.parse(window.localStorage.getItem('__nostrlogin_accounts'));
-//         try {
-//             if (userInfo && userInfo.length > 0) {
-//                 const user = userInfo[0];
-//                 console.log("user from _nostrlogin_accounts: ", user.name);
-//                 console.log("user picture: ", user.picture);
-//                 peer_name = user.name;
-//                 if (peer_name !== undefined && peer_name.length > 30) {
-//                     // truncate peer_name to be < 30 chars
-//                     peer_name = truncateString(user.name, 29);
-//                 } 
-//                 peer_url = user.picture;
-//                 peer_pubkey = user.pubkey;
-//                 peer_npub = nip19.npubEncode(user.pubkey)
-
-//                 window.localStorage.peer_pubkey = user.pubkey;
-//                 window.localStorage.peer_name = user.name;
-//                 window.localStorage.peer_url = user.picture;
-//                 window.localStorage.peer_npub = peer_npub;
-//             } else {
-//                 console.log("No user info available (empty array)");
-//             }
-//         } catch (error) {
-//             console.log("Error parsing userInfo:", error);
-//         }
-//     }, 200); // Delay to ensure data is loaded
-// }
-
-
 function checkUserInfo() {
     console.log("....inside checkUserInfo...." + cycleCount)
     cycleCount++;
@@ -709,8 +681,10 @@ function nostrLogin() {
 
 function continueNostrLogin(type) {
     let info = ""
+    let exitinfo  = ""
     if (type === "priorlocalStorage") {
-        info = "Nostr login expired, using local data"
+        info = "Nostr login expired, using cached local data"
+        exitinfo = " and Flush"
     } else if (type === "nostr") {
         info = "Logged in with Nostr"
     }
@@ -723,8 +697,10 @@ function continueNostrLogin(type) {
         imageUrl:  peer_url || '', // only if peer_url is not null
         imageWidth: 100,
         imageHeight: 100,
-        confirmButtonText: 'OK',
-        cancelButtonText: 'Exit',
+        reverseButtons: true,
+        confirmButtonText: 'OK, Let\'s Go',
+        confirmButtonColor: "#228B22", //"#32CD32",
+        cancelButtonText: 'Exit' + exitinfo,
         cancelButtonColor: "#d33",
         showCancelButton: true,
     }).then((result) => {
@@ -737,6 +713,11 @@ function continueNostrLogin(type) {
                 console.log("init client.......")
             }, 200);
         } else {
+            // flush all old local data
+            const keysToRemove = ['peer_name', 'peer_lnaddress', 'peer_npub', 'peer_pubkey', 'peer_url', 'peer_uuid'];
+            keysToRemove.forEach(key => {
+                window.localStorage.removeItem(key);
+              });
             console.log("nostrLogin: user canceled")
             openURL('/');
         }
