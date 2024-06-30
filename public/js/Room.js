@@ -599,7 +599,44 @@ function checkUserInfo() {
     }
 }
 
-function isValidLightningAddress(address) {
+
+async function isValidLightningAddress(address) {
+    // Split the address into username and domain
+    const [username, domain] = address.split('@');
+    if (!username || !domain) {
+        return false; // Invalid format
+    }
+
+    // Construct the URL to query the .well-known endpoint
+    const url = `https://${domain}/.well-known/lnurlp/${username}`;
+
+    try {
+        const response = await fetch(url, {
+            method: 'GET',
+            headers: {
+                'Accept': 'application/json'
+            }
+        });
+
+        if (!response.ok) {
+            return false; // Not a valid address if the response is not 200
+        }
+
+        const data = await response.json();
+
+        // Check if the response contains required fields for a valid LNURL-pay endpoint
+        if (data.callback && data.maxSendable && data.minSendable && data.metadata) {
+            return true; // Valid Lightning Address
+        } else {
+            return false; // Missing required fields
+        }
+    } catch (error) {
+        console.error('Error validating Lightning Address:', error);
+        return false; // Error during the request
+    }
+}
+
+function isValidLNFormat(address) {
     // Regular expression for Lightning Address format validation
     const regex = /^[a-zA-Z0-9]+@[a-zA-Z0-9.-]+$/;
     return regex.test(address);
@@ -668,10 +705,15 @@ function nostrLogin() {
                     preConfirm: async(name) => {
                         peer_name = name
                         window.localStorage.peer_name = name
-                        if (isValidLightningAddress(peer_name)) {
-                            peer_lnaddress = peer_name
-                            window.localStorage.peer_lnaddress = peer_name
-                        }
+                        isValidLightningAddress(peer_name).then(isValid => {
+                            if (isValid) {
+                                console.log(`${peer_name} is a valid Lightning Address.`);
+                                peer_lnaddress = peer_name
+                                window.localStorage.peer_lnaddress = peer_name    
+                            } else {
+                                console.log(`${peer_name} is not a valid Lightning Address.`);
+                            }
+                        });
                     },
                   }).then((result) => {
                     if (result.isConfirmed) {
