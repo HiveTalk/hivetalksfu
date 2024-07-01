@@ -1,40 +1,5 @@
 <h1 align="center">HiveTalk </h1>
 
-### TODO
-
-#### 1st release
-
--   add nostr login - done
--   add nostr avatar picture, name - done
--   enable front page - show active public rooms - done
-    - ( use built-in API to pull data to front page, see samples in codebase)
--   add link to nostr profile in the chat avatar.  Make this more visible on the dropdown (v2)
-
-#### 2nd release
-
--   Add Zap functionality - basic one done, add to video on
--   fix lobby bug 
--   write section for sign and send nostr events.
--   add 'Talking in room now' user post to nostr relays. only for nostr users.
--   fix chatroom avatars so that nostr avatars are shown in chat. (see link to video below)
--   is there a webRTC timeout? odd bug.
-
-#### 3rd release
-
--   websockets API
--   add API keys for different users on request.
--   enable chatGPT or bitcoiner equiv unleashed.chat
--   TODO items in the existing code base, and from upstream fork.
-
-
-TO FIX: 
-
-- In video below, the nostr profile opens to an external window. the link should be a more visible button, such as dropdown
-- Also see chat avatars in chat are not matching the nostr logged in avatar. Random name avatars are OK. 
-
-https://github.com/HiveTalk/hivetalksfu/assets/73979971/58f6b487-76c2-44da-9261-651d4fc5cc8b
-
-<br />
 
 ### HiveTalk is a Fork of MiroTalk SFU
 
