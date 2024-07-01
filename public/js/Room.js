@@ -601,8 +601,12 @@ function checkUserInfo() {
 
 
 async function isValidLightningAddress(address) {
-    // Split the address into username and domain
-    const [username, domain] = address.split('@');
+    console.log(".... inside isValidLightningAddress: ", address);
+    const parts = address.split('@');
+    if (parts.length !== 2) {
+        return false; // Invalid format
+    }
+    const [username, domain] = parts;
     if (!username || !domain) {
         return false; // Invalid format
     }
@@ -1793,20 +1797,28 @@ function joinRoom(peer_name, room_id) {
     }
 }
 
+let boltavatar = "https://hivetalk.org/images/lnwhitep.png";
+
 function roomIsReady() {
     console.log('06 ----> roomIsReady');
     console.log("Set nostr avatar here in roomIsReady");
     let avatar = peer_info.peer_url
     console.log("roomIsReady - nostr avatar", avatar)
     // set Nostr Avatar here
-    if (rc.isValidEmail(peer_name)) {
-         myProfileAvatar.style.borderRadius = `50px`;
-         myProfileAvatar.setAttribute('src', rc.genGravatar(peer_name));
-    } else if (avatar) { // if nostr avatar is not null
-        myProfileAvatar.setAttribute('src', avatar);
-    } else {
-        myProfileAvatar.setAttribute('src', rc.genAvatarSvg(peer_name, 64));
-    }
+    isValidLightningAddress(peer_name).then(isValid => {
+        if (isValid) {
+            myProfileAvatar.style.borderRadius = `50px`;
+            myProfileAvatar.setAttribute('src', boltavatar);        
+        } else if (rc.isValidEmail(peer_name)) {
+            myProfileAvatar.style.borderRadius = `50px`;
+            myProfileAvatar.setAttribute('src', rc.genGravatar(peer_name));
+        } else if (avatar) { // if nostr avatar is not null
+            myProfileAvatar.setAttribute('src', avatar);
+        } else {
+            myProfileAvatar.setAttribute('src', rc.genAvatarSvg(peer_name, 64));
+        }
+    });
+
     BUTTONS.main.exitButton && show(exitButton);
     BUTTONS.main.shareButton && show(shareButton);
     BUTTONS.main.hideMeButton && show(hideMeButton);
@@ -4393,7 +4405,12 @@ function refreshParticipantsCount(count, adapt = true) {
 }
 
 function getParticipantAvatar(peerName) {
-   // console.log("getParticipantAvatar - peerName: ", peerName);
+    // console.log("getParticipantAvatar - peerName: ", peerName);
+    isValidLightningAddress(peerName).then(isValid => {
+        if (isValid) {
+            return boltavatar;
+        }
+    })
     if (rc.isValidEmail(peerName)) {
         return rc.genGravatar(peerName);
     }
