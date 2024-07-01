@@ -4005,7 +4005,12 @@ class RoomClient {
     setMsgAvatar(avatar, peerName) {        
         let avatarImg = rc.isValidEmail(peerName) ? this.genGravatar(peerName) : this.genAvatarSvg(peerName, 32);
         // this line below doesn't work
-        // let avatarImg = peer_url ? peer_url : this.genAvatarSvg(peerName, 32);
+        //  avatarImg = peer_url ? peer_url : this.genAvatarSvg(peerName, 32);
+        // isValidLightningAddress(peerName).then(isValid => {
+        //     if (isValid) {
+        //         avatarImg = boltavatar;
+        //     }
+        // });
         avatar === 'left' ? (this.leftMsgAvatar = avatarImg) : (this.rightMsgAvatar = avatarImg);
     }
 
@@ -5545,20 +5550,26 @@ class RoomClient {
                     let peer_id = data.peer_id;
                     let peer_name = data.peer_name;
                     // pass data.peer_info.peer_url to get avatar
-                    let peer_url = data.peer_info.peer_url
-                    let avatarImg = peer_url
-                    
-                    if (!avatarImg) {
-                        console.log(" in RoomLobby --> avatarImg: ", avatarImg)
-                        isValidLightningAddress(peer_name).then(isValid => {
-                            if (isValid) {
-                                 avatarImg = boltavatar 
-                            } else {
-                                avatarImg = rc.isValidEmail(peer_name)
-                                ? this.genGravatar(peer_name)
-                                : this.genAvatarSvg(peer_name, 32);
-                            }
-                        });
+                    let peer_url = ''
+                    let avatarImg = ''
+                    try {
+                        peer_url = data.peer_info.peer_url
+                        avatarImg = peer_url
+                        
+                        if (!avatarImg) {
+                            console.log(" in RoomLobby --> avatarImg: ", avatarImg)
+                            isValidLightningAddress(peer_name).then(isValid => {
+                                if (isValid) {
+                                    avatarImg = boltavatar 
+                                } else {
+                                    avatarImg = rc.isValidEmail(peer_name)
+                                    ? this.genGravatar(peer_name)
+                                    : this.genAvatarSvg(peer_name, 32);
+                                }
+                            });
+                        }
+                    } catch (error) {
+                        console.log("No peer_url, that's ok", error)
                     }
                     console.log(" in RoomLobby --> avatarImg: ", avatarImg)
 
