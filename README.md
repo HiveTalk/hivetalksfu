@@ -1,6 +1,6 @@
 <h1 align="center">HiveTalk </h1>
 
-HiveTalk is a Fork of MiroTalk SFU, with Nostr and Lightning Enhancements.
+## HiveTalk is a Fork of MiroTalk SFU, with **Nostr** and **Bitcoin Lightning** Enhancements.
 
 Free WebRTC - SFU - Simple, Secure, Scalable Real-Time Video Conferences with support for up to 4k resolution. It's compatible with all major browsers and platforms
 
