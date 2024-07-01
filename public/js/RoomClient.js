@@ -2983,14 +2983,22 @@ class RoomClient {
     setVideoAvatarImgName(elemId, peer_name, peer_url) {
         let elem = this.getId(elemId);
         if (cfg.useAvatarSvg) {
-            console.log("setVideoAvatarImgName: ", peer_name, peer_url);
+            console.log("setVideoAvatarImgName: ", peer_name, "url: ", peer_url);
+            let avatarImg = ''
             if (peer_url) {
                 elem.setAttribute('src', peer_url)  // this.getNostrAvatar(peer_name))
-            }
-            else {
-                rc.isValidEmail(peer_name)
-                ? elem.setAttribute('src', this.genGravatar(peer_name))
-                : elem.setAttribute('src', this.genAvatarSvg(peer_name, 250))
+            } else {                
+                isValidLightningAddress(peer_name).then(isValid => {
+                    if (isValid) {
+                        avatarImg = elem.setAttribute('src', boltavatar)
+                        console.log("valid lightning address", avatarImg)
+                    } else  {
+                        avatarImg = rc.isValidEmail(peer_name)
+                        ? elem.setAttribute('src', this.genGravatar(peer_name))
+                        : elem.setAttribute('src', this.genAvatarSvg(peer_name, 250))                 
+                        console.log("avatar img", avatarImg)
+                    }
+                });
             }
 
         } else {
@@ -3001,7 +3009,7 @@ class RoomClient {
     genGravatar(email, size = false) {
         const hash = md5(email.toLowerCase().trim());
         const gravatarURL = `https://www.gravatar.com/avatar/${hash}` + (size ? `?s=${size}` : '?s=250') + '?d=404';
-        console.log('gravatarURL', gravatarURL);
+        console.log('inside genGravatar: gravatarURL', gravatarURL);
         return gravatarURL;
         function md5(input) {
             return CryptoJS.MD5(input).toString();
@@ -3011,10 +3019,6 @@ class RoomClient {
     isValidEmail(email) {
         const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
         return emailRegex.test(email);
-    }
-
-    isValidNpub(peerName)  { 
-        return True
     }
 
     genAvatarSvg(peerName, avatarImgSize) {
@@ -4259,7 +4263,7 @@ class RoomClient {
         }
     }
 
-    setMsgAvatar(avatar, peerName) {
+    setMsgAvatar(avatar, peerName) {        
         let avatarImg = rc.isValidEmail(peerName) ? this.genGravatar(peerName) : this.genAvatarSvg(peerName, 32);
         // this line below doesn't work
         // let avatarImg = peer_url ? peer_url : this.genAvatarSvg(peerName, 32);
@@ -6528,10 +6532,17 @@ class RoomClient {
                     let peer_url = data.peer_info.peer_url
                     let avatarImg = peer_url
                     
-                    if (!avatarImg) {                   
-                        avatarImg = rc.isValidEmail(peer_name)
-                            ? this.genGravatar(peer_name)
-                            : this.genAvatarSvg(peer_name, 32);
+                    if (!avatarImg) {
+                        console.log(" in RoomLobby --> avatarImg: ", avatarImg)
+                        isValidLightningAddress(peer_name).then(isValid => {
+                            if (isValid) {
+                                 avatarImg = boltavatar 
+                            } else {
+                                avatarImg = rc.isValidEmail(peer_name)
+                                ? this.genGravatar(peer_name)
+                                : this.genAvatarSvg(peer_name, 32);
+                            }
+                        });
                     }
                     console.log(" in RoomLobby --> avatarImg: ", avatarImg)
 
