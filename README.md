@@ -12,30 +12,27 @@
 
 #### 2nd release
 
--   Add Zap functionality - basic one done
+-   Add Zap functionality - basic one done, add to video on
+-   fix lobby bug 
 -   write section for sign and send nostr events.
 -   add 'Talking in room now' user post to nostr relays. only for nostr users.
 -   fix chatroom avatars so that nostr avatars are shown in chat. (see link to video below)
 -   is there a webRTC timeout? odd bug.
--   fix any other bugs as needed
 
 #### 3rd release
 
--   Remove items that aren't needed or might have issues like google translate or transcription.
+-   websockets API
 -   add API keys for different users on request.
--   enable chatGPT or rather, bitcoiner equiv unleashed.chat
+-   enable chatGPT or bitcoiner equiv unleashed.chat
 -   TODO items in the existing code base, and from upstream fork.
 
 
 TO FIX: 
 
-- see in video below, the nostr profile opens out to an external window. the link should be a more visible button, such as dropdown
+- In video below, the nostr profile opens to an external window. the link should be a more visible button, such as dropdown
 - Also see chat avatars in chat are not matching the nostr logged in avatar. Random name avatars are OK. 
 
 https://github.com/HiveTalk/hivetalksfu/assets/73979971/58f6b487-76c2-44da-9261-651d4fc5cc8b
-
-
-
 
 <br />
 
@@ -91,16 +88,6 @@ https://github.com/HiveTalk/hivetalksfu/assets/73979971/58f6b487-76c2-44da-9261-
 -   Integration with [Slack](https://api.slack.com/apps/) for enhanced communication.
 -   Utilizes [Sentry](https://sentry.io/) for error reporting.
 -   And much more...
-
-</details>
-
-<details>
-<summary>About</summary>
-
-<br>
-
--   [Presentation](https://www.canva.com/design/DAE693uLOIU/view)
--   [Video Overview](https://www.youtube.com/watch?v=_IVn2aINYww)
 
 </details>
 
