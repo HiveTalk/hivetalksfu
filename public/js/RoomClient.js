@@ -182,6 +182,73 @@ const VideoAI = {
 let recordedBlobs = [];
 
 
+// HANDLE LIGHTNING
+
+function handleLightning(zp) { 
+    zp.addEventListener('click', function() {
+        let id = this.id;
+        let extractedIdentifier = id.split('__')[0];
+        Swal.fire({
+            background: swalBackground, 
+            title: `Zap ${extractedIdentifier}`,
+            html: `
+                <label for="amount" style="font-size: 1.2em;">Amount (sats): </label>
+                <input type="number" id="amount" class="swal2-input" placeholder="Enter amount" value="21">
+                <button id="preset-21" class="swal2-confirm swal2-styled" style="margin-right: 10px;">21</button>
+                <button id="preset-100" class="swal2-confirm swal2-styled" style="margin-right: 10px;">100</button>
+                <button id="preset-500" class="swal2-confirm swal2-styled" style="margin-right: 10px;">500</button>
+                <button id="preset-1000" class="swal2-confirm swal2-styled">1000</button>
+            `,
+            showCancelButton: true,
+            reverseButtons: true,
+            confirmButtonText: 'OK',
+            confirmButtonColor: 'green',
+            cancelButtonColor: 'red',
+            preConfirm: () => {
+                const amount = document.getElementById('amount').value;
+                // adjust amount to ln address specified range
+                if (!amount || amount <= 0) {
+                    Swal.showValidationMessage('Please enter a valid amount');
+                    return false;
+                }
+                return amount;
+            }
+        }).then((result) => {
+            if (result.isConfirmed) {
+                let amt = result.value
+                console.log('Amount:', amt);
+                console.log('lightning address:', extractedIdentifier);
+
+                window.moduleFunctions.handleDonation(peer_name, extractedIdentifier, amt)
+                    .then(result => {
+                        console.log("handleDonationResult:", result);
+                        // send zap msg to chat emoji pop up
+                        boltEmoji(extractedIdentifier + ' ' + amt + ' sats');
+                        // send zap message to chatroom if open
+                        rc.broadcastMessage(result);
+                    })
+                    .catch(error => {
+                        console.log("Error:", error);
+                    });
+
+            }
+        });
+        document.getElementById('preset-21').addEventListener('click', function() {
+            document.getElementById('amount').value = 21;
+        });
+        document.getElementById('preset-100').addEventListener('click', function() {
+            document.getElementById('amount').value = 100;
+        });
+        document.getElementById('preset-500').addEventListener('click', function() {
+            document.getElementById('amount').value = 500;
+        });
+        document.getElementById('preset-1000').addEventListener('click', function() {
+            document.getElementById('amount').value = 1000;
+        });
+    })
+
+}
+
 // ####################################################
 // HANDLE NOSTR
 // ####################################################
@@ -1986,6 +2053,17 @@ class RoomClient {
                 d.appendChild(elem);
                 d.appendChild(pm);
                 d.appendChild(i);
+
+                // add lightning address or lnurl for zaps
+                if (peer_lnaddress) { 
+                    let zp = document.createElement('button');
+                    console.log("peer lnaddress: ", peer_lnaddress);
+                    zp.id = peer_lnaddress + '__zap';
+                    zp.className = html.zapIcon;
+                    handleLightning(zp)
+                    d.appendChild(zp);
+                }
+
                 d.appendChild(p);
                 d.appendChild(vb);
                 this.videoMediaContainer.appendChild(d);
@@ -2309,6 +2387,7 @@ class RoomClient {
         const remotePeerAudio = peer_info.peer_audio;
         const remotePrivacyOn = peer_info.peer_video_privacy;
         const remotePeerPresenter = peer_info.peer_presenter;
+        const remoteLNAddress = peer_info.peer_lnaddress;
 
         switch (type) {
             case mediaType.video:
@@ -2389,7 +2468,7 @@ class RoomClient {
                 p = document.createElement('p');
                 p.id = remotePeerId + '__name';
                 p.className = html.userName;
-                p.innerText = (remotePeerPresenter ? '⭐️ ' : '') + peer_name;
+                p.innerText = (remotePeerPresenter ? '⭐️ ' : ' ') + peer_name;
                 pm = document.createElement('div');
                 pb = document.createElement('div');
                 pm.setAttribute('id', remotePeerId + '__pitchMeter');
@@ -2420,6 +2499,17 @@ class RoomClient {
                 if (!this.isMobileDevice) vb.appendChild(pn);
                 d.appendChild(elem);
                 d.appendChild(i);
+
+                // add remote lightning address or lnurl for zaps
+                if (remoteLNAddress) { 
+                    let zp = document.createElement('button');
+                    console.log("remote lnaddress: ", remoteLNAddress);
+                    zp.id = remoteLNAddress + '__zap';
+                    zp.className = html.zapIcon;
+                    handleLightning(zp)
+                    d.appendChild(zp);
+                }
+
                 d.appendChild(p);
                 d.appendChild(pm);
                 d.appendChild(vb);
@@ -2639,77 +2729,15 @@ class RoomClient {
         d.appendChild(i);
 
         // add lightning address or lnurl for zaps
-        let zp = document.createElement('button');
-        console.log("peer_info lnaddress: ", peer_lnaddress);
-        //  peer_lnaddress = window.localStorage.getItem('peer_lnaddress');
         if (peer_lnaddress) { 
+            let zp = document.createElement('button');
             console.log("peer lnaddress: ", peer_lnaddress);
-            // only do this if there is a lightning address
             zp.id = peer_lnaddress + '__zap';
             zp.className = html.zapIcon;
+            handleLightning(zp)
             d.appendChild(zp);
-            zp.addEventListener('click', function() {
-                let id = this.id;
-                let extractedIdentifier = id.split('__')[0];
-                Swal.fire({
-                    background: swalBackground, 
-                    title: `Zap ${extractedIdentifier}`,
-                    html: `
-                        <label for="amount" style="font-size: 1.2em;">Amount (sats): </label>
-                        <input type="number" id="amount" class="swal2-input" placeholder="Enter amount" value="21">
-                        <button id="preset-21" class="swal2-confirm swal2-styled" style="margin-right: 10px;">21</button>
-                        <button id="preset-100" class="swal2-confirm swal2-styled" style="margin-right: 10px;">100</button>
-                        <button id="preset-500" class="swal2-confirm swal2-styled" style="margin-right: 10px;">500</button>
-                        <button id="preset-1000" class="swal2-confirm swal2-styled">1000</button>
-                    `,
-                    showCancelButton: true,
-                    reverseButtons: true,
-                    confirmButtonText: 'OK',
-                    confirmButtonColor: 'green',
-                    cancelButtonColor: 'red',
-                    preConfirm: () => {
-                        const amount = document.getElementById('amount').value;
-                        // adjust amount to ln address specified range
-                        if (!amount || amount <= 0) {
-                            Swal.showValidationMessage('Please enter a valid amount');
-                            return false;
-                        }
-                        return amount;
-                    }
-                }).then((result) => {
-                    if (result.isConfirmed) {
-                        let amt = result.value
-                        console.log('Amount:', amt);
-                        console.log('lightning address:', extractedIdentifier);
-
-                        window.moduleFunctions.handleDonation(peer_name, extractedIdentifier, amt)
-                            .then(result => {
-                                console.log("handleDonationResult:", result);
-                                // send zap msg to chat emoji pop up
-                                boltEmoji(extractedIdentifier + ' ' + amt + ' sats');
-                                // send zap message to chatroom if open
-                                rc.broadcastMessage(result);
-                            })
-                            .catch(error => {
-                                console.log("Error:", error);
-                            });
-
-                    }
-                });
-                document.getElementById('preset-21').addEventListener('click', function() {
-                    document.getElementById('amount').value = 21;
-                });
-                document.getElementById('preset-100').addEventListener('click', function() {
-                    document.getElementById('amount').value = 100;
-                });
-                document.getElementById('preset-500').addEventListener('click', function() {
-                    document.getElementById('amount').value = 500;
-                });
-                document.getElementById('preset-1000').addEventListener('click', function() {
-                    document.getElementById('amount').value = 1000;
-                });
-            })
         }
+
         // add nostr icon - temporary disabled until we find a better place for it
         // let nl = document.createElement('button');
         // console.log("Peer Npub is:  ", peer_npub); 
