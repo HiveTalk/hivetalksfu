@@ -52,6 +52,12 @@ paths:
                 - 'meeting'
             summary: 'Create meeting'
             description: 'Create meeting'
+            parameters:
+                - in: body
+                  name: Meeting
+                  description: Custom Meeting URL.
+                  schema:
+                      $ref: '#/definitions/MeetingRequest'
             consumes:
                 - 'application/json'
             produces:
@@ -136,6 +142,13 @@ definitions:
         properties:
             meeting:
                 type: string
+    MeetingRequest:
+        type: object
+        properties:
+            name:
+                type: string
+                default: 'hivetalksfu'
+                $ref: '#/definitions/MeetingRequest'
     JoinRequest:
         type: object
         properties:
