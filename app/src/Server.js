@@ -155,7 +155,7 @@ if (sentryEnabled) {
 const defaultStats = {
     enabled: true,
     src: 'https://analytics.eu.umami.is/script.js',
-    id: '48ea155e-7570-43bc-84da-38197b40ee69',
+    id: '',
 };
 
 // OpenAI/ChatGPT
@@ -735,7 +735,10 @@ function startServer() {
             return res.status(403).json({ error: 'Unauthorized!' });
         }
         // setup meeting URL
-        const meetingURL = api.getMeetingURL();
+        let name = null; 
+        if (req.body.name) name = req.body.name;
+    
+        const meetingURL = api.getMeetingURL(name);
         res.json({ meeting: meetingURL });
         // log.debug the output if all done
         log.debug('HiveTalk get meeting - Authorized', {
