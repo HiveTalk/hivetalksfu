@@ -1,3 +1,8 @@
+## Code of Conduct
+
+- Be Excellent to Each other
+- Abuse will not be tolerated.
+
 ## Attribution
 
 This Code of Conduct is adapted from the [Contributor Covenant][contributor-covenant-home],
