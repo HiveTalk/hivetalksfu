@@ -210,19 +210,12 @@ definitions:
                 type: string
             presenter:
                 type: boolean
-            video:
-                type: boolean
-            audio:
-                type: boolean
-            screen:
-                type: boolean
-            hand:
-                type: boolean
-            os:
+            npub:
                 type: string
-            browser:
+            pubkey:
                 type: string
-
+            lnaddress:
+                type: string
     Meeting:
         type: object
         properties:
