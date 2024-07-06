@@ -26,7 +26,7 @@ paths:
                 '200':
                     description: 'Get Meeting info'
                     schema:
-                        $ref: '#/definitions/MeetingsResponse'
+                        $ref: '#/definitions/MeetingResponse'
                 '403':
                     description: 'Unauthorized!'
     /meetings:
@@ -141,7 +141,10 @@ definitions:
         type: 'object'
         properties:
             meeting:
-                type: string
+                type: array
+                items:
+                    $ref: '#/definitions/Meetinfo'
+
     MeetingRequest:
         type: object
         properties:
@@ -225,3 +228,10 @@ definitions:
                 type: array
                 items:
                     $ref: '#/definitions/Peer'
+    Meetinfo:
+        type: object
+        properties:
+            roomId:
+                type: string
+            peers:
+                type: string
