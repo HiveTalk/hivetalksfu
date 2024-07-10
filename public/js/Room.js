@@ -355,7 +355,7 @@ document.addEventListener('DOMContentLoaded', function () {
 let checkInterval = null;
 // checkInterval = setInterval(checkUserInfo, 1000);
 let cycleCount = 0;
-const maxCycles = 24;  // 240 cycles, 120 seconds = 2 minutes to login with Nostr before redirecting to Home Page
+const maxCycles = 360;  // 240 cycles, 120 seconds = 2 minutes to login with Nostr before redirecting to Home Page
 
 
 // helper methods
@@ -516,6 +516,13 @@ async function loadUser() {
                         window.localStorage.peer_name = user.name;
                         window.localStorage.peer_url = user.picture;
                         window.localStorage.peer_npub = peer_npub;
+
+                        if (user.name === undefined) {
+                            // offer to set a username as the first 7 chars of the pubkey
+                            peer_name = truncateString(user.pubkey + "...", 10);
+                            window.localStorage.peer_name = peer_name;
+                        }
+
                     } else {
                         console.log("No user info available (empty array)");
                     }
@@ -594,6 +601,12 @@ function checkUserInfo() {
             // we are assuming peer_name exists. if not, then we need to offer
             // option to set a username after 60 sec period of checking and no username
             
+            if (user.name === undefined) {
+                // offer to set a username as the first 7 chars of the pubkey
+                peer_name = truncateString(user.pubkey + "...", 10);
+                window.localStorage.peer_name = peer_name;
+            }
+
             if (peer_name && peer_pubkey) {
                 console.log("discovery complete: checkUserInfo: ", peer_name, peer_pubkey, peer_url);
 
