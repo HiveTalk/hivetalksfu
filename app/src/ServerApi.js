@@ -30,11 +30,11 @@ module.exports = class ServerApi {
                         peer_presenter,
                         peer_npub,
                         peer_pubkey,
-                        peer_lnaddress,                    
-                        peer_video,
-                        peer_audio,
-                        peer_screen,
-                        peer_hand,
+                        peer_lnaddress,
+                        // peer_video,
+                        // peer_audio,
+                        // peer_screen,
+                        // peer_hand,
                     },
                 }) => ({
                     name: peer_name,
@@ -42,10 +42,6 @@ module.exports = class ServerApi {
                     npub: peer_npub,
                     pubkey: peer_pubkey,
                     lnaddress: peer_lnaddress,
-//                  video: peer_video,
-//                  audio: peer_audio,
-//                  screen: peer_screen,
-//                 hand: peer_hand,
                 }),
             );
             return {
