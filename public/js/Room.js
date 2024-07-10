@@ -33,7 +33,7 @@ let defaultRelays = [
     'wss://relay.primal.net',
     'wss://relay.damus.io/',
     'wss://relay.nostr.band/all',
-   // 'wss://nos.lol'
+    'wss://nos.lol'
 ];
 
 const socket = io({ transports: ['websocket'] });
@@ -309,8 +309,8 @@ document.addEventListener('DOMContentLoaded', function () {
 
             // if there is no peer_name but we have a pubkey, use first 5 chars
             if (user.name === undefined) {
-                // offer to set a username as the first 5 chars of peer_npub
-                peer_name = truncateString(peer_npub + "...", 5);
+                // offer to set a username as the first 7 chars of the pubkey
+                peer_name = truncateString(user.pubkey + "...", 10);
             }
             window.localStorage.peer_name = user.name;
 
@@ -419,6 +419,19 @@ async function getNostrProfile(pubkey, relays) {
             const content = JSON.parse(event.content);
             const lightningAddress = content.lud16 || content.lud06;
             console.log("relays: ", relays);
+
+            // incase the relay pool still returns undefined
+            if (content['name'] === undefined) {
+                peer_name = truncateString(peer_pubkey + "...", 10);
+            } else {
+                peer_name = content['name'] // override default
+                peer_url = content['image'] || content['picture'] // override default
+                console.log("content: ", content, "peer_name", peer_name, "peer_url", peer_url);
+                window.localStorage.peer_name = peer_name;
+                window.localStorage.peer_url = peer_url;
+            }
+            // peer_nip05 = content['nip05']
+
             if (lightningAddress) {
               console.log(`User's Lightning Address: ${lightningAddress}`);
               peer_lnaddress  = lightningAddress;
