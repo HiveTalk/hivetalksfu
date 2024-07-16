@@ -715,10 +715,9 @@ class RoomClient {
 
         // notify && participantsCount == 1 ? shareRoom() : sound('joined');
         if (notify && participantsCount == 1) {
-            // share room on nostr
-            console.log("share room pop dialog on initial join")
-            shareRoom();
-            // shareRoomOnNostr(); // only allow once to prevent network spamming
+            console.log("share room pop dialog on initial join")             
+                shareRoom();
+        
         } else {
             if (this.isScreenAllowed) {
                 this.shareScreen();

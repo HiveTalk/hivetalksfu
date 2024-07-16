@@ -33,7 +33,8 @@ let defaultRelays = [
     'wss://relay.primal.net',
     'wss://relay.damus.io/',
     'wss://relay.nostr.band/all',
-    'wss://nos.lol'
+    'wss://nos.lol',
+    'wss://hivetalk.nostr1.com',
 ];
 
 const socket = io({ transports: ['websocket'] });
@@ -1691,48 +1692,108 @@ function checkMedia() {
 // ####################################################
 
 // 1. create an event and sign and post to relays
-// assume preferred relays are captured, else post to default relays
-// do we allow user to select relays?
-// do we allow user to customize message?
+// 2. assume preferred relays are captured, else post to default relays
 
-async function shareRoomOnNostr(useNavigator = false) {
-    if (navigator.share && useNavigator) {
-        try {
-            await navigator.share({ url: RoomURL });
-            userLog('info', 'Room Shared on Nostr', 'top-end');
-        } catch (err) {
-            share();
-        }
-    } else {
-       console.log("share room info on button click")
-       share();
-      // share this room on nostr - TODO
-    }
-    function share() {
-        sound('open');
+async function sendEvent(textNote, publicKey) {
+    try {
+        // Define the relay URLs
+        // 'wss://hivetalk.nostr1.com',
+        const relays = ['wss://testnet.plebnet.dev/nostrrelay/XmnWyifA'];
 
+        // Create an event
+        const event = {
+            kind: 1,
+            pubkey: publicKey,
+            created_at: Math.floor(Date.now() / 1000),
+            tags: [],
+            content: textNote + "\n #HiveTalk",
+        };
+        console.log("Event created", event)
+        // Request the nos2x extension to sign the event
+        const signedEvent = await window.nostr.signEvent(event);
+        console.log('Signed Event:', signedEvent);
+        const eventID = signedEvent["id"]
+        console.log("Event ID", eventID)
+
+        // Create a pool and publish the event
+        const pool = new window.NostrTools.SimplePool();
+        await Promise.any(pool.publish(relays, signedEvent));
+        console.log('Published to at least one relay!');
+
+        // Subscribe to all user events, log the one we just published
+        const h = pool.subscribeMany(
+            [...relays],
+            [
+                {
+                    authors: [publicKey],
+                },
+            ],
+            {
+                onevent(event) {
+                    if (event.id === eventID) {
+                        console.log('Event received:', event);
+                        Swal.fire({
+                            background: swalBackground,
+                            position: 'center',
+                            icon: 'success',
+                            title: 'Event Sent',
+                            text: 'Sent to Nostr successfully!',
+                        })
+                    }
+                },
+                oneose() {
+                    h.close();
+                },
+            }
+        );
+    } catch(error) {
+        console.error('An error occurred:', error);
         Swal.fire({
             background: swalBackground,
             position: 'center',
-            title: 'Share Room on Nostr',
-            html: `
-            <p style="background:transparent; color:rgb(8, 189, 89);">${RoomURL}</p>`,
-            showDenyButton: false,
-            showCancelButton: true,
-            cancelButtonColor: 'red',
-            confirmButtonText: `Copy URL`,
-            cancelButtonText: `Close`,
-            showClass: { popup: 'animate__animated animate__fadeInDown' },
-            hideClass: { popup: 'animate__animated animate__fadeOutUp' },
-        }).then((result) => {
-            if (result.isConfirmed) {
-                copyRoomURL();
-            }
-            // if (isScreenAllowed) {
-            //     rc.shareScreen();
-            // }
-        });
-       // makeRoomQR();
+            icon: 'error',
+            title: 'Oops...',
+            text: 'Something went wrong!',
+        })
+    }
+}
+
+async function shareRoomOnNostr(pubkey) {
+    share(pubkey);
+    function share(pubkey) {
+        sound('open');
+        try {
+            let textNote = '';
+            Swal.fire({
+                background: swalBackground,
+                position: 'center',
+                title:  "Share this Room ",
+                input: "textarea",
+                inputValue: `We're having a party in here!  ${RoomURL} `,
+                inputAutoTrim: true,
+                html: `
+                <p style="background:transparent; color:rgb(8, 189, 89);">${RoomURL}</p>
+                <p>Share a message about this room on <b>NOSTR!</b></p>`,
+                reverseButtons: true,
+                showCancelButton: true,
+                confirmButtonColor: "#8338ec",
+                cancelButtonColor: "#d33",
+                denyButtonColor: "#3085d6",
+                confirmButtonText: "Post to NOSTR!",
+                showDenyButton: true,
+                denyButtonText: `Copy URL`,
+              }).then((result) => {
+                if (result.isConfirmed) {
+                    textNote = result.value
+                    console.log("Text", textNote)
+                    sendEvent(textNote, pubkey)
+                } else if (result.isDenied) {
+                    copyRoomURL();
+                }
+              });
+        } catch (error) {
+            console.error('An error occurred:', error);
+        }
     }
 }
 
@@ -1742,17 +1803,21 @@ async function shareRoomOnNostr(useNavigator = false) {
 // ####################################################
 
 async function shareRoom(useNavigator = false) {
-    if (navigator.share && useNavigator) {
-        try {
-            await navigator.share({ url: RoomURL });
-            userLog('info', 'Room Shared successfully', 'top-end');
-        } catch (err) {
+    if (peer_info.peer_pubkey) {
+        console.log('share room on nostr', peer_info.peer_pubkey);
+        shareRoomOnNostr(peer_info.peer_pubkey);
+    } else {
+        if (navigator.share && useNavigator) {
+            try {
+                await navigator.share({ url: RoomURL });
+                userLog('info', 'Room Shared successfully', 'top-end');
+            } catch (err) {
+                share();
+            }
+        } else {
+            console.log("share room info on button click")
             share();
         }
-    } else {
-       console.log("share room info on button click")
-       share();
-      // share this room on nostr - TODO
     }
     function share() {
         sound('open');
@@ -1772,19 +1837,14 @@ async function shareRoom(useNavigator = false) {
             showDenyButton: false,
             showCancelButton: true,
             cancelButtonColor: 'red',
-            // denyButtonColor: 'green',
             confirmButtonText: `Copy URL`,
-            //  denyButtonText: `Email invite`,
             cancelButtonText: `Close`,
             showClass: { popup: 'animate__animated animate__fadeInDown' },
             hideClass: { popup: 'animate__animated animate__fadeOutUp' },
         }).then((result) => {
             if (result.isConfirmed) {
                 copyRoomURL();
-            } //else if (result.isDenied) {
-                //shareRoomByEmail();
-           // }
-            // share screen on join
+            }
             if (isScreenAllowed) {
                 rc.shareScreen();
             }
