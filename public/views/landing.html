@@ -210,5 +210,31 @@
         <script defer src="../js/Common.js"></script>
         <script defer src="../js/info.js"></script>
         <script async defer src="https://buttons.github.io/buttons.js"></script>
+
+        <script>
+            document.getElementById('roomName').addEventListener('input', function (event) {
+                const input = event.target;
+                const value = input.value;
+                const isValid = /^[a-zA-Z0-9-_ ]*$/.test(value);
+                if (!isValid) {
+                    input.setCustomValidity('Only alphanumeric characters, "-" and "_" are allowed.');
+                    input.reportValidity();
+                } else {
+                    input.setCustomValidity('');
+                }
+            });
+
+            document.getElementById('joinRoomButton').addEventListener('click', function (event) {
+                const input = document.getElementById('roomName');
+                const value = input.value;
+                const isValid = /^[a-zA-Z0-9-_ ]*$/.test(value);
+
+                if (!isValid) {
+                    alert('Only alphanumeric characters, "-" and "_" are allowed.');
+                    event.preventDefault(); // Prevents the form from being submitted
+                }
+            });
+        </script>
+
     </body>
 </html>
