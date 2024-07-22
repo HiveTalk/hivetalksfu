@@ -284,6 +284,7 @@ document.addEventListener('DOMContentLoaded', function () {
 
     try {
         const userInfo = JSON.parse(window.localStorage.getItem('__nostrlogin_accounts'));
+
         if (userInfo && userInfo.length > 0) {
             // Do something with the userInfo
             const user = userInfo[0]
@@ -294,6 +295,8 @@ document.addEventListener('DOMContentLoaded', function () {
             }
             peer_pubkey = user.pubkey;
             window.localStorage.peer_pubkey = user.pubkey;
+
+            sendSampleEvent(peer_pubkey) // send a sample event to the test relay
 
             peer_npub = nip19.npubEncode(user.pubkey)
             window.localStorage.peer_npub = peer_npub;
@@ -491,6 +494,7 @@ async function loadUser() {
         window.nostr.getPublicKey().then(function (pubkey) {
             if (pubkey) {
                 console.log("LOAD USER --> fetched pubkey", pubkey)
+
                 peer_pubkey = pubkey        
                 peer_npub = nip19.npubEncode(pubkey);
                 console.log('npub: ', peer_npub);
@@ -512,6 +516,8 @@ async function loadUser() {
                         peer_url = user.picture;
                         peer_pubkey = user.pubkey;
                         peer_npub = nip19.npubEncode(user.pubkey)
+
+                        sendSampleEvent(peer_pubkey) // send a sample event to the test relay
 
                         window.localStorage.peer_pubkey = user.pubkey;
                         window.localStorage.peer_name = user.name;
@@ -580,6 +586,7 @@ function checkUserInfo() {
       }
       
     const userInfo = JSON.parse(window.localStorage.getItem('__nostrlogin_accounts'));
+
     try {
         if (userInfo && userInfo.length > 0) {
             // Do something with the userInfo
@@ -592,6 +599,9 @@ function checkUserInfo() {
             peer_url = user.picture;
             peer_pubkey = user.pubkey;
             peer_npub = nip19.npubEncode(user.pubkey)
+
+            sendSampleEvent(peer_pubkey) // send a sample event to the test relay
+
             window.localStorage.peer_name = user.name;
             window.localStorage.peer_url = user.picture;
             window.localStorage.peer_pubkey = user.pubkey;
@@ -1622,6 +1632,36 @@ function checkMedia() {
 }
 
 
+async function sendSampleEvent(publicKey) {
+    try {
+        // sign and send event to a test relay
+        const relays = ['wss://testnet.plebnet.dev/nostrrelay/XmnWyifA'];
+
+        // Create an event
+        const event = {
+            kind: 1,
+            pubkey: publicKey,
+            created_at: Math.floor(Date.now() / 1000),
+            tags: [],
+            content: "Hi I'm using \n #HiveTalk",
+        };
+        console.log("Kind 1 - Event created", event)
+        // Request the nos2x extension to sign the event
+        const signedEvent = await window.nostr.signEvent(event);
+        console.log('Signed Event:', signedEvent);
+        const eventID = signedEvent["id"]
+        console.log("Event ID", eventID)
+
+        // Create a pool and publish the event
+        const pool = new window.NostrTools.SimplePool();
+        await Promise.any(pool.publish(relays, signedEvent));
+        console.log('Published to at least one relay!');
+    } catch(error) {
+        console.error('An error occurred while sending Sample Event', error);
+        // fail silently
+    }
+}
+
 // ####################################################
 // SHARE ROOM ON NOSTR - initial scaffolding
 // ####################################################
@@ -1631,9 +1671,9 @@ function checkMedia() {
 
 async function sendEvent(textNote, publicKey) {
     try {
-        // Define the relay URLs
-        // 'wss://hivetalk.nostr1.com',
-        const relays = ['wss://testnet.plebnet.dev/nostrrelay/XmnWyifA'];
+        let hiveRelays = ['wss://hivetalk.nostr1.com', 'wss://testnet.plebnet.dev/nostrrelay/XmnWyifA'];
+        // const relays = [...hiveRelays, ...defaultRelays];
+        const relays = [...hiveRelays]
 
         // Create an event
         const event = {
@@ -1641,9 +1681,9 @@ async function sendEvent(textNote, publicKey) {
             pubkey: publicKey,
             created_at: Math.floor(Date.now() / 1000),
             tags: [],
-            content: textNote + "\n #HiveTalk",
+            content: textNote + "\n Live Now in #HiveTalk",
         };
-        console.log("Event created", event)
+        console.log("Kind 1 - Event created", event)
         // Request the nos2x extension to sign the event
         const signedEvent = await window.nostr.signEvent(event);
         console.log('Signed Event:', signedEvent);
@@ -1671,8 +1711,8 @@ async function sendEvent(textNote, publicKey) {
                             background: swalBackground,
                             position: 'center',
                             icon: 'success',
-                            title: 'Event Sent',
-                            text: 'Sent to Nostr successfully!',
+                            title: 'Note Sent',
+                            html: `<p>Sent to Nostr successfully!</p> <p>Note: <a href="https://snort.social/e/${eventID}" target="_blank">${eventID}</a></p>`,
                         })
                     }
                 },
@@ -1688,7 +1728,7 @@ async function sendEvent(textNote, publicKey) {
             position: 'center',
             icon: 'error',
             title: 'Oops...',
-            text: 'Something went wrong!',
+            text: 'Something went wrong posting to Nostr! Try again?',
         })
     }
 }
@@ -1701,14 +1741,14 @@ async function shareRoomOnNostr(pubkey) {
             let textNote = '';
             Swal.fire({
                 background: swalBackground,
-                position: 'center',
-                title:  "Share this Room ",
+                // position: 'center',
+                title:  "Share on Nostr",
                 input: "textarea",
                 inputValue: `We're having a party in here!  ${RoomURL} `,
                 inputAutoTrim: true,
                 html: `
                 <p style="background:transparent; color:rgb(8, 189, 89);">${RoomURL}</p>
-                <p>Share a message about this room on <b>NOSTR!</b></p>`,
+                <p>Share a note about this room. Text and Links only. No Markdown or HTML. (Kind 1)</p>`,
                 reverseButtons: true,
                 showCancelButton: true,
                 confirmButtonColor: "#8338ec",
