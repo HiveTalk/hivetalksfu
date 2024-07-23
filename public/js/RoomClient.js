@@ -3901,9 +3901,14 @@ class RoomClient {
             this.sound('open');
             this.showPeerAboutAndMessages('all', 'all');
         }
+        // console.log("toggleChat: isPinned", this.isChatPinned, " isChatOpen ", this.isChatOpen)
         isParticipantsListOpen = !isParticipantsListOpen;
         this.isChatOpen = !this.isChatOpen;
-        if (this.isChatPinned) this.chatUnpin();
+        if (this.isChatPinned) {
+             this.chatUnpin();
+        } else {
+            this.chatPin();
+        }
         resizeChatRoom();
     }
 
@@ -3949,6 +3954,7 @@ class RoomClient {
         document.documentElement.style.setProperty('--msger-width', '100%');
         document.documentElement.style.setProperty('--msger-height', '100%');
         this.toggleChatHistorySize(true);
+        // console.log(" chatMaximize ", this.isChatMaximized)
     }
 
     chatMinimize() {
@@ -3963,9 +3969,12 @@ class RoomClient {
             document.documentElement.style.setProperty('--msger-height', '700px');
             this.toggleChatHistorySize(false);
         }
+        // console.log(" chatMinimize ", this.isChatMaximized)
     }
 
     chatPin() {
+        // console.log("chatPin Method: ", this.isChatPinned)
+
         if (!this.isVideoPinned) {
             this.videoMediaContainerPin();
         }
@@ -3980,6 +3989,7 @@ class RoomClient {
     }
 
     chatUnpin() {
+        // console.log("chat unpin method: ", this.isChatPinned)
         if (!this.isVideoPinned) {
             this.videoMediaContainerUnpin();
         }
