@@ -4743,7 +4743,8 @@ function showAbout() {
                 <input type="number" id="amount" class="swal2-input" placeholder="Enter amount" value="21">
 
         <br /> <br />
-           Find out more about this project on <a href="https://github.com/hivetalk" target="_blank"> Github</a>
+           Need help? Ask an admin in <a href="https://t.me/+2Ll1IFwXwCJlMGFl" target="_blank"  style="color: #3085d6;"> Telegram</a>.<br/>
+           Find out more about this project on <a href="https://github.com/hivetalk" target="_blank"  style="color: #3085d6;"> Github</a>
             <br/><br/>
 
         </div>
