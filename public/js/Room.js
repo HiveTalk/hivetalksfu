@@ -5242,7 +5242,7 @@ function adaptAspectRatio(participantsCount) {
 
 function showAbout() {
     sound('open');
-
+    let extractedIdentifier = 'soc@hivetalk.org'
     Swal.fire({
         background: swalBackground,
         imageUrl: image.about,
@@ -5251,21 +5251,51 @@ function showAbout() {
         title: 'HiveTalk',
         html: `
         <div id="about">
-            <br />
-             HiveTalk is a fork of MiroTalk SFU <br/>
-            Fork maintainer: <a href="https://github.com/hivetalk" target="_blank"> HiveTalk group</a>
+            <b>  Zap the developer: ${extractedIdentifier} </b><br/><br/>
+                <label for="amount" style="font-size: 1.2em;">
+                Amount (sats): </label>
+                <input type="number" id="amount" class="swal2-input" placeholder="Enter amount" value="21">
+
+        <br /> <br />
+           Find out more about this project on <a href="https://github.com/hivetalk" target="_blank"> Github</a>
             <br/><br/>
-            <button 
-                id="support-button" 
-                data-umami-event="Support button" 
-                class="pulsate" 
-                onclick="window.open('https://sats.lnaddy.com/tipjar/11')">
-                <i class="fas fa-heart"></i> 
-                Support
-            </button>
+
         </div>
         `,
-        showClass: { popup: 'animate__animated animate__fadeInDown' },
-        hideClass: { popup: 'animate__animated animate__fadeOutUp' },
+        showCancelButton: true,
+        reverseButtons: true,
+        confirmButtonText: 'Zap!',
+        confirmButtonColor: '#3085d6',
+        cancelButtonColor: 'red',
+        cancelButtonText: 'Close',
+        // showClass: { popup: 'animate__animated animate__fadeInDown' },
+        // hideClass: { popup: 'animate__animated animate__fadeOutUp' },
+        preConfirm: () => {
+            const amount = document.getElementById('amount').value;
+            // adjust amount to ln address specified range
+            if (!amount || amount <= 0) {
+                Swal.showValidationMessage('Please enter a valid amount');
+                return false;
+            }
+            return amount;
+        }
+    }).then((result) => {
+        if (result.isConfirmed) {
+            let amt = result.value
+            console.log('Amount:', amt);
+            console.log('lightning address:', extractedIdentifier);
+
+            window.moduleFunctions.handleDonation(peer_name, extractedIdentifier, amt)
+                .then(result => {
+                    console.log("handleDonationResult:", result);
+                    // send zap msg to chat emoji pop up
+                    boltEmoji(extractedIdentifier + ' ' + amt + ' sats');
+                    // send zap message to chatroom if open
+                    rc.broadcastMessage(result);
+                })
+                .catch(error => {
+                    console.log("Error:", error);
+                });
+        }
     });
 }
