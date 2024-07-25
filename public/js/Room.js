@@ -1730,7 +1730,7 @@ async function signSampleEvent(publicKey) {
 
 async function sendEvent(textNote, publicKey) {
     try {
-        let hiveRelays = ['wss://hivetalk.nostr1.com', 'wss://testnet.plebnet.dev/nostrrelay/XmnWyifA'];
+        let hiveRelays = ['wss://hivetalk.nostr1.com'];
         // const relays = [...hiveRelays, ...defaultRelays];
         const relays = [...hiveRelays]
 
