@@ -296,7 +296,7 @@ document.addEventListener('DOMContentLoaded', function () {
             peer_pubkey = user.pubkey;
             window.localStorage.peer_pubkey = user.pubkey;
 
-            sendSampleEvent(peer_pubkey) // send a sample event to the test relay
+            signSampleEvent(peer_pubkey) // send a sample event to the test relay
 
             peer_npub = nip19.npubEncode(user.pubkey)
             window.localStorage.peer_npub = peer_npub;
@@ -517,7 +517,7 @@ async function loadUser() {
                         peer_pubkey = user.pubkey;
                         peer_npub = nip19.npubEncode(user.pubkey)
 
-                        sendSampleEvent(peer_pubkey) // send a sample event to the test relay
+                        signSampleEvent(peer_pubkey) // send a sample event to the test relay
 
                         window.localStorage.peer_pubkey = user.pubkey;
                         window.localStorage.peer_name = user.name;
@@ -600,7 +600,7 @@ function checkUserInfo() {
             peer_pubkey = user.pubkey;
             peer_npub = nip19.npubEncode(user.pubkey)
 
-            sendSampleEvent(peer_pubkey) // send a sample event to the test relay
+            signSampleEvent(peer_pubkey) // send a sample event to the test relay
 
             window.localStorage.peer_name = user.name;
             window.localStorage.peer_url = user.picture;
@@ -1632,12 +1632,10 @@ function checkMedia() {
 }
 
 
-async function sendSampleEvent(publicKey) {
+async function signSampleEvent(publicKey) {
     try {
-        // sign and send event to a test relay
-        const relays = ['wss://testnet.plebnet.dev/nostrrelay/XmnWyifA'];
-
-        // Create an event
+        // Create an event and sign it to make sure user is who they say they are.
+        // also useful if they want to blast a note out to their relays
         const event = {
             kind: 1,
             pubkey: publicKey,
@@ -1652,10 +1650,6 @@ async function sendSampleEvent(publicKey) {
         const eventID = signedEvent["id"]
         console.log("Event ID", eventID)
 
-        // Create a pool and publish the event
-        const pool = new window.NostrTools.SimplePool();
-        await Promise.any(pool.publish(relays, signedEvent));
-        console.log('Published to at least one relay!');
     } catch(error) {
         console.error('An error occurred while sending Sample Event', error);
         // fail silently
