@@ -32,9 +32,9 @@ const pool = new SimplePool();
 let defaultRelays = [
     'wss://relay.primal.net',
     'wss://relay.damus.io/',
-    'wss://relay.nostr.band/all',
+//    'wss://relay.nostr.band/all',
     'wss://nos.lol',
-    'wss://hivetalk.nostr1.com',
+//    'wss://hivetalk.nostr1.com',
 ];
 
 const socket = io({ transports: ['websocket'] });
@@ -1731,8 +1731,8 @@ async function signSampleEvent(publicKey) {
 async function sendEvent(textNote, publicKey) {
     try {
         let hiveRelays = ['wss://hivetalk.nostr1.com'];
-        // const relays = [...hiveRelays, ...defaultRelays];
-        const relays = [...hiveRelays]
+        const relays = [...hiveRelays, ...defaultRelays];
+        //const relays = [...hiveRelays]
 
         // Create an event
         const event = {
