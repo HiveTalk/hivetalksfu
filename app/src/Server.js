@@ -201,6 +201,7 @@ const views = {
     privacy: path.join(__dirname, '../../', 'public/views/privacy.html'),
     room: path.join(__dirname, '../../', 'public/views/Room.html'),
     support: path.join(__dirname, '../../', 'public/views/support.html'),
+    donate: path.join(__dirname, '../../', 'public/views/support.html'),
 
 };
 
@@ -546,6 +547,10 @@ function startServer() {
         res.sendFile(views.support);
     });
 
+    // hivetalk donate
+    app.get(['/donate'], (req, res) => {
+        res.sendFile(views.support);
+    });
 
     // Get stats endpoint
     app.get(['/stats'], (req, res) => {
