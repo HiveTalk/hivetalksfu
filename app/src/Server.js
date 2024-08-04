@@ -200,7 +200,7 @@ const views = {
     permission: path.join(__dirname, '../../', 'public/views/permission.html'),
     privacy: path.join(__dirname, '../../', 'public/views/privacy.html'),
     room: path.join(__dirname, '../../', 'public/views/Room.html'),
-    donate: path.join(__dirname, '../../', 'public/views/donate.html'),
+    support: path.join(__dirname, '../../', 'public/views/support.html'),
 
 };
 
@@ -541,9 +541,9 @@ function startServer() {
         res.sendFile(views.about);
     });
 
-    // hivetalk donate
-    app.get(['/donate'], (req, res) => {
-        res.sendFile(views.donate);
+    // hivetalk support
+    app.get(['/support'], (req, res) => {
+        res.sendFile(views.support);
     });
 
 
