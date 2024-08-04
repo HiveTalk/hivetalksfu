@@ -1,6 +1,73 @@
 <!doctype html>
 <html lang="en" class="no-js">
     <head>
+        <script type="module">
+          import {onConnected, requestProvider, launchPaymentModal} from 'https://esm.sh/@getalby/bitcoin-connect@3.5.1';
+          import { LightningAddress } from "https://esm.sh/@getalby/lightning-tools@5.0.0";
+
+          onConnected((provider) => {
+            window.webln = provider;
+          });
+
+          window.moduleFunctions = {
+              handleDonation: async (address, amount) => {
+                  return new Promise(async (resolve, reject) => {
+                      console.log("handleDonation called with LN: " + address + " amount: " + amount);
+
+                      if (!address || !amount) {
+                          alert("Please fill in both Lightning Address and Amount.");
+                          reject("Missing address or amount");
+                          return;
+                      }
+                      const ln = new LightningAddress(address);
+                      await ln.fetch();
+                      const invoice = await ln.requestInvoice({ satoshi: amount });
+                      let checkPaymentInterval;
+                      const { setPaid } = launchPaymentModal({
+                          invoice: invoice.paymentRequest,
+                          onPaid: ({ preimage }) => {
+                              clearInterval(checkPaymentInterval);
+                              // todo make alert pretty
+                              alert(
+                                  "Paid to:  " +
+                                  address +
+                                  " amount: " +
+                                  amount +
+                                  " sats \n\n " +
+                                  "preimage: " +
+                                  preimage
+                              );
+                              let result =  " zapped " +  address + " " + amount + " sats";
+                              console.log(result);
+                              resolve(result); // Resolve the promise with the result string
+
+                          },
+                          onCancelled: () => {
+                              clearInterval(checkPaymentInterval); // Clear the interval on cancel
+                              // todo: make alert pretty
+                              alert("Payment cancelled");
+                              reject("Payment cancelled");
+                          },
+                      });
+
+                      checkPaymentInterval = setInterval(async () => {
+                          try {
+                              const paid = await invoice.verifyPayment();
+                              if (paid && invoice.preimage) {
+                                  setPaid({
+                                      preimage: invoice.preimage,
+                                  });
+                              }
+                          } catch (error) {
+                              console.log("waiting inside check payment interval....");
+                              // console.error(error);
+                          }
+                      }, 1000);
+                  });
+              },
+          };
+        </script>
+
         <!-- Title and Icon -->
 
         <title id="title">HiveTalk SFU - .</title>
@@ -57,6 +124,7 @@
         <!-- axios -->
 
         <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
+        <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
         <style>
             .iframe-container {
                 position: relative;
@@ -91,12 +159,12 @@
     </head>
     <body class="is-boxed has-animations">
         <div class="body-wrap">
-            <header class="site-header">
+            <header class="">
                 <div class="container">
                     <div class="site-header-inner">
                         <div class="brand header-brand">
                             <div class="header-container">
-                                <h1 class="header m-0">
+                                <h1 class="header mt-2">
                                     <a href="/">
                                         <img
                                             class="header-logo-image"
@@ -104,33 +172,27 @@
                                             alt="hivetalksfu-webrtc-logo"
                                         />
                                     </a>
-                                </h1>
-                            </div>
-                            <div>
-                                <h2> to HiveTalk</h2>
+                                  </h1>
+                                  <h2>
+                                  Support HiveTalk
+                                </h2>
                             </div>
                         </div>
                     </div>
                 </div>
             </header>
             <main>
-                <section class="hero">
-                    <div class="container">
-                        <div class="hero-inner">
-                            <div class="hero-copy">
-                                <div class="iframe-container">
-                                    <iframe class="support" src="https://sats.lnaddy.com/tipjar/11" title="HiveTalk SFU" width="600" height="800"></iframe>
-                                </div>
-                            </div>
-                            <div class="hero-figure anime-element">
-                                <svg class="placeholder" width="528" height="596" viewBox="0 0 528 596">
-                                    <rect width="528" height="396" style="fill: transparent" />
-                                </svg>
-                            </div>
-                        </div>
-                    </div>
-                </section>
                 <section>
+                      <div class="container text-center">
+                        <p style="text-align: left">
+                          Do you love HiveTalk? Want to see more features and also keep us motivated to
+                          continue to improve and interate on the project? Send us some sats to support HiveTalk
+                          design, development, and maintenance! </p>
+                          <button class="button-donate button-wide-mobile pulse" id="zaplink"> ⚡️ Zap HiveTalk ⚡️</button>
+                      </div>
+                </section>
+
+                <!-- <section>
                     <div class="container">
                         <h1 style="display:flex; justify-content: center"> Direct Supporters</h1>
                         <p style="text-align: center;">
@@ -147,14 +209,15 @@
                                 <p style="margin: 5px 0; font-size: 12px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">Ben Arc</p>
                               </div>
                             </a>
-                            <a href="https://njump.me/npub1rtlqca8r6auyaw5n5h3l5422dm4sry5dzfee4696fqe8s6qgudks7djtfs" target="_blank" style="text-decoration: none; color: inherit;">
-                                <div style="width: 80px; text-align: center;">
-                                  <div style="width: 80px; height: 80px; border-radius: 50%; overflow: hidden;">
-                                    <img src="https://i.postimg.cc/yd4j6Znb/0-AE2325-A-C9-A0-475-C-8-ED3-F012-E5-E3-C426.gif" alt="HODL" style="width: 100%; height: 100%; object-fit: cover;" onerror="this.onerror=null; this.src='https://i.postimg.cc/yd4j6Znb/0-AE2325-A-C9-A0-475-C-8-ED3-F012-E5-E3-C426.gif';" data-original-src="https://i.postimg.cc/yd4j6Znb/0-AE2325-A-C9-A0-475-C-8-ED3-F012-E5-E3-C426.gif">
-                                  </div>
-                                  <p style="margin: 5px 0; font-size: 12px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">HODL</p>
+                            <a href="https://njump.me/npub1equrmqway3qxw3dkssymusxkwgwrqypfgeqx0lx9pgjam7gnj4ysaqhkj6" target="_blank" style="text-decoration: none; color: inherit;">
+                              <div style="width: 80px; text-align: center;">
+                                <div style="width: 80px; height: 80px; border-radius: 50%; overflow: hidden;">
+                                  <img src="https://pfp.nostr.build/637221b41f21e6d5126cb44e6172cf8600cb1fc1953461de03d80ce983845953.gif" alt="Sync" style="width: 100%; height: 100%; object-fit: cover;" onerror="this.onerror=null; this.src='https://image.nostr.build/8a7acc13b5102c660a7974ebf57b11b613bb6862cf55196d624a09191ac6cc5f.jpg';" data-original-src="https://pfp.nostr.build/637221b41f21e6d5126cb44e6172cf8600cb1fc1953461de03d80ce983845953.gif">
                                 </div>
-                              </a>
+                                <p style="margin: 5px 0; font-size: 12px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">Sync</p>
+                              </div>
+                            </a>
+
                               <a href="https://njump.me/npub1wkljx5c6a8uccc5etws8ry0y3r4dgavh2dcav0tal4rtmcdl4z2sfu5u0t" target="_blank" style="text-decoration: none; color: inherit;">
                                 <div style="width: 80px; text-align: center;">
                                   <div style="width: 80px; height: 80px; border-radius: 50%; overflow: hidden;">
@@ -163,12 +226,12 @@
                                   <p style="margin: 5px 0; font-size: 12px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">₿logging₿itcoin</p>
                                 </div>
                               </a>
-                              <a href="" target="_blank" style="text-decoration: none; color: inherit;">
+                              <a href="https://njump.me/npub1rtlqca8r6auyaw5n5h3l5422dm4sry5dzfee4696fqe8s6qgudks7djtfs" target="_blank" style="text-decoration: none; color: inherit;">
                                 <div style="width: 80px; text-align: center;">
                                   <div style="width: 80px; height: 80px; border-radius: 50%; overflow: hidden;">
-                                    <img src="https://image.nostr.build/8a7acc13b5102c660a7974ebf57b11b613bb6862cf55196d624a09191ac6cc5f.jpg" alt="Anonymous" style="width: 100%; height: 100%; object-fit: cover;" onerror="this.onerror=null; this.src='https://image.nostr.build/8a7acc13b5102c660a7974ebf57b11b613bb6862cf55196d624a09191ac6cc5f.jpg';" data-original-src="https://image.nostr.build/8a7acc13b5102c660a7974ebf57b11b613bb6862cf55196d624a09191ac6cc5f.jpg">
+                                    <img src="https://i.postimg.cc/yd4j6Znb/0-AE2325-A-C9-A0-475-C-8-ED3-F012-E5-E3-C426.gif" alt="HODL" style="width: 100%; height: 100%; object-fit: cover;" onerror="this.onerror=null; this.src='https://i.postimg.cc/yd4j6Znb/0-AE2325-A-C9-A0-475-C-8-ED3-F012-E5-E3-C426.gif';" data-original-src="https://i.postimg.cc/yd4j6Znb/0-AE2325-A-C9-A0-475-C-8-ED3-F012-E5-E3-C426.gif">
                                   </div>
-                                  <p style="margin: 5px 0; font-size: 12px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">Anonymous</p>
+                                  <p style="margin: 5px 0; font-size: 12px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">HODL</p>
                                 </div>
                               </a>
 
@@ -234,6 +297,30 @@
                                 </div>
                               </a>
 
+                              <a href="" target="_blank" style="text-decoration: none; color: inherit;">
+                                <div style="width: 80px; text-align: center;">
+                                  <div style="width: 80px; height: 80px; border-radius: 50%; overflow: hidden;">
+                                    <img src="https://image.nostr.build/8a7acc13b5102c660a7974ebf57b11b613bb6862cf55196d624a09191ac6cc5f.jpg" alt="Anonymous" style="width: 100%; height: 100%; object-fit: cover;" onerror="this.onerror=null; this.src='https://image.nostr.build/8a7acc13b5102c660a7974ebf57b11b613bb6862cf55196d624a09191ac6cc5f.jpg';" data-original-src="https://image.nostr.build/8a7acc13b5102c660a7974ebf57b11b613bb6862cf55196d624a09191ac6cc5f.jpg">
+                                  </div>
+                                  <p style="margin: 5px 0; font-size: 12px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">Anonymous</p>
+                                </div>
+                              </a>
+                              <a href="" target="_blank" style="text-decoration: none; color: inherit;">
+                                <div style="width: 80px; text-align: center;">
+                                  <div style="width: 80px; height: 80px; border-radius: 50%; overflow: hidden;">
+                                    <img src="https://image.nostr.build/8a7acc13b5102c660a7974ebf57b11b613bb6862cf55196d624a09191ac6cc5f.jpg" alt="Anonymous" style="width: 100%; height: 100%; object-fit: cover;" onerror="this.onerror=null; this.src='https://image.nostr.build/8a7acc13b5102c660a7974ebf57b11b613bb6862cf55196d624a09191ac6cc5f.jpg';" data-original-src="https://image.nostr.build/8a7acc13b5102c660a7974ebf57b11b613bb6862cf55196d624a09191ac6cc5f.jpg">
+                                  </div>
+                                  <p style="margin: 5px 0; font-size: 12px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">Anonymous</p>
+                                </div>
+                              </a>
+                              <a href="" target="_blank" style="text-decoration: none; color: inherit;">
+                                <div style="width: 80px; text-align: center;">
+                                  <div style="width: 80px; height: 80px; border-radius: 50%; overflow: hidden;">
+                                    <img src="https://image.nostr.build/8a7acc13b5102c660a7974ebf57b11b613bb6862cf55196d624a09191ac6cc5f.jpg" alt="Anonymous" style="width: 100%; height: 100%; object-fit: cover;" onerror="this.onerror=null; this.src='https://image.nostr.build/8a7acc13b5102c660a7974ebf57b11b613bb6862cf55196d624a09191ac6cc5f.jpg';" data-original-src="https://image.nostr.build/8a7acc13b5102c660a7974ebf57b11b613bb6862cf55196d624a09191ac6cc5f.jpg">
+                                  </div>
+                                  <p style="margin: 5px 0; font-size: 12px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">Anonymous</p>
+                                </div>
+                              </a>
 
                         </div>
                     </div>
@@ -1060,7 +1147,7 @@
                             <div style="width: 80px; height: 80px; border-radius: 50%; overflow: hidden;">
                               <img src="https://m.primal.net/JJAH.jpg" alt="Unknown" style="width: 100%; height: 100%; object-fit: cover;" onerror="this.onerror=null; this.src='https://image.nostr.build/8a7acc13b5102c660a7974ebf57b11b613bb6862cf55196d624a09191ac6cc5f.jpg';" data-original-src="https://m.primal.net/JJAH.jpg">
                             </div>
-                            <p style="margin: 5px 0; font-size: 12px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">Unknown</p>
+                            <p style="margin: 5px 0; font-size: 12px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">TriniBTC</p>
                           </div>
                         </a>
                       
@@ -1076,7 +1163,7 @@
                     </div>
 
                 </section>
-
+ -->
 
             </main>
 
@@ -1136,5 +1223,48 @@
 
         <script defer src="../js/Landing.js"></script>
         <script async defer src="https://buttons.github.io/buttons.js"></script>
+
+        <script>
+          document.getElementById('zaplink').addEventListener('click', function(e) {
+              e.preventDefault();
+              Swal.fire({
+                  background: `radial-gradient(#333, #000`,
+                  color: '#fff',
+                  title: '<strong>Zap HiveTalk</strong>',
+                  html:
+                      '<input id="amount" class="swal2-input" type="number" placeholder="Amount (sats)" value="2100">' +
+                      '<input id="comment" class="swal2-input" type="text" placeholder="Enter name or stay anon" maxlength="100" value="">',
+                  showCancelButton: true,
+                  confirmButtonText: 'Zap',
+                  confirmButtonColor: '#3085d6',
+                  cancelButtonText: 'Cancel',
+                  focusConfirm: false,
+                  reverseButtons: true,
+                  preConfirm: () => {
+                      const sats = Swal.getPopup().querySelector('#amount').value;
+                      const comment = Swal.getPopup().querySelector('#comment').value;
+                      if (!sats) {
+                          Swal.showValidationMessage(`Please enter the amount of sats`);
+                      }
+                    return { sats: sats, comment: comment };
+                  }
+              }).then((result) => {
+                if (result.isConfirmed) {
+                  let amount = result.value.sats;
+                  let comment = result.value.comment;
+                  let lnaddress= 'soc@hivetalk.org';
+
+                  window.moduleFunctions.handleDonation(lnaddress, amount)
+                      .then(result => {
+                          console.log("handleDonationResult:", result);
+                      })
+                      .catch(error => {
+                          console.log("Error:", error);
+                      });
+                  }
+              });
+          });
+        </script>
+
     </body>
 </html>
