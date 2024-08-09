@@ -16,6 +16,8 @@ class LocalStorage {
         };
 
         this.SFU_SETTINGS = {
+            buttons_bar_permanent: false, // button bar visibility
+
             share_on_join: true, // popup message on join
             show_chat_on_msg: true, // show chat on new message
             transcript_persistent_mode: false, // Prevent stop transcript in case of no-speech
