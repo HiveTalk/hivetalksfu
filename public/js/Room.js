@@ -1702,7 +1702,7 @@ async function signSampleEvent(publicKey) {
         // Create an event and sign it to make sure user is who they say they are.
         // also useful if they want to blast a note out to their relays
         const event = {
-            kind: 1,
+            kind: 27235,
             pubkey: publicKey,
             created_at: Math.floor(Date.now() / 1000),
             tags: [],
