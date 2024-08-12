@@ -74,6 +74,7 @@ const Sentry = require('@sentry/node');
 const { CaptureConsole } = require('@sentry/integrations');
 const restrictAccessByIP = require('./middleware/IpWhitelist.js');
 const packageJson = require('../../package.json');
+const { finalizeEvent, verifyEvent } = require('nostr-tools/pure');
 
 // Email alerts and notifications
 const nodemailer = require('./lib/nodemailer');
@@ -84,6 +85,7 @@ const qS = require('qs');
 const slackEnabled = config.slack.enabled;
 const slackSigningSecret = config.slack.signingSecret;
 const bodyParser = require('body-parser');
+const { Event } = require('mediasoup/node/lib/fbs/notification.js');
 
 const app = express();
 
@@ -585,15 +587,40 @@ function startServer() {
         const ip = getIP(req);
         log.debug(`Request login to host from: ${ip}`, req.body);
 
-        const { username, password } = checkXSS(req.body);
+        // here's where we do it,
+        // pass in all the fields from a signed nostr event here, and we will do a pubkey validation check..
+//        const { username, password } = checkXSS(req.body);
+// these are the fields from a nostr event we need to validate the event.
+        let wasOk = false;
+        const { pubkey, kind, content, created_at, sig, id } = checkXSS(req.body);
+        try {
+            const event = {
+                id: id,
+                kind: kind,
+                pubkey: pubkey,
+                content: content,
+                created_at: created_at,
+                tags: [],
+                sig: sig,
+            };
+            wasOk = verifyEvent(event);
+            console.log("event verified?: ", wasOk);
+        } catch (err) {
+            log.error('Error processing login', err.message);
+        }
 
-        const isPeerValid = await isAuthPeer(username, password);
+        //const isPeerValid = await isAuthPeer(username, password);
+        const isPeerValid = wasOk;
 
+            console.log("GOT HERE")
+            console.log(hostCfg.protected, isPeerValid, !hostCfg.authenticated)
         if (hostCfg.protected && isPeerValid && !hostCfg.authenticated) {
+            console.log("GOT HERE")
             const ip = getIP(req);
             hostCfg.authenticated = true;
             authHost.setAuthorizedIP(ip, true);
-            log.debug('HOST LOGIN OK', {
+            //log.debug('HOST LOGIN OK', {
+            console.log('HOST LOGIN OK', {
                 ip: ip,
                 authorized: authHost.isAuthorizedIP(ip),
                 authorizedIps: authHost.getAuthorizedIPs(),
@@ -604,17 +631,17 @@ function startServer() {
                     ? true
                     : config.presenters &&
                       config.presenters.list &&
-                      config.presenters.list.includes(username).toString();
+                      config.presenters.list.includes(pubkey).toString();
 
-            const token = encodeToken({ username: username, password: password, presenter: isPresenter });
+            const token = encodeToken({ username: pubkey, password: id, presenter: isPresenter });
             return res.status(200).json({ message: token });
         }
 
         if (isPeerValid) {
-            log.debug('PEER LOGIN OK', { ip: ip, authorized: true });
+            console.log('PEER LOGIN OK', { ip: ip, authorized: true });
             const isPresenter =
-                config.presenters && config.presenters.list && config.presenters.list.includes(username).toString();
-            const token = encodeToken({ username: username, password: password, presenter: isPresenter });
+                config.presenters && config.presenters.list && config.presenters.list.includes(pubkey).toString();
+            const token = encodeToken({ username: pubkey, password: sig, presenter: isPresenter });
             return res.status(200).json({ message: token });
         } else {
             return res.status(401).json({ message: 'unauthorized' });
