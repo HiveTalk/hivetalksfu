@@ -269,6 +269,7 @@ let initStream = null;
 let scriptProcessor = null;
 
 const RoomURL = window.location.origin + '/join/' + room_id; // window.location.origin + '/join/?room=' + roomId + '&token=' + myToken
+//const RoomURL = window.location.origin + '/join/?room=' + roomId + '&token=' + myToken
 
 let transcription;
 
