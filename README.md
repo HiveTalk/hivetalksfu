@@ -65,7 +65,7 @@ Free WebRTC - SFU - Simple, Secure, Scalable Real-Time Video Conferences with su
 <br/>
 
 -   You can `directly join a room` by using link like:
--   https://sfu.mirotalk.com/join?room=test&roomPassword=0&name=mirotalksfu&audio=0&video=0&screen=0&notify=0
+-   https://hivetalk.org/join?room=test&roomPassword=0&name=hivetalksfu&audio=0&video=0&screen=0&notify=0
 
     | Params       | Type           | Description     |
     | ------------ | -------------- | --------------- |
@@ -126,7 +126,7 @@ To embed a meeting in `your service or app` using an iframe, use the following c
 ```html
 <iframe
     allow="camera; microphone; display-capture; fullscreen; clipboard-read; clipboard-write; autoplay"
-    src="https://sfu.mirotalk.com/newroom"
+    src="https://hivetalk.org/newroom"
     style="height: 100vh; width: 100vw; border: 0px;"
 ></iframe>
 ```
@@ -138,7 +138,7 @@ To embed a meeting in `your service or app` using an iframe, use the following c
 
 <br/>
 
--   Before running MiroTalk SFU, ensure you have `Node.js` and all [requirements](https://mediasoup.org/documentation/v3/mediasoup/installation/#requirements) installed. This project has been tested with Node version [18.X](https://nodejs.org/en/download).
+-   Before running HiveTalk SFU, ensure you have `Node.js` and all [requirements](https://mediasoup.org/documentation/v3/mediasoup/installation/#requirements) installed. This project has been tested with Node version [18.X](https://nodejs.org/en/download).
 
 -   Requirements install example for `Ubuntu 20.04`
 
@@ -164,9 +164,9 @@ Install `NodeJS 18.X` and `npm` using [Node Version Manager](https://docs.mirota
 
 ```bash
 # Clone this repo
-$ git clone https://github.com/miroslavpejic85/mirotalksfu.git
-# Go to to dir mirotalksfu
-$ cd mirotalksfu
+$ git clone https://github.com/HiveTalk/hivetalksfu.git
+# Go to to dir hivetalksfu
+$ cd hivetalksfu
 # Copy app/src/config.template.js in app/src/config.js and edit it if needed
 $ cp app/src/config.template.js app/src/config.js
 # Install dependencies - be patient, the first time will take a few minutes, in the meantime have a good coffee ;)
@@ -183,7 +183,7 @@ $ PORT=3011 npm start
 
 > \[!NOTE]
 >
-> To run `MiroTalk SFU` on a `Windows operating system`, you can follow the instructions provided in [this documentation](https://github.com/miroslavpejic85/mirotalksfu/issues/99#issuecomment-1586073853).
+> To run `HiveTalk SFU` on a `Windows operating system`, you can follow the instructions provided in [this documentation](https://github.com/hivetalk/hivetalksfu/issues/99#issuecomment-1586073853).
 
 </details>
 
@@ -221,9 +221,9 @@ $ docker-compose down
 
 -   `Ngrok/HTTPS:` You can start a video conference directly from your local PC and make it accessible from any device outside your network by following [these instructions](docs/ngrok.md), or expose it directly on [HTTPS](app/ssl/README.md).
 
--   `Self-hosting:` For `self-hosting MiroTalk SFU` on your own dedicated server, please refer to [this comprehensive guide](docs/self-hosting.md). It will provide you with all the necessary instructions to get your MiroTalk SFU instance up and running smoothly.
+-   `Self-hosting:` For `self-hosting HiveTalk SFU` on your own dedicated server, please refer to [this comprehensive guide](docs/self-hosting.md). It will provide you with all the necessary instructions to get your HiveTalk SFU instance up and running smoothly.
 
--   `Rest API:` The [API documentation](https://docs.mirotalk.com/mirotalk-sfu/api/) uses [swagger](https://swagger.io/) at https://localhost:3010/api/v1/docs or check it on live [here](https://sfu.mirotalk.com/api/v1/docs).
+-   `Rest API:` The [API documentation](https://docs.mirotalk.com/mirotalk-sfu/api/) uses [swagger](https://swagger.io/) at https://localhost:3010/api/v1/docs or check it on live [here](https://hivetalk.org/api/v1/docs).
 
 ```bash
 # The response will give you the active meetings (default disabled).
@@ -274,9 +274,7 @@ $ curl -X POST "https://sfu.mirotalk.com/api/v1/token" -H "authorization: mirota
 
 [![AGPLv3](public/images/AGPLv3.png)](LICENSE)
 
-MiroTalk SFU is free and open-source under the terms of AGPLv3 (GNU Affero General Public License v3.0). Please `respect the license conditions`, In particular `modifications need to be free as well and made available to the public`. Get a quick overview of the license at [Choose an open source license](https://choosealicense.com/licenses/agpl-3.0/).
-
-To obtain a [MiroTalk SFU license](https://docs.mirotalk.com/license/licensing-options/) with terms different from the AGPLv3, you can conveniently make your [purchase on CodeCanyon](https://codecanyon.net/item/mirotalk-sfu-webrtc-realtime-video-conferences/40769970). This allows you to tailor the licensing conditions to better suit your specific requirements.
+HiveTalk SFU is free and open-source under the terms of AGPLv3 (GNU Affero General Public License v3.0). Please `respect the license conditions`, In particular `modifications need to be free as well and made available to the public`. Get a quick overview of the license at [Choose an open source license](https://choosealicense.com/licenses/agpl-3.0/).
 
 </details>
 
