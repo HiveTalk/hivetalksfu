@@ -705,7 +705,7 @@ function startServer() {
             console.log('PEER LOGIN OK', { ip: ip, authorized: true });
             const isPresenter =
                 config.presenters && config.presenters.list && config.presenters.list.includes(pubkey).toString();
-            const token = encodeToken({ username: pubkey, password: sig, presenter: isPresenter });
+            const token = encodeToken({ username: pubkey, password: id, presenter: isPresenter });
             return res.status(200).json({ message: token });
         } else {
             return res.status(401).json({ message: 'unauthorized' });
@@ -2929,9 +2929,11 @@ function startServer() {
             jwt.verify(token, jwtCfg.JWT_KEY, (err, decoded) => {
                 if (err) {
                     // Token is invalid
+                    console.log('token invalid')
                     resolve(false);
                 } else {
                     // Token is valid
+                    console.log('token valid')
                     resolve(true);
                 }
             });
@@ -2976,6 +2978,7 @@ function startServer() {
 
         // Parse the decrypted payload as JSON
         const payload = JSON.parse(decryptedPayload);
+        console.log("decoded token", payload)
 
         return payload;
     }
