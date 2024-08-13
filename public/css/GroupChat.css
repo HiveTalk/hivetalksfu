@@ -24,6 +24,20 @@
     /* border: 1px solid lime; */
 }
 
+@media only screen and (max-width: 768px) {
+    .chat-container.fullscreen {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        z-index: 1000;
+        border-radius: 0;
+    }
+}
+
+
+
 /* Chat app container */
 .chat-app {
     position: absolute;
@@ -360,7 +374,6 @@ input[type='text'] {
 .form-check-input {
     cursor: pointer;
 }
-
 #chatShareRoomBtn {
     padding: 8px 16px;
     background: var(--body-bg);

@@ -3891,6 +3891,15 @@ class RoomClient {
     async toggleChat() {
         const chatRoom = this.getId('chatRoom');
         chatRoom.classList.toggle('show');
+        if (this.isMobileDevice) {
+            // For mobile: toggle between full screen and hidden
+            chatRoom.classList.toggle('fullscreen');
+            chatRoom.style.display = this.isChatOpen ? 'none' : 'block';
+        } else {
+            // For desktop: use existing toggle logic
+            chatRoom.classList.toggle('show');
+        }
+    
         if (!this.isChatOpen) {
             await getRoomParticipants();
             hide(chatMinButton);
