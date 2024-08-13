@@ -2852,6 +2852,13 @@ function handleSelects() {
         lS.setSettings(localStorageSettings);
         e.target.blur();
     };
+    switchKeepButtonsVisible.onchange = (e) => {
+        isButtonsBarOver = e.currentTarget.checked;
+        localStorageSettings.keep_buttons_visible = isButtonsBarOver;
+        lS.setSettings(localStorageSettings);
+        e.target.blur();
+    };
+
     // audio options
     switchAutoGainControl.onchange = (e) => {
         localStorageSettings.mic_auto_gain_control = e.currentTarget.checked;
@@ -3239,6 +3246,9 @@ function loadSettingsFromLocalStorage() {
     switchPitchBar.checked = isPitchBarEnabled;
     switchSounds.checked = isSoundEnabled;
     switchShare.checked = notify;
+    isButtonsBarOver = localStorageSettings.keep_buttons_visible || false;
+    document.getElementById('switchKeepButtonsVisible').checked = isButtonsBarOver;
+
 
     recPrioritizeH264 = localStorageSettings.rec_prioritize_h264;
     switchH264Recording.checked = recPrioritizeH264;
