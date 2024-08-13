@@ -1436,6 +1436,13 @@ label {
     border-radius: 1rem;
     background: radial-gradient(circle at bottom, #539ce2 0%, #702792 50%, #1d2026 100%);
 }
+.feature-icon2 {
+    display: flex;
+    justify-content: center;
+    height: 150px;
+    padding: 1rem;
+    border-radius: 1rem;
+}
 @media (min-width: 641px) {
     .features-wrap:first-of-type {
         margin-top: -24px;
