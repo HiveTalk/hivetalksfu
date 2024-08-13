@@ -226,8 +226,9 @@ const views = {
     privacy: path.join(__dirname, '../../', 'public/views/privacy.html'),
     room: path.join(__dirname, '../../', 'public/views/Room.html'),
     support: path.join(__dirname, '../../', 'public/views/support.html'),
-    donate: path.join(__dirname, '../../', 'public/views/support.html'),
-
+    donate: path.join(__dirname, '../../', 'public/views/support.html'), // legacy so keep this line
+    faq: path.join(__dirname, '../../', 'public/views/faq.html'),
+    presskit: path.join(__dirname, '../../', 'public/views/presskit.html'),
     rtmpStreamer: path.join(__dirname, '../../', 'public/views/RtmpStreamer.html'),
 };
 
@@ -603,6 +604,17 @@ function startServer() {
     app.get(['/donate'], (req, res) => {
         res.sendFile(views.support);
     });
+
+    // hivetalk donate
+    app.get(['/faq'], (req, res) => {
+        res.sendFile(views.faq);
+    });
+
+    // hivetalk donate
+    app.get(['/presskit'], (req, res) => {
+        res.sendFile(views.presskit);
+    });
+    
 
     // Get stats endpoint
     app.get(['/stats'], (req, res) => {
