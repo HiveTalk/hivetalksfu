@@ -1409,6 +1409,11 @@ label {
     margin-right: -32px;
     margin-left: -32px;
 }
+#meetingsContainer {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+}
 .features-wrap:first-of-type {
     margin-top: -16px;
 }
