@@ -3890,15 +3890,8 @@ class RoomClient {
 
     async toggleChat() {
         const chatRoom = this.getId('chatRoom');
-        if (this.isMobileDevice) {
-            // For mobile: toggle between full screen and hidden
-            chatRoom.classList.toggle('fullscreen');
-            chatRoom.style.display = this.isChatOpen ? 'none' : 'block';
-        } else {
-            // For desktop: use existing toggle logic
-            chatRoom.classList.toggle('show');
-        }
-    
+        chatRoom.classList.toggle('show');
+        
         if (!this.isChatOpen) {
             await getRoomParticipants();
             hide(chatMinButton);
@@ -3912,14 +3905,19 @@ class RoomClient {
         // console.log("toggleChat: isPinned", this.isChatPinned, " isChatOpen ", this.isChatOpen)
         isParticipantsListOpen = !isParticipantsListOpen;
         this.isChatOpen = !this.isChatOpen;
-        if (this.isChatPinned) {
-             this.chatUnpin();
+        if (this.isMobileDevice) {
+            document.body.style.overflow = this.isChatOpen ? 'hidden' : '';
         } else {
-            this.chatPin();
+            if (this.isChatPinned) {
+                this.chatUnpin();
+            } else {
+                this.chatPin();
+            }
         }
+    
         resizeChatRoom();
     }
-
+        
     toggleShowParticipants() {
         const plist = this.getId('plist');
         const chat = this.getId('chat');
