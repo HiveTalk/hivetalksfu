@@ -3890,7 +3890,6 @@ class RoomClient {
 
     async toggleChat() {
         const chatRoom = this.getId('chatRoom');
-        chatRoom.classList.toggle('show');
         if (this.isMobileDevice) {
             // For mobile: toggle between full screen and hidden
             chatRoom.classList.toggle('fullscreen');
