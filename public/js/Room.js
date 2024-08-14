@@ -3249,6 +3249,8 @@ function loadSettingsFromLocalStorage() {
     switchShare.checked = notify;
     isButtonsBarOver = localStorageSettings.keep_buttons_visible || false;
     document.getElementById('switchKeepButtonsVisible').checked = isButtonsBarOver;
+    if (isButtonsBarOver) showButtons();
+
 
 
     recPrioritizeH264 = localStorageSettings.rec_prioritize_h264;
