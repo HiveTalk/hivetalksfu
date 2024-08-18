@@ -1395,6 +1395,11 @@ label {
     margin-right: -32px;
     margin-left: -32px;
 }
+#meetingsContainer {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+}
 .features-wrap:first-of-type {
     margin-top: -16px;
 }
@@ -2103,6 +2108,12 @@ main {
     box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
     text-decoration: none;  /* Ensure no underline */
     color: inherit;  /* Ensure text color inherits from parent */
+    /* New properties for text wrapping */
+    max-width: calc(100% - 20px); /* Account for left and right margin */
+    white-space: normal;
+    word-wrap: break-word;
+    overflow-wrap: break-word;
+    
 }
 
 .button-donate {

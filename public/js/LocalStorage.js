@@ -53,6 +53,7 @@ class LocalStorage {
             theme_custom: false, // keep custom theme
             buttons_bar: 0, // vertical
             pin_grid: 0, // vertical
+            keep_buttons_visible: false,
         };
 
         this.DEVICES_COUNT = {
