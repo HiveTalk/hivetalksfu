@@ -214,13 +214,12 @@ function getUUID4() {
 }
 
 function joinRoom() {
-
     const roomNameInput = document.getElementById('roomName');
     let roomName = filterXSS(roomNameInput.value).trim(); // Remove any leading or trailing spaces
 
     // Check for invalid characters
     if (roomName.includes(' ')) {
-        roomName = roomName.replace(/\s/g, '_');  // Replace spaces with underscores
+        roomName = roomName.replace(/\s/g, '_'); // Replace spaces with underscores
     }
 
     if (roomName.includes('/')) {

@@ -20,7 +20,7 @@ if (location.href.substr(0, 5) !== 'https') location.href = 'https' + location.h
 // ####################################################
 console.log('Window Location', window.location);
 
-var loggedIn = false
+var loggedIn = false;
 
 // Access the functions from the global object
 const { relayInit, generateSecretKey, getPublicKey, SimplePool } = NostrTools;
@@ -32,9 +32,9 @@ const pool = new SimplePool();
 let defaultRelays = [
     'wss://relay.primal.net',
     'wss://relay.damus.io/',
-//    'wss://relay.nostr.band/all',
+    //    'wss://relay.nostr.band/all',
     'wss://nos.lol',
-//    'wss://hivetalk.nostr1.com',
+    //    'wss://hivetalk.nostr1.com',
 ];
 
 const socket = io({ transports: ['websocket'] });
@@ -281,23 +281,22 @@ let quill = null;
 // INIT ROOM
 // ####################################################
 
-
 document.addEventListener('DOMContentLoaded', function () {
     // show nostr dialog on click in profile settings, only show if logged in
-    document.getElementById('nostrButton').addEventListener('click', function() {
+    document.getElementById('nostrButton').addEventListener('click', function () {
         document.dispatchEvent(new CustomEvent('nlLaunch', { detail: 'switch-account' }));
     });
     console.log('00 ----> init Nostr Login');
     hide(loadingDiv);
     // check localstorage if actually logged in before
-    console.log("CHECK IF LOGGED IN on Nostr or Previously in LocalStorage");
+    console.log('CHECK IF LOGGED IN on Nostr or Previously in LocalStorage');
 
     try {
         const userInfo = JSON.parse(window.localStorage.getItem('__nostrlogin_accounts'));
 
         if (userInfo && userInfo.length > 0) {
             // Do something with the userInfo
-            const user = userInfo[0]
+            const user = userInfo[0];
             peer_name = user.name;
             if (user.name !== undefined && user.name.length > 30) {
                 // truncate peer_name to be < 30 chars
@@ -306,86 +305,105 @@ document.addEventListener('DOMContentLoaded', function () {
             peer_pubkey = user.pubkey;
             window.localStorage.peer_pubkey = user.pubkey;
 
-            signSampleEvent(peer_pubkey) // send a sample event to the test relay
+            signSampleEvent(peer_pubkey); // send a sample event to the test relay
 
-            peer_npub = nip19.npubEncode(user.pubkey)
+            peer_npub = nip19.npubEncode(user.pubkey);
             window.localStorage.peer_npub = peer_npub;
 
             // if there is no peer_name but we have a pubkey, use first 5 chars
             if (user.name === undefined) {
                 // offer to set a username as the first 7 chars of the pubkey
-                peer_name = truncateString(user.pubkey + "...", 10);
+                peer_name = truncateString(user.pubkey + '...', 10);
             }
             window.localStorage.peer_name = user.name;
 
             peer_url = user.picture;
             window.localStorage.peer_url = user.picture;
-            console.log("checkUserInfo :", user.pubkey, user.name, user.picture, peer_npub);
+            console.log('checkUserInfo :', user.pubkey, user.name, user.picture, peer_npub);
 
             if (peer_name && peer_pubkey) {
-                console.log("discovery complete: checkUserInfo: ", peer_name, peer_pubkey, peer_url);
+                console.log('discovery complete: checkUserInfo: ', peer_name, peer_pubkey, peer_url);
 
                 // try to get lightning address
                 loggedIn = getInfoAndContinue();
-                console.log("checking if loggedIn pre clearInterval: ", loggedIn);
+                console.log('checking if loggedIn pre clearInterval: ', loggedIn);
 
                 if (loggedIn) {
                     // clearInterval(checkInterval);      // Then clear the interval
-                    continueNostrLogin("nostr"); // And continue with the next step
+                    continueNostrLogin('nostr'); // And continue with the next step
                 }
             }
         } else {
             // look for peer_name and peer lnaddress from previous local storage session
             // if not found, offer to set a username
             if (window.localStorage.peer_name) {
-                peer_name =  window.localStorage.peer_name;
+                peer_name = window.localStorage.peer_name;
                 if (window.localStorage.peer_url) {
-                    peer_url =  window.localStorage.peer_url;
+                    peer_url = window.localStorage.peer_url;
                 }
                 if (window.localStorage.peer_lnaddress) {
-                    peer_lnaddress =  window.localStorage.peer_lnaddress;
+                    peer_lnaddress = window.localStorage.peer_lnaddress;
                 }
-                console.log("adopt prior localStorage ", peer_name, peer_pubkey, peer_url);
+                console.log('adopt prior localStorage ', peer_name, peer_pubkey, peer_url);
                 loggedIn = true; // set logged in is now true
-                continueNostrLogin("priorlocalStorage"); // And continue with the next step
+                continueNostrLogin('priorlocalStorage'); // And continue with the next step
                 // if the user doesn't want the above settings, they can change it
                 // during the continueNostrLogin() flow
             }
-
         }
     } catch (error) {
-        console.log("Error parsing userInfo:", error);
+        console.log('Error parsing userInfo:', error);
     }
     // if both of the above methods fail then we try nostr or random login
     if (!loggedIn) {
-        console.log(" no priornostr login, try setting random username")
+        console.log(' no priornostr login, try setting random username');
         checkInterval = setInterval(checkUserInfo, 1000);
         nostrLogin();
     }
 });
 
-
 // Check every 500 milliseconds (0.5 second)
 let checkInterval = null;
 // checkInterval = setInterval(checkUserInfo, 1000);
 let cycleCount = 0;
-const maxCycles = 360;  // 240 cycles, 120 seconds = 2 minutes to login with Nostr before redirecting to Home Page
-
+const maxCycles = 360; // 240 cycles, 120 seconds = 2 minutes to login with Nostr before redirecting to Home Page
 
 // helper methods
 function generateRandomName() {
     // Define some syllables to combine into a name
     const syllables = [
-        'la', 'ma', 'ra', 'sa', 'ta', 'na', 'ka', 'pa', 'fa', 'zi', 'li', 'mi', 
-        'nu', 'ke', 'jo', 'lu', 'vi', 'ri', 'si', 'di', 'bi', 'ti', 'mo', 'no'
+        'la',
+        'ma',
+        'ra',
+        'sa',
+        'ta',
+        'na',
+        'ka',
+        'pa',
+        'fa',
+        'zi',
+        'li',
+        'mi',
+        'nu',
+        'ke',
+        'jo',
+        'lu',
+        'vi',
+        'ri',
+        'si',
+        'di',
+        'bi',
+        'ti',
+        'mo',
+        'no',
     ];
     let name = '';
-    const maxLength = 10;  // Ensure the name length is < 30 chars
+    const maxLength = 10; // Ensure the name length is < 30 chars
     while (name.length < maxLength) {
         const randomIndex = Math.floor(Math.random() * syllables.length);
-        const newSyllable = syllables[randomIndex];        
+        const newSyllable = syllables[randomIndex];
         // Check if adding the new syllable would exceed the maxLength
-        if (name.length + newSyllable.length >= maxLength) break;        
+        if (name.length + newSyllable.length >= maxLength) break;
         name += newSyllable;
     }
     // Capitalize the first letter of the generated name
@@ -393,9 +411,9 @@ function generateRandomName() {
     return name;
 }
 
-function setRandomName() { 
-    let name = generateRandomName()
-    console.log("just set a peer name")
+function setRandomName() {
+    let name = generateRandomName();
+    console.log('just set a peer name');
     name = filterXSS(name);
     // if (!getCookie(room_id + '_name')) {
     //     window.localStorage.peer_name = name;
@@ -408,56 +426,56 @@ function setRandomName() {
 // try to get the lightning address associated with profile
 // and/or grab NIP-05 or Nprofile info
 async function getNostrProfile(pubkey, relays) {
-    return new Promise((resolve, reject) => { 
-    let h = pool.subscribeMany(
-      relays,
-      [
-        {
-          kinds: [0],
-          authors: [pubkey]
-        }
-      ],
-      {
-        onevent(event) {
-          if (event && event.kind === 0 && event.pubkey === pubkey) {
-            const content = JSON.parse(event.content);
-            const lightningAddress = content.lud16 || content.lud06;
-            console.log("relays: ", relays);
+    return new Promise((resolve, reject) => {
+        let h = pool.subscribeMany(
+            relays,
+            [
+                {
+                    kinds: [0],
+                    authors: [pubkey],
+                },
+            ],
+            {
+                onevent(event) {
+                    if (event && event.kind === 0 && event.pubkey === pubkey) {
+                        const content = JSON.parse(event.content);
+                        const lightningAddress = content.lud16 || content.lud06;
+                        console.log('relays: ', relays);
 
-            // incase the relay pool still returns undefined
-            if (content['name'] === undefined) {
-                peer_name = truncateString(peer_pubkey + "...", 10);
-            } else {
-                peer_name = content['name'] // override default
-                peer_url = content['image'] || content['picture'] // override default
-                console.log("content: ", content, "peer_name", peer_name, "peer_url", peer_url);
-                window.localStorage.peer_name = peer_name;
-                window.localStorage.peer_url = peer_url;
-            }
-            // peer_nip05 = content['nip05']
+                        // incase the relay pool still returns undefined
+                        if (content['name'] === undefined) {
+                            peer_name = truncateString(peer_pubkey + '...', 10);
+                        } else {
+                            peer_name = content['name']; // override default
+                            peer_url = content['image'] || content['picture']; // override default
+                            console.log('content: ', content, 'peer_name', peer_name, 'peer_url', peer_url);
+                            window.localStorage.peer_name = peer_name;
+                            window.localStorage.peer_url = peer_url;
+                        }
+                        // peer_nip05 = content['nip05']
 
-            if (lightningAddress) {
-              console.log(`User's Lightning Address: ${lightningAddress}`);
-              peer_lnaddress  = lightningAddress;
-              window.localStorage.peer_lnaddress = lightningAddress;
-            } else {
-            // so if we can't find the lightning address, let the user set it later
-              peer_lnaddress = '';
-              window.localStorage.peer_lnaddress = '';
-              console.log('Lightning Address not found in the profile.');
-            }          
-            h.close();
-            // login fetch info now complete, set it to be true to exit login loop
-            // even if there is no lightning address, that's ok, we are logged in.
-            loggedIn = true
-          }
-        },
-        onclose() {
-          h.close();
-        }
-      }
-    );
-  });
+                        if (lightningAddress) {
+                            console.log(`User's Lightning Address: ${lightningAddress}`);
+                            peer_lnaddress = lightningAddress;
+                            window.localStorage.peer_lnaddress = lightningAddress;
+                        } else {
+                            // so if we can't find the lightning address, let the user set it later
+                            peer_lnaddress = '';
+                            window.localStorage.peer_lnaddress = '';
+                            console.log('Lightning Address not found in the profile.');
+                        }
+                        h.close();
+                        // login fetch info now complete, set it to be true to exit login loop
+                        // even if there is no lightning address, that's ok, we are logged in.
+                        loggedIn = true;
+                    }
+                },
+                onclose() {
+                    h.close();
+                },
+            },
+        );
+    });
 }
 
 // get nostr profile info based on default or preferred relays
@@ -469,93 +487,93 @@ async function getInfoAndContinue() {
         return true;
     } catch (error) {
         console.error('Error in getInfo:', error);
-    }    
+    }
 }
 
 // nostr-login auth
 document.addEventListener('nlAuth', (e) => {
-    console.log("nlauth", e)
+    console.log('nlauth', e);
     if (e.detail.type === 'login' || e.detail.type === 'signup') {
         if (!loggedIn) {
-            console.log("Logging In")
+            console.log('Logging In');
             // loggedIn = true
-              // get pubkey with window.nostr and show user profile
-              //const login = window.localStorage.getItem('login');
-              console.log("NLAUTH -->  login info: ", e.detail.type)  // , login)
+            // get pubkey with window.nostr and show user profile
+            //const login = window.localStorage.getItem('login');
+            console.log('NLAUTH -->  login info: ', e.detail.type); // , login)
         }
     } else {
-    // clear local user data, hide profile info 
-    if (loggedIn) {
-        setTimeout(function() {
-            console.log("logoff section")
-            loggedIn = false
-            //  clear user info from the local storage
-            document.dispatchEvent(new Event("nlLogout")); // logout from nostr-login
-            openURL('/'); // redirect to front page on logout
-        }, 200);
+        // clear local user data, hide profile info
+        if (loggedIn) {
+            setTimeout(function () {
+                console.log('logoff section');
+                loggedIn = false;
+                //  clear user info from the local storage
+                document.dispatchEvent(new Event('nlLogout')); // logout from nostr-login
+                openURL('/'); // redirect to front page on logout
+            }, 200);
+        }
     }
-    }
-})
-
+});
 
 // load nostr user from nostr-login dialog pop up
 async function loadUser() {
     if (window.nostr) {
-        window.nostr.getPublicKey().then(function (pubkey) {
-            if (pubkey) {
-                console.log("LOAD USER --> fetched pubkey", pubkey)
+        window.nostr
+            .getPublicKey()
+            .then(function (pubkey) {
+                if (pubkey) {
+                    console.log('LOAD USER --> fetched pubkey', pubkey);
 
-                peer_pubkey = pubkey        
-                peer_npub = nip19.npubEncode(pubkey);
-                console.log('npub: ', peer_npub);
-                window.localStorage.peer_pubkey = pubkey;
-                window.localStorage.peer_npub = peer_npub;
-                // first attempt to grab user info from nostr-login if logged in
-                //getDisplayUserInfo();
-                const userInfo = JSON.parse(window.localStorage.getItem('__nostrlogin_accounts'));
-                try {
-                    if (userInfo && userInfo.length > 0) {
-                        const user = userInfo[0];
-                        console.log("user from _nostrlogin_accounts: ", user.name);
-                        console.log("user picture: ", user.picture);
-                        peer_name = user.name;
-                        if (peer_name !== undefined && peer_name.length > 30) {
-                            // truncate peer_name to be < 30 chars
-                            peer_name = truncateString(user.name, 29);
+                    peer_pubkey = pubkey;
+                    peer_npub = nip19.npubEncode(pubkey);
+                    console.log('npub: ', peer_npub);
+                    window.localStorage.peer_pubkey = pubkey;
+                    window.localStorage.peer_npub = peer_npub;
+                    // first attempt to grab user info from nostr-login if logged in
+                    //getDisplayUserInfo();
+                    const userInfo = JSON.parse(window.localStorage.getItem('__nostrlogin_accounts'));
+                    try {
+                        if (userInfo && userInfo.length > 0) {
+                            const user = userInfo[0];
+                            console.log('user from _nostrlogin_accounts: ', user.name);
+                            console.log('user picture: ', user.picture);
+                            peer_name = user.name;
+                            if (peer_name !== undefined && peer_name.length > 30) {
+                                // truncate peer_name to be < 30 chars
+                                peer_name = truncateString(user.name, 29);
+                            }
+                            peer_url = user.picture;
+                            peer_pubkey = user.pubkey;
+                            peer_npub = nip19.npubEncode(user.pubkey);
+
+                            signSampleEvent(peer_pubkey); // send a sample event to the test relay
+
+                            window.localStorage.peer_pubkey = user.pubkey;
+                            window.localStorage.peer_name = user.name;
+                            window.localStorage.peer_url = user.picture;
+                            window.localStorage.peer_npub = peer_npub;
+
+                            if (user.name === undefined) {
+                                // offer to set a username as the first 7 chars of the pubkey
+                                peer_name = truncateString(user.pubkey + '...', 10);
+                                window.localStorage.peer_name = peer_name;
+                            }
+                        } else {
+                            console.log('No user info available (empty array)');
                         }
-                        peer_url = user.picture;
-                        peer_pubkey = user.pubkey;
-                        peer_npub = nip19.npubEncode(user.pubkey)
-
-                        signSampleEvent(peer_pubkey) // send a sample event to the test relay
-
-                        window.localStorage.peer_pubkey = user.pubkey;
-                        window.localStorage.peer_name = user.name;
-                        window.localStorage.peer_url = user.picture;
-                        window.localStorage.peer_npub = peer_npub;
-
-                        if (user.name === undefined) {
-                            // offer to set a username as the first 7 chars of the pubkey
-                            peer_name = truncateString(user.pubkey + "...", 10);
-                            window.localStorage.peer_name = peer_name;
-                        }
-
-                    } else {
-                        console.log("No user info available (empty array)");
+                    } catch (error) {
+                        console.log('Error parsing userInfo:', error);
                     }
-                } catch (error) {
-                    console.log("Error parsing userInfo:", error);
                 }
-            } 
-        }).catch((err) => {
-            console.log("LoadUser Err", err);
-            console.log("logoff section")
-            loggedIn = false
-            document.dispatchEvent(new Event("nlLogout")); // logout from nostr-login
-        });
+            })
+            .catch((err) => {
+                console.log('LoadUser Err', err);
+                console.log('logoff section');
+                loggedIn = false;
+                document.dispatchEvent(new Event('nlLogout')); // logout from nostr-login
+            });
     }
 }
-
 
 function truncateString(str, maxLength) {
     if (str.length > maxLength) {
@@ -565,90 +583,89 @@ function truncateString(str, maxLength) {
 }
 
 function checkUserInfo() {
-    console.log("....inside checkUserInfo...." + cycleCount)
+    console.log('....inside checkUserInfo....' + cycleCount);
     cycleCount++;
-    
+
     // wait until timer is up in 1 min (120 cycles) and then go back to home page.
     if (cycleCount >= maxCycles) {
         clearInterval(checkInterval);
-        console.log("checkUserInfo aborted after 120 cycles.");
+        console.log('checkUserInfo aborted after 120 cycles.');
         let timerInterval;
         Swal.fire({
-            background: swalBackground, 
-            title: "No Nostr Login Detected!",
-            html: "Redirecting to Home Page in <b></b> milliseconds.",
+            background: swalBackground,
+            title: 'No Nostr Login Detected!',
+            html: 'Redirecting to Home Page in <b></b> milliseconds.',
             timer: 3000,
             timerProgressBar: true,
             didOpen: () => {
                 Swal.showLoading();
-                const timer = Swal.getPopup().querySelector("b");
+                const timer = Swal.getPopup().querySelector('b');
                 timerInterval = setInterval(() => {
-                timer.textContent = `${Swal.getTimerLeft()}`;
+                    timer.textContent = `${Swal.getTimerLeft()}`;
                 }, 100);
             },
             willClose: () => {
                 clearInterval(timerInterval);
-                document.dispatchEvent(new Event("nlLogout")); // logout from nostr-login
+                document.dispatchEvent(new Event('nlLogout')); // logout from nostr-login
                 openURL('/newroom'); // redirect to new room page on logout
                 return;
-            }
-        })
-      }
-      
+            },
+        });
+    }
+
     const userInfo = JSON.parse(window.localStorage.getItem('__nostrlogin_accounts'));
 
     try {
         if (userInfo && userInfo.length > 0) {
             // Do something with the userInfo
-            const user = userInfo[0]  
+            const user = userInfo[0];
             peer_name = user.name;
             if (user.name !== undefined && user.name.length > 30) {
                 // truncate peer_name to be < 30 chars
                 peer_name = truncateString(user.name, 29);
-            } 
+            }
             peer_url = user.picture;
             peer_pubkey = user.pubkey;
-            peer_npub = nip19.npubEncode(user.pubkey)
+            peer_npub = nip19.npubEncode(user.pubkey);
 
-            signSampleEvent(peer_pubkey) // send a sample event to the test relay
+            signSampleEvent(peer_pubkey); // send a sample event to the test relay
 
             window.localStorage.peer_name = user.name;
             window.localStorage.peer_url = user.picture;
             window.localStorage.peer_pubkey = user.pubkey;
             window.localStorage.peer_npub = peer_npub;
-            console.log("checkUserInfo :", user.pubkey, user.name, user.picture, peer_npub);
+            console.log('checkUserInfo :', user.pubkey, user.name, user.picture, peer_npub);
 
             // TODO: what do we do here if there is no peer_name but we have a pubkey?
             // we are assuming peer_name exists. if not, then we need to offer
             // option to set a username after 60 sec period of checking and no username
-            
+
             if (user.name === undefined) {
                 // offer to set a username as the first 7 chars of the pubkey
-                peer_name = truncateString(user.pubkey + "...", 10);
+                peer_name = truncateString(user.pubkey + '...', 10);
                 window.localStorage.peer_name = peer_name;
             }
 
             if (peer_name && peer_pubkey) {
-                console.log("discovery complete: checkUserInfo: ", peer_name, peer_pubkey, peer_url);
+                console.log('discovery complete: checkUserInfo: ', peer_name, peer_pubkey, peer_url);
 
                 // try to get lightning address
                 getInfoAndContinue();
-                console.log("checking if loggedIn pre clearInteraval: ", loggedIn);
+                console.log('checking if loggedIn pre clearInteraval: ', loggedIn);
 
                 if (loggedIn) {
-                    clearInterval(checkInterval);      // Then clear the interval
-                    continueNostrLogin("nostr");    // And continue with the next step
-                }            
+                    clearInterval(checkInterval); // Then clear the interval
+                    continueNostrLogin('nostr'); // And continue with the next step
+                }
             }
         }
     } catch (error) {
-        console.log("Error parsing userInfo:", error);
+        console.log('Error parsing userInfo:', error);
     }
 }
 
-
 async function isValidLightningAddress(address) {
-    console.log(".... inside isValidLightningAddress: ", address);
+    console.log('.... inside isValidLightningAddress: ', address);
     const parts = address.split('@');
     if (parts.length !== 2) {
         return false; // Invalid format
@@ -665,8 +682,8 @@ async function isValidLightningAddress(address) {
         const response = await fetch(url, {
             method: 'GET',
             headers: {
-                'Accept': 'application/json'
-            }
+                Accept: 'application/json',
+            },
         });
 
         if (!response.ok) {
@@ -691,9 +708,9 @@ function isValidLNFormat(address) {
     // Regular expression for Lightning Address format validation
     const regex = /^[a-zA-Z0-9]+@[a-zA-Z0-9.-]+$/;
     return regex.test(address);
-  }
+}
 
-function nostrLogin() { 
+function nostrLogin() {
     console.log('0.1.00 ----> Nostr or Other Login');
 
     Swal.fire({
@@ -701,12 +718,12 @@ function nostrLogin() {
         allowEscapeKey: false,
         background: swalBackground,
         title: '<img src="../images/hivelogo50x200.svg"/>',
-        html: 'Welcome! Questions? see the <a href="/faq" target="_blank">FAQ</a> ',        
+        html: 'Welcome! Questions? see the <a href="/faq" target="_blank">FAQ</a> ',
         showDenyButton: true,
         denyButtonText: `Just set a Name`,
-        denyButtonColor: "green",
-        confirmButtonText: "Login with Nostr",
-        confirmButtonColor: "#3085d6",
+        denyButtonColor: 'green',
+        confirmButtonText: 'Login with Nostr',
+        confirmButtonColor: '#3085d6',
         preConfirm: async () => {
             try {
                 setTimeout(() => {
@@ -714,132 +731,130 @@ function nostrLogin() {
                     loadUser();
                 }, 500);
             } catch (error) {
-                // loggedIn = false                
+                // loggedIn = false
                 Swal.showValidationMessage(`
                 Request failed: ${error}
               `);
             }
+        },
+    }).then((result) => {
+        if (result.isConfirmed) {
+            // see checkUserInfo to continue login
+            console.log('NOSTR LOGIN Selected by User');
+        } else if (result.isDenied) {
+            setRandomName();
+            //console.log("Set Random Name")
+            // blank out the other values (might not need this)
+            peer_pubkey = '';
+            peer_npub = '';
+            peer_lnaddress = '';
+            peer_url = '';
+            Swal.fire({
+                allowOutsideClick: false,
+                allowEscapeKey: false,
+                background: swalBackground,
+                title: 'Set Name or Lightning Address',
+                inputValue: peer_name,
+                input: 'text',
+                inputAttributes: {
+                    maxlength: 30,
+                    autocapitalize: 'off',
+                    autocorrect: 'off',
+                    placeholder: peer_name,
+                },
+                icon: 'question',
+                showCancelButton: true,
+                showConfirmButton: true,
+                reverseButtons: true,
+                confirmButtonColor: '#28a745',
+                cancelButtonColor: '#d33',
+                confirmButtonText: 'OK',
+                cancelButtonText: 'Cancel',
+                preConfirm: async (name) => {
+                    peer_name = name;
+                    window.localStorage.peer_name = name;
+                    isValidLightningAddress(peer_name).then((isValid) => {
+                        if (isValid) {
+                            console.log(`${peer_name} is a valid Lightning Address.`);
+                            peer_lnaddress = peer_name;
+                            window.localStorage.peer_lnaddress = peer_name;
+                        } else {
+                            console.log(`${peer_name} is not a valid Lightning Address.`);
+                        }
+                    });
+                },
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    console.log('nostrLogin: user confirmed');
+                    clearInterval(checkInterval);
+                    console.log('.... clear check interval NOW ....');
+
+                    setTimeout(function () {
+                        show(loadingDiv);
+                        initClient();
+                        console.log('init client.......');
+                    }, 200);
+                } else {
+                    console.log('Random Name: user canceled');
+                    openURL('/');
+                }
+            });
+        } else {
+            console.log('nostrLogin: user canceled');
+            openURL('/');
         }
-    }).then((result) => {        
-            if (result.isConfirmed) {
-                // see checkUserInfo to continue login
-                console.log("NOSTR LOGIN Selected by User")
-
-            } else if (result.isDenied) {
-                setRandomName()
-                //console.log("Set Random Name")
-                // blank out the other values (might not need this)
-                peer_pubkey = ''
-                peer_npub = ''
-                peer_lnaddress = ''
-                peer_url = ''
-                Swal.fire({
-                    allowOutsideClick: false,
-                    allowEscapeKey: false,
-                    background: swalBackground,
-                    title: "Set Name or Lightning Address",
-                    inputValue: peer_name,
-                    input: "text",
-                    inputAttributes : {
-                        maxlength: 30,
-                        autocapitalize: "off",
-                        autocorrect: "off",
-                        placeholder: peer_name,
-                    },
-                    icon: "question",
-                    showCancelButton: true,
-                    showConfirmButton: true,
-                    reverseButtons: true,
-                    confirmButtonColor: "#28a745",
-                    cancelButtonColor: "#d33",
-                    confirmButtonText: "OK",
-                    cancelButtonText: "Cancel",
-                    preConfirm: async(name) => {
-                        peer_name = name
-                        window.localStorage.peer_name = name
-                        isValidLightningAddress(peer_name).then(isValid => {
-                            if (isValid) {
-                                console.log(`${peer_name} is a valid Lightning Address.`);
-                                peer_lnaddress = peer_name
-                                window.localStorage.peer_lnaddress = peer_name    
-                            } else {
-                                console.log(`${peer_name} is not a valid Lightning Address.`);
-                            }
-                        });
-                    },
-                  }).then((result) => {
-                    if (result.isConfirmed) {
-                        console.log("nostrLogin: user confirmed")
-                        clearInterval(checkInterval);
-                        console.log(".... clear check interval NOW ....")
-
-                        setTimeout(function() {
-                                show(loadingDiv);
-                                initClient();
-                                console.log("init client.......")
-                            }, 200);
-                    } else {
-                        console.log("Random Name: user canceled")
-                        openURL('/');
-                    }
-                  })
-            }  else { 
-                console.log("nostrLogin: user canceled")
-                openURL('/');
-            }
     });
 
-    console.log("NostrLogin - Logged in status : ", loggedIn)
+    console.log('NostrLogin - Logged in status : ', loggedIn);
 }
 
-
 function continueNostrLogin(type) {
-    let info = ""
-    let exitinfo  = ""
-    if (type === "priorlocalStorage") {
-        info = "Using cached local data"
-        exitinfo = " and Flush"
-    } else if (type === "nostr") {
-        info = "Logged in with Nostr"
+    let info = '';
+    let exitinfo = '';
+    if (type === 'priorlocalStorage') {
+        info = 'Using cached local data';
+        exitinfo = ' and Flush';
+    } else if (type === 'nostr') {
+        info = 'Logged in with Nostr';
     }
     console.log('0.2.00 ----> Continue Nostr Login');
 
     Swal.fire({
         background: swalBackground,
-        title: "Hello " + peer_name,
+        title: 'Hello ' + peer_name,
         text: info,
-        imageUrl:  peer_url || '', // only if peer_url is not null
+        imageUrl: peer_url || '', // only if peer_url is not null
         imageWidth: 100,
         imageHeight: 100,
         reverseButtons: true,
-        confirmButtonText: 'OK, Let\'s Go',
-        confirmButtonColor: "#228B22", //"#32CD32",
+        confirmButtonText: "OK, Let's Go",
+        confirmButtonColor: '#228B22', //"#32CD32",
         cancelButtonText: 'Exit' + exitinfo,
-        cancelButtonColor: "#d33",
+        cancelButtonColor: '#d33',
         showCancelButton: true,
     }).then((result) => {
         if (result.isConfirmed) {
-            console.log("nostrLogin: user confirmed")
-           // clearInterval(checkInterval);
-            setTimeout(function() {
+            console.log('nostrLogin: user confirmed');
+            // clearInterval(checkInterval);
+            setTimeout(function () {
                 show(loadingDiv);
                 initClient();
-                console.log("init client.......")
+                console.log('init client.......');
             }, 200);
         } else {
             // flush all old local data
             const keysToRemove = ['peer_name', 'peer_lnaddress', 'peer_npub', 'peer_pubkey', 'peer_url', 'peer_uuid'];
-            keysToRemove.forEach(key => {
+            keysToRemove.forEach((key) => {
                 window.localStorage.removeItem(key);
-              });
-            console.log("nostrLogin: user canceled")
+            });
+            console.log('nostrLogin: user canceled');
             openURL('/');
         }
     });
 }
 
 function initClient() {
-    console.log("Starting InitClient() sequence .....")
+    console.log('Starting InitClient() sequence .....');
     setTheme();
 
     // Transcription
@@ -1364,7 +1379,6 @@ function getPeerName() {
     return name;
 }
 
-
 function getPeerUUID() {
     if (lS.getItemLocalStorage('peer_uuid')) {
         return lS.getItemLocalStorage('peer_uuid');
@@ -1572,7 +1586,7 @@ async function whoAreYou() {
         hideClass: { popup: 'animate__animated animate__fadeOutUp' },
         inputValidator: (name) => {
             if (!name) return 'Please enter your name';
-            if (name.length > 30) return 'Name must be max 30 char';            
+            if (name.length > 30) return 'Name must be max 30 char';
             name = filterXSS(name);
             if (isHtml(name)) return 'Invalid name!';
             if (!getCookie(room_id + '_name')) {
@@ -1697,7 +1711,6 @@ function checkMedia() {
     });
 }
 
-
 async function signSampleEvent(publicKey) {
     try {
         // Create an event and sign it to make sure user is who they say they are.
@@ -1709,14 +1722,13 @@ async function signSampleEvent(publicKey) {
             tags: [],
             content: "Hi I'm using \n #HiveTalk",
         };
-        console.log("Kind 1 - Event created", event)
+        console.log('Kind 1 - Event created', event);
         // Request the nos2x extension to sign the event
         const signedEvent = await window.nostr.signEvent(event);
         console.log('Signed Event:', signedEvent);
-        const eventID = signedEvent["id"]
-        console.log("Event ID", eventID)
-
-    } catch(error) {
+        const eventID = signedEvent['id'];
+        console.log('Event ID', eventID);
+    } catch (error) {
         console.error('An error occurred while sending Sample Event', error);
         // fail silently
     }
@@ -1741,14 +1753,14 @@ async function sendEvent(textNote, publicKey) {
             pubkey: publicKey,
             created_at: Math.floor(Date.now() / 1000),
             tags: [],
-            content: textNote + "\n Live Now in #HiveTalk",
+            content: textNote + '\n Live Now in #HiveTalk',
         };
-        console.log("Kind 1 - Event created", event)
+        console.log('Kind 1 - Event created', event);
         // Request the nos2x extension to sign the event
         const signedEvent = await window.nostr.signEvent(event);
         console.log('Signed Event:', signedEvent);
-        const eventID = signedEvent["id"]
-        console.log("Event ID", eventID)
+        const eventID = signedEvent['id'];
+        console.log('Event ID', eventID);
 
         // Create a pool and publish the event
         const pool = new window.NostrTools.SimplePool();
@@ -1773,15 +1785,15 @@ async function sendEvent(textNote, publicKey) {
                             icon: 'success',
                             title: 'Note Sent',
                             html: `<p>Sent to Nostr successfully!</p> <p>Note: <a href="https://snort.social/e/${eventID}" target="_blank">${eventID}</a></p>`,
-                        })
+                        });
                     }
                 },
                 oneose() {
                     h.close();
                 },
-            }
+            },
         );
-    } catch(error) {
+    } catch (error) {
         console.error('An error occurred:', error);
         Swal.fire({
             background: swalBackground,
@@ -1789,7 +1801,7 @@ async function sendEvent(textNote, publicKey) {
             icon: 'error',
             title: 'Oops...',
             text: 'Something went wrong posting to Nostr! Try again?',
-        })
+        });
     }
 }
 
@@ -1802,8 +1814,8 @@ async function shareRoomOnNostr(pubkey) {
             Swal.fire({
                 background: swalBackground,
                 // position: 'center',
-                title:  "Share on Nostr",
-                input: "textarea",
+                title: 'Share on Nostr',
+                input: 'textarea',
                 inputValue: `We're having a party in here!  ${RoomURL} `,
                 inputAutoTrim: true,
                 html: `
@@ -1811,27 +1823,26 @@ async function shareRoomOnNostr(pubkey) {
                 <p>Share a note about this room. Text and Links only. No Markdown or HTML. (Kind 1)</p>`,
                 reverseButtons: true,
                 showCancelButton: true,
-                confirmButtonColor: "#8338ec",
-                cancelButtonColor: "#d33",
-                denyButtonColor: "#3085d6",
-                confirmButtonText: "Post to NOSTR!",
+                confirmButtonColor: '#8338ec',
+                cancelButtonColor: '#d33',
+                denyButtonColor: '#3085d6',
+                confirmButtonText: 'Post to NOSTR!',
                 showDenyButton: true,
                 denyButtonText: `Copy URL`,
-              }).then((result) => {
+            }).then((result) => {
                 if (result.isConfirmed) {
-                    textNote = result.value
-                    console.log("Text", textNote)
-                    sendEvent(textNote, pubkey)
+                    textNote = result.value;
+                    console.log('Text', textNote);
+                    sendEvent(textNote, pubkey);
                 } else if (result.isDenied) {
                     copyRoomURL();
                 }
-              });
+            });
         } catch (error) {
             console.error('An error occurred:', error);
         }
     }
 }
-
 
 // ####################################################
 // SHARE ROOM
@@ -1850,7 +1861,7 @@ async function shareRoom(useNavigator = false) {
                 share();
             }
         } else {
-            console.log("share room info on button click")
+            console.log('share room info on button click');
             share();
         }
     }
@@ -2000,22 +2011,23 @@ function joinRoom(peer_name, room_id) {
     }
 }
 
-let boltavatar = "https://hivetalk.org/images/lnwhitep.png";
+let boltavatar = 'https://hivetalk.org/images/lnwhitep.png';
 
 function roomIsReady() {
     console.log('06 ----> roomIsReady');
-    console.log("Set nostr avatar here in roomIsReady");
-    let avatar = peer_info.peer_url
-    console.log("roomIsReady - nostr avatar", avatar)
+    console.log('Set nostr avatar here in roomIsReady');
+    let avatar = peer_info.peer_url;
+    console.log('roomIsReady - nostr avatar', avatar);
     // set Nostr Avatar here
-    isValidLightningAddress(peer_name).then(isValid => {
+    isValidLightningAddress(peer_name).then((isValid) => {
         if (isValid) {
             myProfileAvatar.style.borderRadius = `50px`;
-            myProfileAvatar.setAttribute('src', boltavatar);        
+            myProfileAvatar.setAttribute('src', boltavatar);
         } else if (rc.isValidEmail(peer_name)) {
             myProfileAvatar.style.borderRadius = `50px`;
             myProfileAvatar.setAttribute('src', rc.genGravatar(peer_name));
-        } else if (avatar) { // if nostr avatar is not null
+        } else if (avatar) {
+            // if nostr avatar is not null
             myProfileAvatar.setAttribute('src', avatar);
         } else {
             myProfileAvatar.setAttribute('src', rc.genAvatarSvg(peer_name, 64));
@@ -3464,20 +3476,18 @@ function handleRoomEmojiPicker() {
     }
 }
 
-
 function boltEmoji(msg) {
-    console.log('bolt Emoji: ' , msg);
+    console.log('bolt Emoji: ', msg);
     const cmd = {
         type: 'zapEmoji',
         peer_name: peer_name,
         emoji: '⚡️ ' + msg,
         broadcast: true,
     };
-    console.log(cmd)
+    console.log(cmd);
     rc.emitCmd(cmd);
     rc.handleCmd(cmd);
 }
-
 
 // ####################################################
 // ROOM EDITOR
@@ -3829,7 +3839,7 @@ function leaveFeedback() {
 function redirectOnLeave() {
     loggedIn = false;
     console.log('Room event: Client leave room');
-   // document.dispatchEvent(new Event("nlLogout")); // logout from nostr-login
+    // document.dispatchEvent(new Event("nlLogout")); // logout from nostr-login
     redirect && redirect.enabled ? openURL(redirect.url) : openURL('/');
 }
 
@@ -4759,9 +4769,9 @@ function getParticipantsList(peers) {
             // only get the npub if there is a nostr pubkey
             peer_npub = nip19.npubEncode(peer_pubkey);
         }
-//        console.log("getParticipant list - peer_name :", peer_name, ", peer_pubkey :", peer_pubkey, "npub:", peer_npub)      
-//        console.log("getParticipant list - setting avatarImg :", peer_info.peer_url)
-        const avatarImg = peer_info.peer_url || getParticipantAvatar( peer_name ) 
+        //        console.log("getParticipant list - peer_name :", peer_name, ", peer_pubkey :", peer_pubkey, "npub:", peer_npub)
+        //        console.log("getParticipant list - setting avatarImg :", peer_info.peer_url)
+        const avatarImg = peer_info.peer_url || getParticipantAvatar(peer_name);
         // || rc.genAvatarSvg(peer_name, 32);
 
         // NOT ME
@@ -4777,19 +4787,19 @@ function getParticipantsList(peers) {
                     onclick="rc.showPeerAboutAndMessages(this.id, '${peer_name}', event)"
                 >`;
 
-                if (peer_npub){
-                    li +=`                
+                if (peer_npub) {
+                    li += `                
                     <a href="https://njump.me/${peer_npub}" target="_blank">
                     <img
                     src="${avatarImg}"
                     alt="avatar" 
                     />
-                    </a>`;    
+                    </a>`;
                 } else {
                     li += `<img src="${avatarImg}" alt="avatar" />`;
                 }
 
-                li +=`
+                li += `
                     <div class="about">
                         <div class="name">${peer_name_limited}</div>
                         <div class="status"> <i class="fa fa-circle online"></i> online <i id="${peer_id}-unread-msg" class="fas fa-comments hidden"></i> </div>
@@ -4861,16 +4871,16 @@ function getParticipantsList(peers) {
                     data-to-name="${peer_name}"
                     class="clearfix" 
                     onclick="rc.showPeerAboutAndMessages(this.id, '${peer_name}', event)"
-                >`
+                >`;
 
-                if (peer_npub){
-                    li +=`                
+                if (peer_npub) {
+                    li += `                
                     <a href="https://njump.me/${peer_npub}" target="_blank">
                     <img
                     src="${avatarImg}"
                     alt="avatar" 
                     />
-                    </a>`;    
+                    </a>`;
                 } else {
                     li += `<img src="${avatarImg}" alt="avatar" />`;
                 }
@@ -4964,11 +4974,11 @@ function refreshParticipantsCount(count, adapt = true) {
 
 function getParticipantAvatar(peerName) {
     // console.log("getParticipantAvatar - peerName: ", peerName);
-    isValidLightningAddress(peerName).then(isValid => {
+    isValidLightningAddress(peerName).then((isValid) => {
         if (isValid) {
             return boltavatar;
         }
-    })
+    });
     if (rc.isValidEmail(peerName)) {
         return rc.genGravatar(peerName);
     }
@@ -5246,7 +5256,7 @@ function adaptAspectRatio(participantsCount) {
 
 function showAbout() {
     sound('open');
-    let extractedIdentifier = 'soc@hivetalk.org'
+    let extractedIdentifier = 'soc@hivetalk.org';
     Swal.fire({
         background: swalBackground,
         imageUrl: image.about,
@@ -5283,23 +5293,24 @@ function showAbout() {
                 return false;
             }
             return amount;
-        }
+        },
     }).then((result) => {
         if (result.isConfirmed) {
-            let amt = result.value
+            let amt = result.value;
             console.log('Amount:', amt);
             console.log('lightning address:', extractedIdentifier);
 
-            window.moduleFunctions.handleDonation(peer_name, extractedIdentifier, amt)
-                .then(result => {
-                    console.log("handleDonationResult:", result);
+            window.moduleFunctions
+                .handleDonation(peer_name, extractedIdentifier, amt)
+                .then((result) => {
+                    console.log('handleDonationResult:', result);
                     // send zap msg to chat emoji pop up
                     boltEmoji(extractedIdentifier + ' ' + amt + ' sats');
                     // send zap message to chatroom if open
                     rc.broadcastMessage(result);
                 })
-                .catch(error => {
-                    console.log("Error:", error);
+                .catch((error) => {
+                    console.log('Error:', error);
                 });
         }
     });

@@ -360,6 +360,7 @@ input[type='text'] {
 .form-check-input {
     cursor: pointer;
 }
+
 #chatShareRoomBtn {
     padding: 8px 16px;
     background: var(--body-bg);

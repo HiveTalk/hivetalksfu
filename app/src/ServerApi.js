@@ -53,7 +53,7 @@ module.exports = class ServerApi {
     }
 
     getMeetingURL(name) {
-        if (name) { 
+        if (name) {
             return 'https://' + this._host + '/join/' + encodeURIComponent(name); // name;
         }
         return 'https://' + this._host + '/join/' + uuidV4();
