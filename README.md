@@ -245,7 +245,6 @@ $ curl -X POST "https://sfu.mirotalk.com/api/v1/token" -H "authorization: mirota
 
 </details>
 
-
 <details>
 <summary>Credits</summary>
 
@@ -278,13 +277,11 @@ HiveTalk SFU is free and open-source under the terms of AGPLv3 (GNU Affero Gener
 
 </details>
 
-
 ## Contributors
 
 <a href="https://github.com/hivetalk/hivetalksfu/graphs/contributors">
   <img src="https://contrib.rocks/image?repo=hivetalk/hivetalksfu" />
 </a>
-
 
 ---
 

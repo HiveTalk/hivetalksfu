@@ -10,19 +10,19 @@
         "debug": "DEBUG='mediasoup*' node app/src/Server.js",
         "compile": "npx browserify public/sfu/MediasoupClientCompile.js -o public/sfu/MediasoupClient.js",
         "lint": "npx prettier --write .",
-        "docker-build": "docker build --tag mirotalk/sfu:latest .",
+        "docker-build": "docker build --tag hivetalk/sfu:latest .",
         "docker-rmi": "docker images |grep '<none>' |awk '{print $3}' |xargs docker rmi",
-        "docker-push": "docker push mirotalk/sfu:latest",
-        "docker-pull": "docker pull mirotalk/sfu:latest",
-        "docker-rmc": "docker container rm mirotalksfu --force",
-        "docker-run": "docker run -d -p 40000-40100:40000-40100 -p 3010:3010 -v ./app/src/config.js:/src/app/src/config.js:ro --name mirotalksfu mirotalk/sfu:latest",
-        "docker-run-vm": "docker run -d -p 40000-40100:40000-40100 -p 3010:3010 -v ./app/:/src/app/:ro -v ./public/:/src/public/:ro --name mirotalksfu mirotalk/sfu:latest",
-        "docker-start": "docker start mirotalksfu",
-        "docker-stop": "docker stop mirotalksfu"
+        "docker-push": "docker push hivetalk/sfu:latest",
+        "docker-pull": "docker pull hivetalk/sfu:latest",
+        "docker-rmc": "docker container rm hivetalksfu --force",
+        "docker-run": "docker run -d -p 40000-40100:40000-40100 -p 3010:3010 -v ./app/src/config.js:/src/app/src/config.js:ro --name hivetalksfu hivetalk/sfu:latest",
+        "docker-run-vm": "docker run -d -p 40000-40100:40000-40100 -p 3010:3010 -v ./app/:/src/app/:ro -v ./public/:/src/public/:ro --name hivetalksfu hivetalk/sfu:latest",
+        "docker-start": "docker start hivetalksfu",
+        "docker-stop": "docker stop hivetalksfu"
     },
     "repository": {
         "type": "git",
-        "url": "git+https://github.com/miroslavpejic85/mirotalksfu"
+        "url": "git+https://github.com/hivetalk/hivetalksfu"
     },
     "keywords": [
         "webrtc",
@@ -35,7 +35,7 @@
         "openai",
         "chatgpt"
     ],
-    "author": "Miroslav Pejic",
+    "author": "Hivetalk Group, Miroslav Pejic",
     "license": "AGPL-3.0",
     "engines": {
         "node": ">=18"

@@ -16636,7 +16636,7 @@
         57: [
             function (require, module, exports) {
                 /////////////////////////////////////////////////////////////////////////////////
-                /* UAParser.js v1.0.37
+                /* UAParser.js v1.0.38
    Copyright © 2012-2021 Faisal Salman <f@faisalman.com>
    MIT License */ /*
    Detect Browser, Engine, OS, CPU, and Device type/model from User-Agent data.
@@ -16652,7 +16652,7 @@
                     // Constants
                     /////////////
 
-                    var LIBVERSION = '1.0.37',
+                    var LIBVERSION = '1.0.38',
                         EMPTY = '',
                         UNKNOWN = '?',
                         FUNC_TYPE = 'function',
@@ -16871,6 +16871,10 @@
                             ],
                             [VERSION, [NAME, OPERA + ' Mini']],
                             [
+                                /\bop(?:rg)?x\/([\w\.]+)/i, // Opera GX
+                            ],
+                            [VERSION, [NAME, OPERA + ' GX']],
+                            [
                                 /\bopr\/([\w\.]+)/i, // Opera Webkit
                             ],
                             [VERSION, [NAME, OPERA]],
@@ -16893,6 +16897,10 @@
                                 /(weibo)__([\d\.]+)/i, // Weibo
                             ],
                             [NAME, VERSION],
+                            [
+                                /\bddg\/([\w\.]+)/i, // DuckDuckGo
+                            ],
+                            [VERSION, [NAME, 'DuckDuckGo']],
                             [
                                 /(?:\buc? ?browser|(?:juc.+)ucweb)[\/ ]?([\w\.]+)/i, // UCBrowser
                             ],
@@ -16997,6 +17005,7 @@
                                 /safari (line)\/([\w\.]+)/i, // Line App for iOS
                                 /\b(line)\/([\w\.]+)\/iab/i, // Line App for Android
                                 /(alipay)client\/([\w\.]+)/i, // Alipay
+                                /(twitter)(?:and| f.+e\/([\w\.]+))/i, // Twitter
                                 /(chromium|instagram|snapchat)[\/ ]([-\w\.]+)/i, // Chromium/Instagram/Snapchat
                             ],
                             [NAME, VERSION],
@@ -17184,6 +17193,8 @@
                                 /\b(cph[12]\d{3}|p(?:af|c[al]|d\w|e[ar])[mt]\d0|x9007|a101op)\b/i,
                             ],
                             [MODEL, [VENDOR, 'OPPO'], [TYPE, MOBILE]],
+                            [/\b(opd2\d{3}a?) bui/i],
+                            [MODEL, [VENDOR, 'OPPO'], [TYPE, TABLET]],
                             [
                                 // Vivo
                                 /vivo (\w+)(?: bui|\))/i,
@@ -17563,7 +17574,7 @@
                             [/droid.+; (wt63?0{2,3})\)/i],
                             [MODEL, [VENDOR, ZEBRA], [TYPE, WEARABLE]],
                             [
-                                /(quest( 2| pro)?)/i, // Oculus Quest
+                                /(quest( \d| pro)?)/i, // Oculus Quest
                             ],
                             [MODEL, [VENDOR, FACEBOOK], [TYPE, WEARABLE]],
                             [
@@ -17823,7 +17834,7 @@
                             _os[NAME] = undefined;
                             _os[VERSION] = undefined;
                             rgxMapper.call(_os, _ua, _rgxmap.os);
-                            if (_isSelfNav && !_os[NAME] && _uach && _uach.platform != 'Unknown') {
+                            if (_isSelfNav && !_os[NAME] && _uach && _uach.platform && _uach.platform != 'Unknown') {
                                 _os[NAME] = _uach.platform.replace(/chrome os/i, CHROMIUM_OS).replace(/macos/i, MAC_OS); // backward compatibility
                             }
                             return _os;

@@ -562,7 +562,6 @@ function startServer() {
     app.get(['/presskit'], (req, res) => {
         res.sendFile(views.presskit);
     });
-    
 
     // Get stats endpoint
     app.get(['/stats'], (req, res) => {
@@ -689,7 +688,7 @@ function startServer() {
         const api = new ServerApi(host, authorization);
         // Get meetings
         const meetings = api.getMeetings(roomList);
-        meetings.forEach(room => {
+        meetings.forEach((room) => {
             // Replace the "peers" array with its length
             room.peers = room.peers.length;
         });
@@ -701,8 +700,6 @@ function startServer() {
             meetings: meetings,
         });
     });
-
-
 
     // request meetings list
     app.get([restApi.basePath + '/meetings'], (req, res) => {
@@ -752,9 +749,9 @@ function startServer() {
             return res.status(403).json({ error: 'Unauthorized!' });
         }
         // setup meeting URL
-        let name = null; 
+        let name = null;
         if (req.body.name) name = req.body.name;
-    
+
         const meetingURL = api.getMeetingURL(name);
         res.json({ meeting: meetingURL });
         // log.debug the output if all done
@@ -922,8 +919,7 @@ function startServer() {
 
     httpsServer.listen(config.server.listen.port, () => {
         log.log(
-            
-`%c
+            `%c
      ^^      .-=-=-=-.  ^^
  ^^        ('-=-=-=-=-')         ^^
          ('-=-=-=-=-=-=-')  ^^         ^^

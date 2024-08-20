@@ -1,7 +1,7 @@
 ## Code of Conduct
 
-- Be Excellent to Each other
-- Abuse will not be tolerated.
+-   Be Excellent to Each other
+-   Abuse will not be tolerated.
 
 ## Attribution
 

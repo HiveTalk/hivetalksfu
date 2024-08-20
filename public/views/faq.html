@@ -1,10 +1,8 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
-
-<head>
     <head>
         <title>HiveTalk FAQ</title>
-    
+
         <!-- Title and Icon -->
 
         <link id="icon" rel="shortcut icon" href="../images/logo.svg" />
@@ -42,7 +40,7 @@
 
         <!-- StyleSheet -->
 
-               <link rel="stylesheet" type="text/css" href="../css/landing.css" />
+        <link rel="stylesheet" type="text/css" href="../css/landing.css" />
 
         <!-- Js scripts -->
 
@@ -53,180 +51,220 @@
         <script src="https://unpkg.com/scrollreveal@4.0.0/dist/scrollreveal.min.js"></script>
     </head>
 
-<body>
-    <header class="">
-        <div class="container">
-            <div class="site-header-inner">
-                <div class="brand header-brand">
-                    <div class="header-container">
-                        <h1 class="header mt-2">
-                            <a href="/">
-                                <img
-                                    class="header-logo-image"
-                                    src="../images/logo.svg"
-                                    alt="hivetalksfu-webrtc-logo"
-                                />
-                            </a>
-                        </h1>
+    <body>
+        <header class="">
+            <div class="container">
+                <div class="site-header-inner">
+                    <div class="brand header-brand">
+                        <div class="header-container">
+                            <h1 class="header mt-2">
+                                <a href="/">
+                                    <img
+                                        class="header-logo-image"
+                                        src="../images/logo.svg"
+                                        alt="hivetalksfu-webrtc-logo"
+                                    />
+                                </a>
+                            </h1>
+                        </div>
                     </div>
                 </div>
             </div>
-        </div>
-    </header>
+        </header>
 
-    <main>
-        <section>
-            <div class="container text-center">
-                <h2>What is Hivetalk?</h2>
-                <p>Free browser based Real-time video calls. Nostr + Lightning enabled.</p>
-            <video width="640" height="360" controls>
-                <source src="../media/IntroDetailsHivetalk.mp4" type="video/mp4">
-                Your browser does not support the video tag.
-              </video>
-              </div>
-        </section>
-        <section>
-            <div class="container">                
-            <h2> HiveTalk FAQ </h2>
-        <h2>Q: How is HiveTalk different from Zoom or Jitsi?</h2>
-        <ul>
-            <li>A: Hivetalk is a Nostr + Lightning friendly application with similar features to both Zoom and Jitsi.
-                However, you do not need to be a Nostr or Lightning user to benefit from Hivetalk, you can also join as
-                an anon or just type your name or use your gravatar email address to use the basic video conferencing
-                and chat features. Nostr + Lightning features (such as zap, avatar, njump link on nostr chat avatar) are
-                enabled only for those who have logged in with these credentials. Currently we support Nostr login only
-                through the Nostr-login app, and you can type your lightning address into the username box on login if
-                you want to sign with a lightning address only.</li>
-        </ul>
-        <h2>Q: How to use lobby?</h2>
-        <ul>
-            <li>A: To enable lobby function as a mod you must click "Toggle the Settings" then click on the "Room"
-                category. In order to toggle on "Lobby" a blue toggle button will indicate that its enabled. The user
-                experience will be as follows: Click on room link -&gt; sign in -&gt; pass through permissions for
-                camera &amp; mic -&gt; a message will appear with the text "Room has lobby enabled, asking to join
-                meeting" at the same time the user sees this, the admin of the room gets a pop up of lobby users to
-                accept or deny entry.</li>
-        </ul>
-        <h2>Q: How does the current moderator setup work?</h2>
-        <ul>
-            <li>A: The current moderation setup works as follows: once you create a room you are the sole mod, cant
-                share or transfer ownership of room. As mod you have extensive customization of the room, some examples
-                are being able to have everyone join muted, everyone join hidden (no camera), everyone cant unmute
-                themselves, everyone cant share screen, disconnect all upon leaving room, toggle on broadcast which puts
-                mod on stage and users in the audience with the choice of bringing up users to the stage if they request
-                it, toggle on Lobby which allows you to vet incoming users, and even Lock Room which allows you to
-                password protect your room. These are a couple examples but there is much more.</li>
-        </ul>
-        <h2>Q: Why are random people allowed to join?</h2>
-        <ul>
-            <li>A: Random people are only allowed to join public rooms. If you'd like a private room, you have two
-                options first one is "Lock Room" - you can access this by clicking on "Toggle the Settings" then click
-                on "Room" and then "Lock Room". This feature allows you to password protect your room. Second option is
-                "Lobby"/ It is the fifth function top down on the "Room" settings, this feature allows you to view the
-                name of the users in your room lobby, allowing you to accept or deny their entry into the room.</li>
-        </ul>
-        <h2>Q: How to disable whiteboard?</h2>
-        <ul>
-            <li>A: To disable whiteboard you must first open up whiteboard as mod of the room and on the upper left side
-                right next to the X close button you'll see the button to toggle which if you hoover over text will
-                appear saying "If enabled, participants cannot interact"</li>
-        </ul>
-        <h2>Q: How to stream movies?</h2>
-        <ul>
-            <li>A: To stream movies you have two options, one is to stream it using the "Media" function which you can
-                find inside room settings in its own category "Media" with the button "Share a video or audio" this
-                allows you to paste a video or audio URL. From my experience these URLs cannot be paywalled or have
-                external ads, for example youtube links work because youtube isn't paywalled you can access most videos
-                except age restricted ones without an account and the ads are streamed not external. Which is why
-                streaming from a free streaming service with external ads (the pop up ones) does not work. If you have
-                the movie or video downloaded on your device a solution that works is uploading it to a <a
-                    href="https://nostr.build">nostr.build</a> account and pasting that link into media. But there's
-                good news: the second option does allow you to stream from those sort of sites and any other, the
-                feature is "Screen Sharing" you can go into room settings and into "Video" category and then Screen FPS
-                to adjust between 5,15,30 or max FPS, and you turn it on by clicking the desktop icon on the left
-                handside of your room menu.</li>
-        </ul>
-        <h2>Q: Why can't I change my mic permissions after I joined the room?</h2>
-        <ul>
-            <li>A: The way hivetalk is designed, once you have entered a room, the mic and camera settings are preset in
-                the browser and can't be changed during the session. If you want to reset mic or cam permissions, you
-                will need to exit the room or refresh the page to rejoin the room.</li>
-        </ul>
-        <h2>Q: Why doesn't my zap show when I scan the invoice but don't connect wallet?</h2>
-        <ul>
-            <li>A: Since we are using Bitcoin-connect from Alby, the only way that the Zap will be confirmed or shown is
-                if your wallet is connected directly through the Bitcoin-connect widget. If you scan the invoice with
-                another app and are not connected the widget will not know the invoice is paid. If you have questions
-                about this widget, please visit bitcoin-connect.com</li>
-        </ul>
-        <h2>Q: Where to get more help?</h2>
-        <ul>
-            <li>A: You can visit our <a href="https://t.me/+2Ll1IFwXwCJlMGFl">telegram</a> chat room for help anytime.
-            </li>
-        </ul>
-    </div>
+        <main>
+            <section>
+                <div class="container text-center">
+                    <h2>What is Hivetalk?</h2>
+                    <p>Free browser based Real-time video calls. Nostr + Lightning enabled.</p>
+                    <video width="640" height="360" controls>
+                        <source src="../media/IntroDetailsHivetalk.mp4" type="video/mp4" />
+                        Your browser does not support the video tag.
+                    </video>
+                </div>
+            </section>
+            <section>
+                <div class="container">
+                    <h2>HiveTalk FAQ</h2>
+                    <h2>Q: How is HiveTalk different from Zoom or Jitsi?</h2>
+                    <ul>
+                        <li>
+                            A: Hivetalk is a Nostr + Lightning friendly application with similar features to both Zoom
+                            and Jitsi. However, you do not need to be a Nostr or Lightning user to benefit from
+                            Hivetalk, you can also join as an anon or just type your name or use your gravatar email
+                            address to use the basic video conferencing and chat features. Nostr + Lightning features
+                            (such as zap, avatar, njump link on nostr chat avatar) are enabled only for those who have
+                            logged in with these credentials. Currently we support Nostr login only through the
+                            Nostr-login app, and you can type your lightning address into the username box on login if
+                            you want to sign with a lightning address only.
+                        </li>
+                    </ul>
+                    <h2>Q: How to use lobby?</h2>
+                    <ul>
+                        <li>
+                            A: To enable lobby function as a mod you must click "Toggle the Settings" then click on the
+                            "Room" category. In order to toggle on "Lobby" a blue toggle button will indicate that its
+                            enabled. The user experience will be as follows: Click on room link -&gt; sign in -&gt; pass
+                            through permissions for camera &amp; mic -&gt; a message will appear with the text "Room has
+                            lobby enabled, asking to join meeting" at the same time the user sees this, the admin of the
+                            room gets a pop up of lobby users to accept or deny entry.
+                        </li>
+                    </ul>
+                    <h2>Q: How does the current moderator setup work?</h2>
+                    <ul>
+                        <li>
+                            A: The current moderation setup works as follows: once you create a room you are the sole
+                            mod, cant share or transfer ownership of room. As mod you have extensive customization of
+                            the room, some examples are being able to have everyone join muted, everyone join hidden (no
+                            camera), everyone cant unmute themselves, everyone cant share screen, disconnect all upon
+                            leaving room, toggle on broadcast which puts mod on stage and users in the audience with the
+                            choice of bringing up users to the stage if they request it, toggle on Lobby which allows
+                            you to vet incoming users, and even Lock Room which allows you to password protect your
+                            room. These are a couple examples but there is much more.
+                        </li>
+                    </ul>
+                    <h2>Q: Why are random people allowed to join?</h2>
+                    <ul>
+                        <li>
+                            A: Random people are only allowed to join public rooms. If you'd like a private room, you
+                            have two options first one is "Lock Room" - you can access this by clicking on "Toggle the
+                            Settings" then click on "Room" and then "Lock Room". This feature allows you to password
+                            protect your room. Second option is "Lobby"/ It is the fifth function top down on the "Room"
+                            settings, this feature allows you to view the name of the users in your room lobby, allowing
+                            you to accept or deny their entry into the room.
+                        </li>
+                    </ul>
+                    <h2>Q: How to disable whiteboard?</h2>
+                    <ul>
+                        <li>
+                            A: To disable whiteboard you must first open up whiteboard as mod of the room and on the
+                            upper left side right next to the X close button you'll see the button to toggle which if
+                            you hoover over text will appear saying "If enabled, participants cannot interact"
+                        </li>
+                    </ul>
+                    <h2>Q: How to stream movies?</h2>
+                    <ul>
+                        <li>
+                            A: To stream movies you have two options, one is to stream it using the "Media" function
+                            which you can find inside room settings in its own category "Media" with the button "Share a
+                            video or audio" this allows you to paste a video or audio URL. From my experience these URLs
+                            cannot be paywalled or have external ads, for example youtube links work because youtube
+                            isn't paywalled you can access most videos except age restricted ones without an account and
+                            the ads are streamed not external. Which is why streaming from a free streaming service with
+                            external ads (the pop up ones) does not work. If you have the movie or video downloaded on
+                            your device a solution that works is uploading it to a
+                            <a href="https://nostr.build">nostr.build</a> account and pasting that link into media. But
+                            there's good news: the second option does allow you to stream from those sort of sites and
+                            any other, the feature is "Screen Sharing" you can go into room settings and into "Video"
+                            category and then Screen FPS to adjust between 5,15,30 or max FPS, and you turn it on by
+                            clicking the desktop icon on the left handside of your room menu.
+                        </li>
+                    </ul>
+                    <h2>Q: Why can't I change my mic permissions after I joined the room?</h2>
+                    <ul>
+                        <li>
+                            A: The way hivetalk is designed, once you have entered a room, the mic and camera settings
+                            are preset in the browser and can't be changed during the session. If you want to reset mic
+                            or cam permissions, you will need to exit the room or refresh the page to rejoin the room.
+                        </li>
+                    </ul>
+                    <h2>Q: Why doesn't my zap show when I scan the invoice but don't connect wallet?</h2>
+                    <ul>
+                        <li>
+                            A: Since we are using Bitcoin-connect from Alby, the only way that the Zap will be confirmed
+                            or shown is if your wallet is connected directly through the Bitcoin-connect widget. If you
+                            scan the invoice with another app and are not connected the widget will not know the invoice
+                            is paid. If you have questions about this widget, please visit bitcoin-connect.com
+                        </li>
+                    </ul>
+                    <h2>Q: Where to get more help?</h2>
+                    <ul>
+                        <li>
+                            A: You can visit our <a href="https://t.me/+2Ll1IFwXwCJlMGFl">telegram</a> chat room for
+                            help anytime.
+                        </li>
+                    </ul>
+                </div>
+            </section>
+        </main>
 
-</section>
-</main>
+        <footer id="footer" class="site-footer">
+            <div class="container">
+                <div class="site-footer-inner">
+                    <div class="brand footer-brand">
+                        <a href="/">
+                            <div class="form-group-desktop">
+                                <img class="header-logo-image" src="../images/hivelogo50x200.svg" alt="Logo" />
+                            </div>
+                        </a>
+                    </div>
+                    <ul class="footer-links list-reset">
+                        <li><a href="/">Home</a></li>
+                        <li><a href="/faq">FAQ</a></li>
+                        <li><a href="/about">About</a></li>
+                        <li><a href="/support">Support</a></li>
+                        <li><a href="/privacy">Privacy</a></li>
+                        <li><a href="/api/v1/docs/">API</a></li>
+                    </ul>
+                    <ul class="footer-social-links list-reset">
+                        <li>
+                            <a href="https://github.com/hivetalk" target="_blank" rel="noopener noreferrer">
+                                <svg
+                                    xmlns="http://www.w3.org/2000/svg"
+                                    width="24"
+                                    height="24"
+                                    viewBox="0 0 24 24"
+                                    fill="currentColor"
+                                >
+                                    <title>Github</title>
+                                    <path
+                                        d="M12 0c-6.626 0-12 5.373-12 12 0 5.302 3.438 9.8 8.207 11.387.599.111.793-.261.793-.577v-2.234c-3.338.726-4.033-1.416-4.033-1.416-.546-1.387-1.333-1.756-1.333-1.756-1.089-.745.083-.729.083-.729 1.205.084 1.839 1.237 1.839 1.237 1.07 1.834 2.807 1.304 3.492.997.107-.775.418-1.305.762-1.604-2.665-.305-5.467-1.334-5.467-5.931 0-1.311.469-2.381 1.236-3.221-.124-.303-.535-1.524.117-3.176 0 0 1.008-.322 3.301 1.23.957-.266 1.983-.399 3.003-.404 1.02.005 2.047.138 3.006.404 2.291-1.552 3.297-1.23 3.297-1.23.653 1.653.242 2.874.118 3.176.77.84 1.235 1.911 1.235 3.221 0 4.609-2.807 5.624-5.479 5.921.43.372.823 1.102.823 2.222v3.293c0 .319.192.694.801.576 4.765-1.589 8.199-6.086 8.199-11.386 0-6.627-5.373-12-12-12z"
+                                    />
+                                </svg>
+                            </a>
+                        </li>
+                        <li>
+                            <a href="https://t.me/+2Ll1IFwXwCJlMGFl" target="_blank" rel="noopener noreferrer">
+                                <svg
+                                    role="img"
+                                    viewBox="0 0 24 24"
+                                    xmlns="http://www.w3.org/2000/svg"
+                                    fill="currentColor"
+                                    width="24"
+                                    height="24"
+                                >
+                                    <title>Telegram</title>
+                                    <path
+                                        d="M11.944 0A12 12 0 0 0 0 12a12 12 0 0 0 12 12 12 12 0 0 0 12-12A12 12 0 0 0 12 0a12 12 0 0 0-.056 0zm4.962 7.224c.1-.002.321.023.465.14a.506.506 0 0 1 .171.325c.016.093.036.306.02.472-.18 1.898-.962 6.502-1.36 8.627-.168.9-.499 1.201-.82 1.23-.696.065-1.225-.46-1.9-.902-1.056-.693-1.653-1.124-2.678-1.8-1.185-.78-.417-1.21.258-1.91.177-.184 3.247-2.977 3.307-3.23.007-.032.014-.15-.056-.212s-.174-.041-.249-.024c-.106.024-1.793 1.14-5.061 3.345-.48.33-.913.49-1.302.48-.428-.008-1.252-.241-1.865-.44-.752-.245-1.349-.374-1.297-.789.027-.216.325-.437.893-.663 3.498-1.524 5.83-2.529 6.998-3.014 3.332-1.386 4.025-1.627 4.476-1.635z"
+                                    />
+                                </svg>
+                            </a>
+                        </li>
+                        <li>
+                            <a href="https://hivetalk.nostr1.com" target="_blank" rel="noopener noreferrer">
+                                <img src="/images/relaygr.png" alt="nostr" width="24" height="24" />
+                            </a>
+                        </li>
+                        <li>
+                            <a
+                                href="https://njump.me/npub18pudjhdhhp2v8gxnkttt00um729nv93tuepjda2jrwn3eua5tf5s80a699"
+                                target="_blank"
+                                rel="noopener noreferrer"
+                            >
+                                <img src="/images/nostrgr.png" alt="nostr" width="24" height="24" />
+                            </a>
+                        </li>
+                    </ul>
+                    <div class="footer-copyright">
+                        &copy; 2024 HiveTalk, all rights reserved
+                        <br />
+                        <div id="content-placeholder"><!-- Content will be inserted here --></div>
+                    </div>
+                </div>
+            </div>
+        </footer>
 
-<footer id="footer" class="site-footer">
-    <div class="container">
-     <div class="site-footer-inner">
-       <div class="brand footer-brand">
-         <a href="/">
-           <div class="form-group-desktop">
-             <img class="header-logo-image" src="../images/hivelogo50x200.svg" alt="Logo" />
-           </div>
-         </a>
-       </div>
-       <ul class="footer-links list-reset">
-         <li><a href="/">Home</a></li>
-         <li><a href="/faq">FAQ</a></li>
-         <li><a href="/about">About</a></li>
-         <li><a href="/support">Support</a></li>
-         <li><a href="/privacy">Privacy</a></li>
-         <li><a href="/api/v1/docs/">API</a></li>
-       </ul>
-       <ul class="footer-social-links list-reset">
-        <li>
-            <a href="https://github.com/hivetalk" target="_blank" rel="noopener noreferrer">
-              <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="currentColor"><title>Github</title>
-                <path d="M12 0c-6.626 0-12 5.373-12 12 0 5.302 3.438 9.8 8.207 11.387.599.111.793-.261.793-.577v-2.234c-3.338.726-4.033-1.416-4.033-1.416-.546-1.387-1.333-1.756-1.333-1.756-1.089-.745.083-.729.083-.729 1.205.084 1.839 1.237 1.839 1.237 1.07 1.834 2.807 1.304 3.492.997.107-.775.418-1.305.762-1.604-2.665-.305-5.467-1.334-5.467-5.931 0-1.311.469-2.381 1.236-3.221-.124-.303-.535-1.524.117-3.176 0 0 1.008-.322 3.301 1.23.957-.266 1.983-.399 3.003-.404 1.02.005 2.047.138 3.006.404 2.291-1.552 3.297-1.23 3.297-1.23.653 1.653.242 2.874.118 3.176.77.84 1.235 1.911 1.235 3.221 0 4.609-2.807 5.624-5.479 5.921.43.372.823 1.102.823 2.222v3.293c0 .319.192.694.801.576 4.765-1.589 8.199-6.086 8.199-11.386 0-6.627-5.373-12-12-12z"/>
-              </svg>
-            </a>
-          </li>
-        <li>
-           <a href="https://t.me/+2Ll1IFwXwCJlMGFl" target="_blank" rel="noopener noreferrer">
-            <svg role="img" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" fill="currentColor" width="24" height="24"><title>Telegram</title>
-                <path d="M11.944 0A12 12 0 0 0 0 12a12 12 0 0 0 12 12 12 12 0 0 0 12-12A12 12 0 0 0 12 0a12 12 0 0 0-.056 0zm4.962 7.224c.1-.002.321.023.465.14a.506.506 0 0 1 .171.325c.016.093.036.306.02.472-.18 1.898-.962 6.502-1.36 8.627-.168.9-.499 1.201-.82 1.23-.696.065-1.225-.46-1.9-.902-1.056-.693-1.653-1.124-2.678-1.8-1.185-.78-.417-1.21.258-1.91.177-.184 3.247-2.977 3.307-3.23.007-.032.014-.15-.056-.212s-.174-.041-.249-.024c-.106.024-1.793 1.14-5.061 3.345-.48.33-.913.49-1.302.48-.428-.008-1.252-.241-1.865-.44-.752-.245-1.349-.374-1.297-.789.027-.216.325-.437.893-.663 3.498-1.524 5.83-2.529 6.998-3.014 3.332-1.386 4.025-1.627 4.476-1.635z"/>
-            </svg>
-           </a>
-         </li>
-         <li>
-            <a href="https://hivetalk.nostr1.com" target="_blank" rel="noopener noreferrer">
-                <img src="/images/relaygr.png" alt="nostr" width="24" height="24" />
-            </a>
-         </li>
-         <li>
-            <a href="https://njump.me/npub18pudjhdhhp2v8gxnkttt00um729nv93tuepjda2jrwn3eua5tf5s80a699" target="_blank" rel="noopener noreferrer">
-                <img src="/images/nostrgr.png" alt="nostr" width="24" height="24" />
-            </a>
-         </li>
-       </ul>
-       <div class="footer-copyright">
-         &copy; 2024 HiveTalk, all rights reserved
-         <br/>
-         <div id="content-placeholder"><!-- Content will be inserted here --></div>
-       </div>
-     </div>
-    </div>
-   </footer>
-
-
-<script defer src="../js/Landing.js"></script>
-<script async defer src="https://buttons.github.io/buttons.js"></script>
-
-
-</body>
-
+        <script defer src="../js/Landing.js"></script>
+        <script async defer src="https://buttons.github.io/buttons.js"></script>
+    </body>
 </html>

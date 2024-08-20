@@ -13,7 +13,6 @@
  *
  */
 
-
 const cfg = {
     useAvatarSvg: true,
 };
@@ -81,7 +80,7 @@ const image = {
     rec: '../images/rec.png',
     recording: '../images/recording.png',
     delete: '../images/delete.png',
-    locked: '../images/locked.png',    
+    locked: '../images/locked.png',
     mute: '../images/mute.png',
     hide: '../images/hide.png',
     stop: '../images/stop.png',
@@ -157,15 +156,14 @@ const enums = {
 // Recording
 let recordedBlobs = [];
 
-
 // HANDLE LIGHTNING
 
-function handleLightning(zp) { 
-    zp.addEventListener('click', function() {
+function handleLightning(zp) {
+    zp.addEventListener('click', function () {
         let id = this.id;
         let extractedIdentifier = id.split('__')[0];
         Swal.fire({
-            background: swalBackground, 
+            background: swalBackground,
             title: `Zap ${extractedIdentifier}`,
             html: `
                 <label for="amount" style="font-size: 1.2em;">Amount (sats): </label>
@@ -188,41 +186,40 @@ function handleLightning(zp) {
                     return false;
                 }
                 return amount;
-            }
+            },
         }).then((result) => {
             if (result.isConfirmed) {
-                let amt = result.value
+                let amt = result.value;
                 console.log('Amount:', amt);
                 console.log('lightning address:', extractedIdentifier);
 
-                window.moduleFunctions.handleDonation(peer_name, extractedIdentifier, amt)
-                    .then(result => {
-                        console.log("handleDonationResult:", result);
+                window.moduleFunctions
+                    .handleDonation(peer_name, extractedIdentifier, amt)
+                    .then((result) => {
+                        console.log('handleDonationResult:', result);
                         // send zap msg to chat emoji pop up
                         boltEmoji(extractedIdentifier + ' ' + amt + ' sats');
                         // send zap message to chatroom if open
                         rc.broadcastMessage(result);
                     })
-                    .catch(error => {
-                        console.log("Error:", error);
+                    .catch((error) => {
+                        console.log('Error:', error);
                     });
-
             }
         });
-        document.getElementById('preset-21').addEventListener('click', function() {
+        document.getElementById('preset-21').addEventListener('click', function () {
             document.getElementById('amount').value = 21;
         });
-        document.getElementById('preset-100').addEventListener('click', function() {
+        document.getElementById('preset-100').addEventListener('click', function () {
             document.getElementById('amount').value = 100;
         });
-        document.getElementById('preset-500').addEventListener('click', function() {
+        document.getElementById('preset-500').addEventListener('click', function () {
             document.getElementById('amount').value = 500;
         });
-        document.getElementById('preset-1000').addEventListener('click', function() {
+        document.getElementById('preset-1000').addEventListener('click', function () {
             document.getElementById('amount').value = 1000;
         });
-    })
-
+    });
 }
 
 // ####################################################
@@ -231,9 +228,9 @@ function handleLightning(zp) {
 
 // Define the getProfile for Nostr - temporarily get it from njump.me
 function getProfile(eventParam) {
-    var host = "https://njump.me";
-    
-    var width = '100%';  // Set default width
+    var host = 'https://njump.me';
+
+    var width = '100%'; // Set default width
     var height = '100%'; // Set default height
     var iframe = document.createElement('iframe');
     iframe.src = host + '/' + eventParam + '?embed=yes';
@@ -241,16 +238,16 @@ function getProfile(eventParam) {
     iframe.style.width = width;
     iframe.style.height = 800 + 'px';
     iframe.style.border = 'none'; // Remove the border
-    
+
     // Add a class to easily permit overwriting the styles
-    iframe.classList.add("nostr-embedded");
+    iframe.classList.add('nostr-embedded');
 
     // Listen for messages from the iframe
-    window.addEventListener('message', function(event) {
-        console.log("Message received:", event.data);
-        iframe.onload = function() {
+    window.addEventListener('message', function (event) {
+        console.log('Message received:', event.data);
+        iframe.onload = function () {
             // This code will execute when the iframe content has loaded
-            iframe.contentWindow.postMessage({setDarkMode: true}, '*');
+            iframe.contentWindow.postMessage({ setDarkMode: true }, '*');
         };
     });
     return iframe;
@@ -621,9 +618,8 @@ class RoomClient {
 
         // notify && participantsCount == 1 ? shareRoom() : sound('joined');
         if (notify && participantsCount == 1) {
-            console.log("share room pop dialog on initial join")             
-                shareRoom();
-        
+            console.log('share room pop dialog on initial join');
+            shareRoom();
         } else {
             if (this.isScreenAllowed) {
                 this.shareScreen();
@@ -1894,12 +1890,12 @@ class RoomClient {
                 d.appendChild(i);
 
                 // add lightning address or lnurl for zaps
-                if (peer_lnaddress) { 
+                if (peer_lnaddress) {
                     let zp = document.createElement('button');
-                    console.log("peer lnaddress: ", peer_lnaddress);
+                    console.log('peer lnaddress: ', peer_lnaddress);
                     zp.id = peer_lnaddress + '__zap';
                     zp.className = html.zapIcon;
-                    handleLightning(zp)
+                    handleLightning(zp);
                     d.appendChild(zp);
                 }
 
@@ -2327,12 +2323,12 @@ class RoomClient {
                 d.appendChild(i);
 
                 // add remote lightning address or lnurl for zaps
-                if (remoteLNAddress) { 
+                if (remoteLNAddress) {
                     let zp = document.createElement('button');
-                    console.log("remote lnaddress: ", remoteLNAddress);
+                    console.log('remote lnaddress: ', remoteLNAddress);
                     zp.id = remoteLNAddress + '__zap';
                     zp.className = html.zapIcon;
-                    handleLightning(zp)
+                    handleLightning(zp);
                     d.appendChild(zp);
                 }
 
@@ -2505,7 +2501,7 @@ class RoomClient {
         i = document.createElement('img');
         i.className = 'videoAvatarImage center'; // pulsate
         i.id = peer_id + '__img';
- 
+
         // set peer and present names
         p = document.createElement('p');
         p.id = peer_id + '__name';
@@ -2535,18 +2531,18 @@ class RoomClient {
         d.appendChild(i);
 
         // add lightning address or lnurl for zaps
-        if (peer_lnaddress) { 
+        if (peer_lnaddress) {
             let zp = document.createElement('button');
-            console.log("peer lnaddress: ", peer_lnaddress);
+            console.log('peer lnaddress: ', peer_lnaddress);
             zp.id = peer_lnaddress + '__zap';
             zp.className = html.zapIcon;
-            handleLightning(zp)
+            handleLightning(zp);
             d.appendChild(zp);
         }
 
         // add nostr icon - temporary disabled until we find a better place for it
         // let nl = document.createElement('button');
-        // console.log("Peer Npub is:  ", peer_npub); 
+        // console.log("Peer Npub is:  ", peer_npub);
         // if (peer_npub) { // only do this if there is a peer_npub
         //     nl.id = peer_npub + '__nostr';
         //     nl.className = html.nostrIcon;
@@ -2811,24 +2807,23 @@ class RoomClient {
     setVideoAvatarImgName(elemId, peer_name, peer_url) {
         let elem = this.getId(elemId);
         if (cfg.useAvatarSvg) {
-            console.log("setVideoAvatarImgName: ", peer_name, "url: ", peer_url);
-            let avatarImg = ''
+            console.log('setVideoAvatarImgName: ', peer_name, 'url: ', peer_url);
+            let avatarImg = '';
             if (peer_url) {
-                elem.setAttribute('src', peer_url)  // this.getNostrAvatar(peer_name))
-            } else {                
-                isValidLightningAddress(peer_name).then(isValid => {
+                elem.setAttribute('src', peer_url); // this.getNostrAvatar(peer_name))
+            } else {
+                isValidLightningAddress(peer_name).then((isValid) => {
                     if (isValid) {
-                        avatarImg = elem.setAttribute('src', boltavatar)
-                        console.log("valid lightning address", avatarImg)
-                    } else  {
+                        avatarImg = elem.setAttribute('src', boltavatar);
+                        console.log('valid lightning address', avatarImg);
+                    } else {
                         avatarImg = rc.isValidEmail(peer_name)
-                        ? elem.setAttribute('src', this.genGravatar(peer_name))
-                        : elem.setAttribute('src', this.genAvatarSvg(peer_name, 250))                 
-                        console.log("avatar img", avatarImg)
+                            ? elem.setAttribute('src', this.genGravatar(peer_name))
+                            : elem.setAttribute('src', this.genAvatarSvg(peer_name, 250));
+                        console.log('avatar img', avatarImg);
                     }
                 });
             }
-
         } else {
             elem.setAttribute('src', image.avatar);
         }
@@ -3641,7 +3636,7 @@ class RoomClient {
     async toggleChat() {
         const chatRoom = this.getId('chatRoom');
         chatRoom.classList.toggle('show');
-        
+
         if (!this.isChatOpen) {
             await getRoomParticipants();
             hide(chatMinButton);
@@ -3664,10 +3659,10 @@ class RoomClient {
                 this.chatPin();
             }
         }
-    
+
         resizeChatRoom();
     }
-        
+
     toggleShowParticipants() {
         const plist = this.getId('plist');
         const chat = this.getId('chat');
@@ -3810,9 +3805,9 @@ class RoomClient {
             });
     }
 
-    broadcastMessage(msg) { 
+    broadcastMessage(msg) {
         // chatMessage.value = "broadcast this message"
-        const peer_msg = this.formatMsg(this.peer_name + " " + msg);
+        const peer_msg = this.formatMsg(this.peer_name + ' ' + msg);
 
         const data = {
             room_id: this.room_id,
@@ -3845,7 +3840,6 @@ class RoomClient {
     }
 
     sendMessage() {
- 
         // comment out for testing,  allow send if no participants
         // if (!this.thereAreParticipants() && !isChatGPTOn) {
         //     this.cleanMessage();
@@ -3941,7 +3935,7 @@ class RoomClient {
                 });
         } else {
             // send message to group chat room
-            console.log("send msg to group room")
+            console.log('send msg to group room');
             const participantsList = this.getId('participantsList');
             const participantsListItems = participantsList.getElementsByTagName('li');
             for (let i = 0; i < participantsListItems.length; i++) {
@@ -4047,7 +4041,7 @@ class RoomClient {
         }
     }
 
-    setMsgAvatar(avatar, peerName) {        
+    setMsgAvatar(avatar, peerName) {
         let avatarImg = rc.isValidEmail(peerName) ? this.genGravatar(peerName) : this.genAvatarSvg(peerName, 32);
         // this line below doesn't work
         //  avatarImg = peer_url ? peer_url : this.genAvatarSvg(peerName, 32);
@@ -5593,28 +5587,28 @@ class RoomClient {
                     let peer_id = data.peer_id;
                     let peer_name = data.peer_name;
                     // pass data.peer_info.peer_url to get avatar
-                    let peer_url = ''
-                    let avatarImg = ''
+                    let peer_url = '';
+                    let avatarImg = '';
                     try {
-                        peer_url = data.peer_info.peer_url
-                        avatarImg = peer_url
-                        
+                        peer_url = data.peer_info.peer_url;
+                        avatarImg = peer_url;
+
                         if (!avatarImg) {
-                            console.log(" in RoomLobby --> avatarImg: ", avatarImg)
-                            isValidLightningAddress(peer_name).then(isValid => {
+                            console.log(' in RoomLobby --> avatarImg: ', avatarImg);
+                            isValidLightningAddress(peer_name).then((isValid) => {
                                 if (isValid) {
-                                    avatarImg = boltavatar 
+                                    avatarImg = boltavatar;
                                 } else {
                                     avatarImg = rc.isValidEmail(peer_name)
-                                    ? this.genGravatar(peer_name)
-                                    : this.genAvatarSvg(peer_name, 32);
+                                        ? this.genGravatar(peer_name)
+                                        : this.genAvatarSvg(peer_name, 32);
                                 }
                             });
                         }
                     } catch (error) {
-                        console.log("No peer_url, that's ok", error)
+                        console.log("No peer_url, that's ok", error);
                     }
-                    console.log(" in RoomLobby --> avatarImg: ", avatarImg)
+                    console.log(' in RoomLobby --> avatarImg: ', avatarImg);
 
                     let lobbyTb = this.getId('lobbyTb');
                     let lobbyAccept = _PEER.acceptPeer;
@@ -6042,7 +6036,6 @@ class RoomClient {
         }
     }
 
-   
     // ####################################################
     // HANDLE AUDIO
     // ###################################################
