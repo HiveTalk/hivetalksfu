@@ -2467,7 +2467,7 @@ class RoomClient {
         d.id = peer_id + '__videoOff';
         vb = document.createElement('div');
         vb.setAttribute('id', peer_id + 'vb');
-        vb.className = 'videoMenuBar fadein';
+        vb.className = 'videoMenuBar';
         au = document.createElement('button');
         au.id = peer_id + '__audio';
         au.className = peer_audio ? html.audioOn : html.audioOff;
@@ -2613,10 +2613,27 @@ class RoomClient {
         remotePeer ? this.setPeerAudio(peer_id, peer_audio) : this.setIsAudio(peer_id, peer_audio);
 
         console.log('[setVideoOff] Video-element-count', this.videoMediaContainer.childElementCount);
-        //
+
         wbUpdate();
 
         this.handleHideMe();
+
+        d.addEventListener('click', () => {
+            // console.log('Video container clicked:', peer_id);
+            this.toggleVideoMenuBar(peer_id);
+        });
+    }
+
+    toggleVideoMenuBar(peer_id) {
+        console.log('Toggling video menu bar for:', peer_id);
+        const videoMenuBar = this.getId(peer_id + 'vb');
+        if (videoMenuBar) {
+            // console.log('Video menu bar found, toggling active class');
+            videoMenuBar.classList.toggle('active');
+            // console.log('Active class present:', videoMenuBar.classList.contains('active'));
+        } else {
+            console.log('Video menu bar not found');
+        }
     }
 
     removeVideoOff(peer_id) {
