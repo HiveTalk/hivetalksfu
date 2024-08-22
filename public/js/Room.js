@@ -3594,8 +3594,7 @@ function showButtons() {
         isButtonsVisible ||
         (rc.isMobileDevice && rc.isChatOpen) ||
         (rc.isMobileDevice && rc.isMySettingsOpen)
-    )
-        return;
+    )        
     toggleClassElements('videoMenuBar', 'inline');
     control.style.display = 'flex';
     isButtonsVisible = true;
