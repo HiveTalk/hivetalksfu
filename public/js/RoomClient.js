@@ -2456,69 +2456,94 @@ class RoomClient {
     // ####################################################
 
     setVideoOff(peer_info, remotePeer = false) {
-        //console.log('setVideoOff', peer_info);
+        console.log('setVideoOff', peer_info);
         let d, vb, i, h, au, sf, sm, sv, gl, ban, ko, p, pm, pb, pv;
-
+    
         const { peer_id, peer_name, peer_audio, peer_presenter, peer_npub, peer_lnaddress } = peer_info;
-
+    
+        // Error handling: Check if peer_id is valid
+        if (!peer_id) {
+            console.error('Invalid peer_id in setVideoOff');
+            return;
+        }
+    
         this.removeVideoOff(peer_id);
+        
+        // Create main container
         d = document.createElement('div');
         d.className = 'Camera';
         d.id = peer_id + '__videoOff';
+    
+        // Create video menu bar
         vb = document.createElement('div');
-        vb.setAttribute('id', peer_id + 'vb');
+        vb.id = peer_id + 'vb';
         vb.className = 'videoMenuBar fadein';
+    
+        // Create and append peer name header
+        const peerNameHeader = document.createElement('div');
+        peerNameHeader.className = 'peer-name-header';
+        
+        const peerNameContainer = document.createElement('div');
+        peerNameContainer.className = 'peer-name-container';
+        
+        const peerNameSpan = document.createElement('span');
+        peerNameSpan.className = 'peer-name';
+        peerNameSpan.textContent = peer_name;
+        peerNameContainer.appendChild(peerNameSpan);
+        
+        if (peer_npub) {
+            const nostrIcon = document.createElement('span');
+            nostrIcon.className = html.nostrIcon + ' nostr-icon-inline';
+            nostrIcon.addEventListener('click', (event) => {
+                event.stopPropagation();
+                this.handleNostrClick(peer_npub);
+            });
+            peerNameContainer.appendChild(nostrIcon);
+        }
+    
+        peerNameHeader.appendChild(peerNameContainer);
+        vb.appendChild(peerNameHeader);
+    
+        // Create audio button
         au = document.createElement('button');
         au.id = peer_id + '__audio';
         au.className = peer_audio ? html.audioOn : html.audioOff;
+            
+        // Create and append controls for remote peers
         if (remotePeer) {
             pv = document.createElement('input');
-            pv.id = peer_id + '___pVolume';
+            pv.id = 'remotePeer___' + peer_id + '___pVolume';
             pv.type = 'range';
             pv.min = 0;
             pv.max = 100;
             pv.value = 100;
+            peerNameSpan.appendChild(pv);
+    
             sf = document.createElement('button');
             sf.id = 'remotePeer___' + peer_id + '___sendFile';
             sf.className = html.sendFile;
+    
             sm = document.createElement('button');
             sm.id = 'remotePeer___' + peer_id + '___sendMsg';
             sm.className = html.sendMsg;
+    
             sv = document.createElement('button');
             sv.id = 'remotePeer___' + peer_id + '___sendVideo';
             sv.className = html.sendVideo;
+    
             gl = document.createElement('button');
             gl.id = 'remotePeer___' + peer_id + '___geoLocation';
             gl.className = html.geolocation;
+    
             ban = document.createElement('button');
             ban.id = 'remotePeer___' + peer_id + '___ban';
             ban.className = html.ban;
+    
             ko = document.createElement('button');
             ko.id = 'remotePeer___' + peer_id + '___kickOut';
             ko.className = html.kickOut;
-        }
-        // add nostr profile image here if present
-        i = document.createElement('img');
-        i.className = 'videoAvatarImage center'; // pulsate
-        i.id = peer_id + '__img';
-
-        // set peer and present names
-        p = document.createElement('p');
-        p.id = peer_id + '__name';
-        p.className = html.userName;
-        p.innerText = (peer_presenter ? '⭐️ ' : '') + peer_name + (remotePeer ? '' : ' (me) ');
-        h = document.createElement('i');
-        h.id = peer_id + '__hand';
-        h.className = html.userHand;
-        pm = document.createElement('div');
-        pb = document.createElement('div');
-        pm.setAttribute('id', peer_id + '__pitchMeter');
-        pb.setAttribute('id', peer_id + '__pitchBar');
-        pm.className = 'speechbar';
-        pb.className = 'bar';
-        pb.style.height = '1%';
-        pm.appendChild(pb);
-        if (remotePeer) {
+    
+            // Append buttons to video menu bar
             BUTTONS.videoOff.ejectButton && vb.appendChild(ko);
             BUTTONS.videoOff.banButton && vb.appendChild(ban);
             BUTTONS.videoOff.geolocationButton && vb.appendChild(gl);
@@ -2527,66 +2552,56 @@ class RoomClient {
             BUTTONS.videoOff.sendMessageButton && vb.appendChild(sm);
             BUTTONS.videoOff.audioVolumeInput && !this.isMobileDevice && vb.appendChild(pv);
         }
+    
         vb.appendChild(au);
+    
+        // Create and append avatar image
+        i = document.createElement('img');
+        i.className = 'videoAvatarImage center';
+        i.id = peer_id + '__img';
         d.appendChild(i);
-
-        // add lightning address or lnurl for zaps
+    
+        // Add lightning address button if available
         if (peer_lnaddress) {
-            let zp = document.createElement('button');
-            console.log('peer lnaddress: ', peer_lnaddress);
+            const zp = document.createElement('button');
             zp.id = peer_lnaddress + '__zap';
             zp.className = html.zapIcon;
             handleLightning(zp);
             d.appendChild(zp);
         }
-
-        // add nostr icon - temporary disabled until we find a better place for it
-        // let nl = document.createElement('button');
-        // console.log("Peer Npub is:  ", peer_npub);
-        // if (peer_npub) { // only do this if there is a peer_npub
-        //     nl.id = peer_npub + '__nostr';
-        //     nl.className = html.nostrIcon;
-        //     d.appendChild(nl);
-        //     // Add an event listener to the button to trigger SweetAlert2 on click
-        //     nl.addEventListener('click', function() {
-        //         let id = this.id;
-        //         let extractedIdentifier = id.split('__')[0];
-        //         var iframe = getProfile(extractedIdentifier);
-        //        (async ()=>  {
-        //         await Swal.fire({
-        //             background: swalBackground,
-        //             html: iframe.outerHTML,
-        //             position: 'top-end',
-        //             showClass: {
-        //               popup: `
-        //               animate__animated
-        //               animate__fadeInRight
-        //               animate__faster
-        //             `,
-        //             },
-        //             hideClass: {
-        //               popup: `
-        //               animate__animated
-        //               animate__fadeOutRight
-        //               animate__faster
-        //             `,
-        //             },
-        //             grow: 'column',
-        //             width: 600,
-        //             showCloseButton: true,
-        //             showConfirmButton: false,
-        //         });
-        //     })();
-        //     });
-        // }
+    
+        // Create and append other UI elements
+        p = document.createElement('p');
+        p.id = peer_id + '__name';
+        p.className = html.userName;
+        p.innerText = (peer_presenter ? '⭐️ ' : '') + peer_name + (remotePeer ? '' : ' (me) ');
+    
+        h = document.createElement('i');
+        h.id = peer_id + '__hand';
+        h.className = html.userHand;
+    
+        pm = document.createElement('div');
+        pb = document.createElement('div');
+        pm.id = peer_id + '__pitchMeter';
+        pb.id = peer_id + '__pitchBar';
+        pm.className = 'speechbar';
+        pb.className = 'bar';
+        pb.style.height = '1%';
+        pm.appendChild(pb);
+    
         d.appendChild(p);
         d.appendChild(h);
         d.appendChild(pm);
         d.appendChild(vb);
+    
+        // Append the main container to the video media container
         this.videoMediaContainer.appendChild(d);
+    
+        // Set up event handlers
         BUTTONS.videoOff.muteAudioButton && this.handleAU(au.id);
+        
         if (remotePeer) {
-            this.handlePV('remotePeer___' + pv.id);
+            this.handlePV('remotePeer___' + peer_id + '___pVolume');
             this.handleSM(sm.id);
             this.handleSF(sf.id);
             this.handleSV(sv.id);
@@ -2594,12 +2609,13 @@ class RoomClient {
             this.handleBAN(ban.id);
             this.handleKO(ko.id);
         }
+    
         this.handleDD(d.id, peer_id, !remotePeer);
         this.popupPeerInfo(p.id, peer_info);
         this.setVideoAvatarImgName(i.id, peer_name, peer_info.peer_url);
-        this.getId(i.id).style.display = 'block';
-        handleAspectRatio();
-        if (isParticipantsListOpen) getRoomParticipants();
+    
+        i.style.display = 'block';
+    
         if (!this.isMobileDevice && remotePeer) {
             this.setTippy(sm.id, 'Send message', 'bottom');
             this.setTippy(sf.id, 'Send file', 'bottom');
@@ -2610,31 +2626,116 @@ class RoomClient {
             this.setTippy(ban.id, 'Ban', 'bottom');
             this.setTippy(ko.id, 'Eject', 'bottom');
         }
+    
         remotePeer ? this.setPeerAudio(peer_id, peer_audio) : this.setIsAudio(peer_id, peer_audio);
-
+    
+        // Add click event listener for toggling video menu bar
+        d.addEventListener('click', () => this.toggleVideoMenuBar(peer_id));
+    
+        // Add swipe listener for mobile devices
+        if (this.isMobileDevice) {
+            this.addLowLatencySwipeListener(d, peer_id);
+        }
+    
         console.log('[setVideoOff] Video-element-count', this.videoMediaContainer.childElementCount);
-
+        handleAspectRatio();
+        if (isParticipantsListOpen) getRoomParticipants();
         wbUpdate();
-
         this.handleHideMe();
-
-        d.addEventListener('click', () => {
-            // console.log('Video container clicked:', peer_id);
-            this.toggleVideoMenuBar(peer_id);
+    }
+    
+    // Helper function to handle Nostr button click
+    handleNostrClick(peer_npub) {
+        const iframe = getProfile(peer_npub);
+        Swal.fire({
+            background: swalBackground,
+            html: iframe.outerHTML,
+            position: 'top-end',
+            showClass: {
+                popup: 'animate__animated animate__fadeInRight animate__faster'
+            },
+            hideClass: {
+                popup: 'animate__animated animate__fadeOutRight animate__faster'
+            },
+            grow: 'column',
+            width: 600,
+            showCloseButton: true,
+            showConfirmButton: false,
         });
     }
-
+    
     toggleVideoMenuBar(peer_id) {
         console.log('Toggling video menu bar for:', peer_id);
         const videoMenuBar = this.getId(peer_id + 'vb');
-        if (videoMenuBar) {
-            // console.log('Video menu bar found, toggling active class');
-            videoMenuBar.classList.toggle('active');
-            // console.log('Active class present:', videoMenuBar.classList.contains('active'));
-        } else {
-            console.log('Video menu bar not found');
+        if (!videoMenuBar) {
+            console.error('Video menu bar not found for peer:', peer_id);
+            return;
+        }
+    
+        videoMenuBar.classList.toggle('active');
+        
+        if (this.isMobileDevice) {
+            const isActive = videoMenuBar.classList.contains('active');
+            document.body.style.overflow = isActive ? 'hidden' : '';
+            videoMenuBar.style.transform = isActive ? 'translateY(0)' : 'translateY(100%)';
         }
     }
+    
+    addLowLatencySwipeListener(element, peer_id) {
+        let startY, currentY;
+        const videoMenuBar = this.getId(peer_id + 'vb');
+        let isDragging = false;
+        let animationFrameId = null;
+    
+        const updateMenuBarPosition = () => {
+            if (!isDragging) return;
+    
+            const deltaY = currentY - startY;
+            if (deltaY > 0) {
+                const progress = Math.min(deltaY / videoMenuBar.offsetHeight, 1);
+                const opacity = 1 - progress;
+                videoMenuBar.style.transform = `translateY(${deltaY}px)`;
+                videoMenuBar.style.opacity = opacity.toFixed(2);
+            }
+    
+            animationFrameId = requestAnimationFrame(updateMenuBarPosition);
+        };
+    
+        element.addEventListener('touchstart', (e) => {
+            if (videoMenuBar.classList.contains('active')) {
+                startY = currentY = e.touches[0].clientY;
+                isDragging = true;
+                cancelAnimationFrame(animationFrameId);
+                animationFrameId = requestAnimationFrame(updateMenuBarPosition);
+            }
+        });
+    
+        element.addEventListener('touchmove', (e) => {
+            if (!isDragging) return;
+            e.preventDefault(); // Prevent scrolling
+            currentY = e.touches[0].clientY;
+        }, { passive: false });
+    
+        element.addEventListener('touchend', () => {
+            if (!isDragging) return;
+    
+            isDragging = false;
+            cancelAnimationFrame(animationFrameId);
+    
+            const finalDeltaY = currentY - startY;
+            if (finalDeltaY > videoMenuBar.offsetHeight / 6) {
+                this.toggleVideoMenuBar(peer_id);
+            } else {
+                videoMenuBar.style.transition = 'transform 0.3s, opacity 0.3s';
+                videoMenuBar.style.transform = 'translateY(0)';
+                videoMenuBar.style.opacity = '1';
+                setTimeout(() => {
+                    videoMenuBar.style.transition = '';
+                }, 300);
+            }
+        });
+    }
+
 
     removeVideoOff(peer_id) {
         let pvOff = this.getId(peer_id + '__videoOff');
