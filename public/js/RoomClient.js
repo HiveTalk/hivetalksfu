@@ -2518,7 +2518,31 @@ class RoomClient {
             pv.max = 100;
             pv.value = 100;
             peerNameSpan.appendChild(pv);
+            
+            let startX;
+
+            pv.addEventListener('touchstart', (e) => {
+                e.stopPropagation();
+                startX = e.touches[0].clientX;
+            });
     
+            pv.addEventListener('touchmove', (e) => {
+                e.stopPropagation();
+                e.preventDefault();
+                const moveX = e.touches[0].clientX - startX;
+    
+                const sliderRect = pv.getBoundingClientRect();
+                const newPosition = (e.touches[0].clientX - sliderRect.left) / sliderRect.width;
+                pv.value = Math.max(0, Math.min(100, newPosition * 100));
+                
+                pv.dispatchEvent(new Event('input', { bubbles: true }));
+            });
+    
+            pv.addEventListener('touchend', (e) => {
+                e.stopPropagation();
+            });
+        
+
             sf = document.createElement('button');
             sf.id = 'remotePeer___' + peer_id + '___sendFile';
             sf.className = html.sendFile;
@@ -2672,20 +2696,27 @@ class RoomClient {
             return;
         }
     
+        const isActive = videoMenuBar.classList.contains('active');
         videoMenuBar.classList.toggle('active');
         
         if (this.isMobileDevice) {
-            const isActive = videoMenuBar.classList.contains('active');
-            document.body.style.overflow = isActive ? 'hidden' : '';
-            videoMenuBar.style.transform = isActive ? 'translateY(0)' : 'translateY(100%)';
+            document.body.style.overflow = isActive ? '' : 'hidden';
+            videoMenuBar.style.transition = 'transform 0.3s, opacity 0.3s';
+            videoMenuBar.style.transform = isActive ? 'translateY(100%)' : 'translateY(0)';
+            videoMenuBar.style.opacity = isActive ? '0' : '1';
+            setTimeout(() => {
+                videoMenuBar.style.transition = '';
+            }, 300);
         }
     }
+    
     
     addLowLatencySwipeListener(element, peer_id) {
         let startY, currentY;
         const videoMenuBar = this.getId(peer_id + 'vb');
         let isDragging = false;
         let animationFrameId = null;
+        let isVolumeSliderActive = false;
     
         const updateMenuBarPosition = () => {
             if (!isDragging) return;
@@ -2702,6 +2733,11 @@ class RoomClient {
         };
     
         element.addEventListener('touchstart', (e) => {
+            if (e.target.type === 'range') {
+                isVolumeSliderActive = true;
+                return;
+            }
+    
             if (videoMenuBar.classList.contains('active')) {
                 startY = currentY = e.touches[0].clientY;
                 isDragging = true;
@@ -2711,19 +2747,26 @@ class RoomClient {
         });
     
         element.addEventListener('touchmove', (e) => {
+            if (isVolumeSliderActive) return;
+    
             if (!isDragging) return;
             e.preventDefault(); // Prevent scrolling
             currentY = e.touches[0].clientY;
         }, { passive: false });
     
-        element.addEventListener('touchend', () => {
+        element.addEventListener('touchend', (e) => {
+            if (isVolumeSliderActive) {
+                isVolumeSliderActive = false;
+                return;
+            }
+    
             if (!isDragging) return;
     
             isDragging = false;
             cancelAnimationFrame(animationFrameId);
     
             const finalDeltaY = currentY - startY;
-            if (finalDeltaY > videoMenuBar.offsetHeight / 6) {
+            if (finalDeltaY > videoMenuBar.offsetHeight / 4) { // Increased threshold
                 this.toggleVideoMenuBar(peer_id);
             } else {
                 videoMenuBar.style.transition = 'transform 0.3s, opacity 0.3s';
@@ -2735,7 +2778,7 @@ class RoomClient {
             }
         });
     }
-
+    
 
     removeVideoOff(peer_id) {
         let pvOff = this.getId(peer_id + '__videoOff');
