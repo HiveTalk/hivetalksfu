@@ -2281,6 +2281,10 @@ class RoomClient {
     
                 peerNameHeader.appendChild(peerNameContainer);
                 vb.appendChild(peerNameHeader);
+
+                if (this.isMobileDevice) {
+                    peerNameHeader.style.backgroundImage = `url('${peer_info.peer_url || image.avatar}')`;
+                }
     
                 pip = document.createElement('button');
                 pip.id = id + '__pictureInPicture';
@@ -2554,6 +2558,10 @@ class RoomClient {
         peerNameSpan.className = 'peer-name';
         peerNameSpan.textContent = peer_name;
         peerNameContainer.appendChild(peerNameSpan);
+        
+        if (this.isMobileDevice) {
+            peerNameHeader.style.backgroundImage = `url('${peer_info.peer_url || image.avatar}')`;
+        }
         
         if (peer_npub) {
             const nostrIcon = document.createElement('span');

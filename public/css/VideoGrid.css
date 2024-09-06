@@ -243,7 +243,10 @@
         grid-area: header;
         width: 100%;
         padding: 40px;
-        background: rgba(255, 255, 255, 0.1);
+        background-color: rgba(255, 255, 255, 0.2);
+        background-size: cover;
+        background-position: center;
+        background-repeat: no-repeat;
         border-radius: 10px;
         margin-bottom: 10px;
         display: flex;
@@ -255,6 +258,7 @@
         font-size: 18px;
         font-weight: bold;
         color: #fff;
+        text-shadow: 0 0 10px rgba(0, 0, 0, 0.5);
     }
 
     .videoMenuBar input,
