@@ -1902,6 +1902,9 @@ class RoomClient {
                 d.appendChild(p);
                 d.appendChild(vb);
                 this.videoMediaContainer.appendChild(d);
+                
+                d.addEventListener('click', () => this.toggleProducerVideoMenuBar(this.peer_id));
+
                 this.attachMediaStream(elem, stream, type, 'Producer');
                 this.myVideoEl = elem;
                 this.isVideoPictureInPictureSupported && this.handlePIP(elem.id, pip.id);
@@ -1940,6 +1943,13 @@ class RoomClient {
                 break;
         }
         return elem;
+    }
+
+    toggleProducerVideoMenuBar(peerId) {
+        const videoMenuBar = this.getId(peerId + '__vb');
+        if (videoMenuBar) {
+            videoMenuBar.classList.toggle('active');
+        }
     }
 
     async pauseProducer(type) {
@@ -2202,18 +2212,18 @@ class RoomClient {
 
     handleConsumer(id, type, stream, peer_name, peer_info) {
         let elem, vb, d, p, i, cm, au, pip, fs, ts, sf, sm, sv, gl, ban, ko, pb, pm, pv, pn;
-
+    
         let eDiv, eBtn, eVc; // expand buttons
-
+    
         console.log('PEER-INFO', peer_info);
-
+    
         const remotePeerId = peer_info.peer_id;
         const remoteIsScreen = type == mediaType.screen;
         const remotePeerAudio = peer_info.peer_audio;
         const remotePrivacyOn = peer_info.peer_video_privacy;
         const remotePeerPresenter = peer_info.peer_presenter;
         const remoteLNAddress = peer_info.peer_lnaddress;
-
+    
         switch (type) {
             case mediaType.video:
             case mediaType.screen:
@@ -2233,21 +2243,45 @@ class RoomClient {
                 vb = document.createElement('div');
                 vb.setAttribute('id', remotePeerId + '__vb');
                 vb.className = 'videoMenuBar fadein';
-
-                eDiv = document.createElement('div');
-                eDiv.className = 'expand-video';
-                eBtn = document.createElement('button');
-                eBtn.id = remotePeerId + '_videoExpandBtn';
-                eBtn.className = html.expand;
-                eVc = document.createElement('div');
-                eVc.className = 'expand-video-content';
-
+                
+                // Add click event listener for both mobile and desktop
+                d.addEventListener('click', () => this.toggleProducerVideoMenuBar(remotePeerId));
+                
+                // Create and append peer name header
+                const peerNameHeader = document.createElement('div');
+                peerNameHeader.className = 'peer-name-header';
+                
+                const peerNameContainer = document.createElement('div');
+                peerNameContainer.className = 'peer-name-container';
+                
+                const peerNameSpan = document.createElement('span');
+                peerNameSpan.className = 'peer-name';
+                peerNameSpan.textContent = peer_name;
+    
+                // Create and append volume control to peerNameSpan
                 pv = document.createElement('input');
                 pv.id = remotePeerId + '___pVolume';
                 pv.type = 'range';
                 pv.min = 0;
                 pv.max = 100;
                 pv.value = 100;
+                peerNameSpan.appendChild(pv);
+                
+                peerNameContainer.appendChild(peerNameSpan);
+    
+                if (peer_info.peer_npub) {
+                    const nostrIcon = document.createElement('span');
+                    nostrIcon.className = html.nostrIcon + ' nostr-icon-inline';
+                    nostrIcon.addEventListener('click', (event) => {
+                        event.stopPropagation();
+                        this.handleNostrClick(peer_info.peer_npub);
+                    });
+                    peerNameContainer.appendChild(nostrIcon);
+                }
+    
+                peerNameHeader.appendChild(peerNameContainer);
+                vb.appendChild(peerNameHeader);
+    
                 pip = document.createElement('button');
                 pip.id = id + '__pictureInPicture';
                 pip.className = html.pip;
@@ -2299,29 +2333,60 @@ class RoomClient {
                 pb.className = 'bar';
                 pb.style.height = '1%';
                 pm.appendChild(pb);
-
-                BUTTONS.consumerVideo.sendMessageButton && eVc.appendChild(sm);
-                BUTTONS.consumerVideo.sendFileButton && eVc.appendChild(sf);
-                BUTTONS.consumerVideo.sendVideoButton && eVc.appendChild(sv);
-                BUTTONS.consumerVideo.geolocationButton && eVc.appendChild(gl);
-                BUTTONS.consumerVideo.banButton && eVc.appendChild(ban);
-                BUTTONS.consumerVideo.ejectButton && eVc.appendChild(ko);
-                eDiv.appendChild(eBtn);
-                eDiv.appendChild(eVc);
-
-                vb.appendChild(eDiv);
-                BUTTONS.consumerVideo.audioVolumeInput && !this.isMobileDevice && vb.appendChild(pv);
-                vb.appendChild(au);
-                vb.appendChild(cm);
-                BUTTONS.consumerVideo.snapShotButton && vb.appendChild(ts);
-                BUTTONS.consumerVideo.videoPictureInPicture &&
-                    this.isVideoPictureInPictureSupported &&
-                    vb.appendChild(pip);
-                BUTTONS.consumerVideo.fullScreenButton && this.isVideoFullScreenSupported && vb.appendChild(fs);
-                if (!this.isMobileDevice) vb.appendChild(pn);
+    
+                if (this.isMobileDevice) {
+                    // Mobile-specific behavior
+                    BUTTONS.consumerVideo.sendMessageButton && vb.appendChild(sm);
+                    BUTTONS.consumerVideo.sendFileButton && vb.appendChild(sf);
+                    BUTTONS.consumerVideo.sendVideoButton && vb.appendChild(sv);
+                    BUTTONS.consumerVideo.geolocationButton && vb.appendChild(gl);
+                    BUTTONS.consumerVideo.banButton && vb.appendChild(ban);
+                    BUTTONS.consumerVideo.ejectButton && vb.appendChild(ko);
+                    vb.appendChild(au);
+                    vb.appendChild(cm);
+                    BUTTONS.consumerVideo.snapShotButton && vb.appendChild(ts);
+                    BUTTONS.consumerVideo.videoPictureInPicture &&
+                        this.isVideoPictureInPictureSupported &&
+                        vb.appendChild(pip);
+                    BUTTONS.consumerVideo.fullScreenButton && 
+                        this.isVideoFullScreenSupported && 
+                        vb.appendChild(fs);
+    
+                } else {
+                    // Desktop behavior
+                    eDiv = document.createElement('div');
+                    eDiv.className = 'expand-video';
+                    eBtn = document.createElement('button');
+                    eBtn.id = remotePeerId + '_videoExpandBtn';
+                    eBtn.className = html.expand;
+                    eVc = document.createElement('div');
+                    eVc.className = 'expand-video-content';
+    
+                    BUTTONS.consumerVideo.sendMessageButton && eVc.appendChild(sm);
+                    BUTTONS.consumerVideo.sendFileButton && eVc.appendChild(sf);
+                    BUTTONS.consumerVideo.sendVideoButton && eVc.appendChild(sv);
+                    BUTTONS.consumerVideo.geolocationButton && eVc.appendChild(gl);
+                    BUTTONS.consumerVideo.banButton && eVc.appendChild(ban);
+                    BUTTONS.consumerVideo.ejectButton && eVc.appendChild(ko);
+                    eDiv.appendChild(eBtn);
+                    eDiv.appendChild(eVc);
+    
+                    vb.appendChild(eDiv);
+                    vb.appendChild(au);
+                    vb.appendChild(cm);
+                    BUTTONS.consumerVideo.snapShotButton && vb.appendChild(ts);
+                    BUTTONS.consumerVideo.videoPictureInPicture &&
+                        this.isVideoPictureInPictureSupported &&
+                        vb.appendChild(pip);
+                    BUTTONS.consumerVideo.fullScreenButton && 
+                        this.isVideoFullScreenSupported && 
+                        vb.appendChild(fs);
+                    vb.appendChild(pn);
+                }
+    
                 d.appendChild(elem);
                 d.appendChild(i);
-
+    
                 // add remote lightning address or lnurl for zaps
                 if (remoteLNAddress) {
                     let zp = document.createElement('button');
@@ -2331,7 +2396,7 @@ class RoomClient {
                     handleLightning(zp);
                     d.appendChild(zp);
                 }
-
+    
                 d.appendChild(p);
                 d.appendChild(pm);
                 d.appendChild(vb);
@@ -2392,7 +2457,6 @@ class RoomClient {
                 if (sinkId && speakerSelect.value) {
                     this.changeAudioDestination(elem);
                 }
-                //elem.addEventListener('play', () => { elem.volume = 0.1 });
                 console.log('[Add audioConsumers]', this.audioConsumers);
                 break;
             default:
@@ -3445,39 +3509,40 @@ class RoomClient {
         let btnFs = this.getId(fsId);
         if (btnFs) {
             this.setTippy(fsId, 'Full screen', 'bottom');
-            btnFs.addEventListener('click', () => {
+            btnFs.addEventListener('click', (e) => {
+                e.stopPropagation(); // Prevent click from reaching container
                 if (videoPlayer.classList.contains('videoCircle')) {
                     return userLog('info', 'Full Screen not allowed if video on privacy mode', 'top-end');
                 }
-                videoPlayer.style.pointerEvents = this.isVideoOnFullScreen ? 'auto' : 'none';
                 this.toggleFullScreen(videoPlayer);
-                this.isVideoOnFullScreen = this.isVideoOnFullScreen ? false : true;
             });
         }
         if (videoPlayer) {
-            videoPlayer.addEventListener('click', () => {
+            videoPlayer.addEventListener('dblclick', (e) => {
                 if (videoPlayer.classList.contains('videoCircle')) {
                     return userLog('info', 'Full Screen not allowed if video on privacy mode', 'top-end');
                 }
                 if (!videoPlayer.hasAttribute('controls')) {
                     if ((this.isMobileDevice && this.isVideoOnFullScreen) || !this.isMobileDevice) {
-                        videoPlayer.style.pointerEvents = this.isVideoOnFullScreen ? 'auto' : 'none';
                         this.toggleFullScreen(videoPlayer);
-                        this.isVideoOnFullScreen = this.isVideoOnFullScreen ? false : true;
                     }
                 }
             });
-            videoPlayer.addEventListener('fullscreenchange', (e) => {
-                if (!document.fullscreenElement) {
-                    videoPlayer.style.pointerEvents = 'auto';
-                    this.isVideoOnFullScreen = false;
-                }
+            videoPlayer.addEventListener('fullscreenchange', () => {
+                this.isVideoOnFullScreen = !!document.fullscreenElement;
+                videoPlayer.style.pointerEvents = 'auto';
             });
-            videoPlayer.addEventListener('webkitfullscreenchange', (e) => {
-                if (!document.webkitIsFullScreen) {
-                    videoPlayer.style.pointerEvents = 'auto';
-                    this.isVideoOnFullScreen = false;
-                }
+            videoPlayer.addEventListener('webkitfullscreenchange', () => {
+                this.isVideoOnFullScreen = !!document.webkitFullscreenElement;
+                videoPlayer.style.pointerEvents = 'auto';
+            });
+            videoPlayer.addEventListener('mozfullscreenchange', () => {
+                this.isVideoOnFullScreen = !!document.mozFullScreenElement;
+                videoPlayer.style.pointerEvents = 'auto';
+            });
+            videoPlayer.addEventListener('msfullscreenchange', () => {
+                this.isVideoOnFullScreen = !!document.msFullscreenElement;
+                videoPlayer.style.pointerEvents = 'auto';
             });
         }
     }

@@ -103,14 +103,14 @@
     background-image: url('../images/nostrg.png');
     z-index: 1;
     position: absolute;
-    left: 65px;
-    top: 12px;
+    left: 0;
+    top: 15px;
     display: flex;
     align-items: center;
     padding: 5px;
     margin: 5px;
-    width: 60px; /* Set your image width */
-    height: 60px; /* Set your image height */
+    width: 50px; /* Set your image width */
+    height: 50px; /* Set your image height */
     border-radius: 5px; /* Remove button border */
     background-size: cover; /* Ensure the image covers the button */
     cursor: pointer; /* Add pointer cursor on hover */
@@ -168,7 +168,7 @@
     display: inline;
     top: 0;
     left: 0;
-    padding: 10px;
+    padding: 20px;
     background: rgba(0, 0, 0, 0.2);
     font-size: small;
     font-weight: bold;
@@ -214,7 +214,7 @@
     .videoMenuBar {
         position: fixed;
         padding: 15px;
-        padding-left: 70px;
+        padding-left: 65px;
         bottom: 0;
         background: rgba(0, 0, 0, 1);
         transform: translateY(100%);
@@ -232,12 +232,12 @@
         z-index: 1000;
     }
     
-    /* .videoMenuBar .nostr-image-button {
+    .videoMenuBar .nostr-image-button {
         top: 10px;
-        right: 65px; 
+        left: 65px !important;
         width: 50px;
         height: 50px;
-    } */
+    }
 
     .videoMenuBar .peer-name-header {
         grid-area: header;
