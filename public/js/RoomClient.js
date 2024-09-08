@@ -1891,20 +1891,26 @@ class RoomClient {
 
                 // add lightning address or lnurl for zaps
                 if (peer_lnaddress) {
-                    let zp = document.createElement('button');
-                    console.log('peer lnaddress: ', peer_lnaddress);
+                    const zp = document.createElement('button');
                     zp.id = peer_lnaddress + '__zap';
                     zp.className = html.zapIcon;
-                    handleLightning(zp);
+                    zp.addEventListener('click', (event) => {
+                        event.stopPropagation(); // Prevent click from bubbling up
+                        handleLightning(zp);
+                    });
                     d.appendChild(zp);
                 }
-
                 d.appendChild(p);
                 d.appendChild(vb);
                 this.videoMediaContainer.appendChild(d);
                 
-                d.addEventListener('click', () => this.toggleProducerVideoMenuBar(this.peer_id));
-
+                d.addEventListener('click', (event) => {
+                    // Check if the clicked element is the zap button
+                    if (!event.target.closest('.' + html.zapIcon.split(' ')[0])) {
+                        this.simpleToggleVideoMenuBar(this.peer_id);
+                    }
+                });
+                
                 this.attachMediaStream(elem, stream, type, 'Producer');
                 this.myVideoEl = elem;
                 this.isVideoPictureInPictureSupported && this.handlePIP(elem.id, pip.id);
@@ -1945,7 +1951,7 @@ class RoomClient {
         return elem;
     }
 
-    toggleProducerVideoMenuBar(peerId) {
+    simpleToggleVideoMenuBar(peerId) {
         const videoMenuBar = this.getId(peerId + '__vb');
         if (videoMenuBar) {
             videoMenuBar.classList.toggle('active');
@@ -2245,8 +2251,12 @@ class RoomClient {
                 vb.className = 'videoMenuBar fadein';
                 
                 // Add click event listener for both mobile and desktop
-                d.addEventListener('click', () => this.toggleProducerVideoMenuBar(remotePeerId));
-                
+                d.addEventListener('click', (event) => {
+                    // Check if the clicked element is the zap button
+                    if (!event.target.closest('.' + html.zapIcon.split(' ')[0])) {
+                        this.simpleToggleVideoMenuBar(remotePeerId);
+                    }
+                });                
                 // Create and append peer name header
                 const peerNameHeader = document.createElement('div');
                 peerNameHeader.className = 'peer-name-header';
@@ -2662,10 +2672,13 @@ class RoomClient {
             const zp = document.createElement('button');
             zp.id = peer_lnaddress + '__zap';
             zp.className = html.zapIcon;
-            handleLightning(zp);
+            zp.addEventListener('click', (event) => {
+                event.stopPropagation(); // Prevent click from bubbling up
+                handleLightning(zp);
+            });
             d.appendChild(zp);
         }
-    
+            
         // Create and append other UI elements
         p = document.createElement('p');
         p.id = peer_id + '__name';
@@ -2726,8 +2739,13 @@ class RoomClient {
         remotePeer ? this.setPeerAudio(peer_id, peer_audio) : this.setIsAudio(peer_id, peer_audio);
     
         // Add click event listener for toggling video menu bar
-        d.addEventListener('click', () => this.toggleVideoMenuBar(peer_id));
-    
+        d.addEventListener('click', (event) => {
+            // Check if the clicked element is the zap button
+            if (!event.target.closest('.' + html.zapIcon.split(' ')[0])) {
+                this.toggleVideoMenuBar(peer_id);
+            }
+        });
+        
         // Add swipe listener for mobile devices
         if (this.isMobileDevice) {
             this.addLowLatencySwipeListener(d, peer_id);
