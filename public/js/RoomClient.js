@@ -1979,7 +1979,14 @@ class RoomClient {
                 
                 d.appendChild(p);
                 d.appendChild(vb);
-                this.videoMediaContainer.appendChild(d);                
+
+                // Append to videoPinMediaContainer if it's a producer
+                if (type === mediaType.video || type === mediaType.screen) {
+                    this.videoPinMediaContainer.appendChild(d);
+                } else {
+                    this.videoMediaContainer.appendChild(d);
+                }
+                
                 this.attachMediaStream(elem, stream, type, 'Producer');
                 this.myVideoEl = elem;
                 this.isVideoPictureInPictureSupported && this.handlePIP(elem.id, pip.id);
