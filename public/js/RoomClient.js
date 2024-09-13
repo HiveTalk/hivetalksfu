@@ -1850,7 +1850,7 @@ class RoomClient {
                 d.addEventListener('click', (event) => {
                     // Check if the clicked element is not the zap button
                     if (!event.target.closest('.' + html.zapIcon.split(' ')[0])) {
-                        this.openVideoMenuBar(remotePeerId);
+                        this.toggleVideoMenuBar(this.peer_id);
                     }
                 });
                 
@@ -1979,8 +1979,7 @@ class RoomClient {
                 
                 d.appendChild(p);
                 d.appendChild(vb);
-                this.videoMediaContainer.appendChild(d);
-                
+                this.videoMediaContainer.appendChild(d);                
                 this.attachMediaStream(elem, stream, type, 'Producer');
                 this.myVideoEl = elem;
                 this.isVideoPictureInPictureSupported && this.handlePIP(elem.id, pip.id);
@@ -2019,26 +2018,6 @@ class RoomClient {
                 break;
         }
         return elem;
-    }
-
-    openVideoMenuBar(peerId) {
-        const videoMenuBar = this.getId(peerId + '__vb');
-        if (!videoMenuBar) return;
-    
-        const isActive = videoMenuBar.classList.contains('active');
-    
-        // Close all video menu bars
-        const allMenuBars = document.querySelectorAll('.videoMenuBar');
-        allMenuBars.forEach(bar => {
-            if (bar !== videoMenuBar) {
-                bar.classList.remove('active');
-            }
-        });
-    
-        // Open the clicked menu bar if it's not already active
-        if (!isActive) {
-            videoMenuBar.classList.add('active');
-        }
     }
 
     async pauseProducer(type) {
@@ -2337,7 +2316,7 @@ class RoomClient {
                 d.addEventListener('click', (event) => {
                     // Check if the clicked element is not the zap button
                     if (!event.target.closest('.' + html.zapIcon.split(' ')[0])) {
-                        this.openVideoMenuBar(remotePeerId);
+                        this.toggleVideoMenuBar(remotePeerId);
                     }
                 });
                 // Create and append peer name header
