@@ -1821,6 +1821,8 @@ class RoomClient {
 
     async handleProducer(id, type, stream) {
         let elem, vb, vp, ts, d, p, i, au, pip, fs, pm, pb, pn;
+        let eDiv, eBtn, eVc; // expand buttons
+    
         switch (type) {
             case mediaType.video:
             case mediaType.screen:
@@ -1843,6 +1845,44 @@ class RoomClient {
                 vb = document.createElement('div');
                 vb.setAttribute('id', this.peer_id + '__vb');
                 vb.className = 'videoMenuBar fadein';
+                
+                // Add click event listener for both mobile and desktop
+                d.addEventListener('click', (event) => {
+                    if (!event.target.closest('.' + html.zapIcon.split(' ')[0])) {
+                        this.simpleToggleVideoMenuBar(this.peer_id);
+                    }
+                });
+                
+                // Create and append peer name header
+                const peerNameHeader = document.createElement('div');
+                peerNameHeader.className = 'peer-name-header';
+                
+                const peerNameContainer = document.createElement('div');
+                peerNameContainer.className = 'peer-name-container';
+                
+                const peerNameSpan = document.createElement('span');
+                peerNameSpan.className = 'peer-name';
+                peerNameSpan.textContent = this.peer_name + ' (me)';
+                
+                peerNameContainer.appendChild(peerNameSpan);
+                
+                if (this.peer_info.peer_npub) {
+                    const nostrIcon = document.createElement('span');
+                    nostrIcon.className = html.nostrIcon + ' nostr-icon-inline';
+                    nostrIcon.addEventListener('click', (event) => {
+                        event.stopPropagation();
+                        this.handleNostrClick(this.peer_info.peer_npub);
+                    });
+                    peerNameContainer.appendChild(nostrIcon);
+                }
+                
+                peerNameHeader.appendChild(peerNameContainer);
+                vb.appendChild(peerNameHeader);
+    
+                if (this.isMobileDevice) {
+                    peerNameHeader.style.backgroundImage = `url('${this.peer_info.peer_url || image.avatar}')`;
+                }
+    
                 pip = document.createElement('button');
                 pip.id = id + '__pictureInPicture';
                 pip.className = html.pip;
@@ -1856,19 +1896,19 @@ class RoomClient {
                 pn.id = id + '__pin';
                 pn.className = html.pin;
                 vp = document.createElement('button');
-                vp.id = this.peer_id + +'__vp';
+                vp.id = this.peer_id + '__vp';
                 vp.className = html.videoPrivacy;
                 au = document.createElement('button');
                 au.id = this.peer_id + '__audio';
                 au.className = this.peer_info.peer_audio ? html.audioOn : html.audioOff;
                 au.style.cursor = 'default';
+                i = document.createElement('i');
+                i.id = this.peer_id + '__hand';
+                i.className = html.userHand;
                 p = document.createElement('p');
                 p.id = this.peer_id + '__name';
                 p.className = html.userName;
                 p.innerText = (isPresenter ? '⭐️ ' : '') + this.peer_name + ' (me)';
-                i = document.createElement('i');
-                i.id = this.peer_id + '__hand';
-                i.className = html.userHand;
                 pm = document.createElement('div');
                 pb = document.createElement('div');
                 pm.setAttribute('id', this.peer_id + '_pitchMeter');
@@ -1877,39 +1917,63 @@ class RoomClient {
                 pb.className = 'bar';
                 pb.style.height = '1%';
                 pm.appendChild(pb);
-                BUTTONS.producerVideo.muteAudioButton && vb.appendChild(au);
-                BUTTONS.producerVideo.videoPrivacyButton && !isScreen && vb.appendChild(vp);
-                BUTTONS.producerVideo.snapShotButton && vb.appendChild(ts);
-                BUTTONS.producerVideo.videoPictureInPicture &&
-                    this.isVideoPictureInPictureSupported &&
-                    vb.appendChild(pip);
-                BUTTONS.producerVideo.fullScreenButton && this.isVideoFullScreenSupported && vb.appendChild(fs);
-                if (!this.isMobileDevice) vb.appendChild(pn);
+    
+                if (this.isMobileDevice) {
+                    // Mobile-specific behavior
+                    BUTTONS.producerVideo.muteAudioButton && vb.appendChild(au);
+                    BUTTONS.producerVideo.videoPrivacyButton && !isScreen && vb.appendChild(vp);
+                    BUTTONS.producerVideo.snapShotButton && vb.appendChild(ts);
+                    BUTTONS.producerVideo.videoPictureInPicture &&
+                        this.isVideoPictureInPictureSupported &&
+                        vb.appendChild(pip);
+                    BUTTONS.producerVideo.fullScreenButton && 
+                        this.isVideoFullScreenSupported && 
+                        vb.appendChild(fs);
+                } else {
+                    // Desktop behavior
+                    eDiv = document.createElement('div');
+                    eDiv.className = 'expand-video';
+                    eBtn = document.createElement('button');
+                    eBtn.id = this.peer_id + '_videoExpandBtn';
+                    eBtn.className = html.expand;
+                    eVc = document.createElement('div');
+                    eVc.className = 'expand-video-content';
+    
+                    BUTTONS.producerVideo.videoPrivacyButton && !isScreen && eVc.appendChild(vp);
+                    eDiv.appendChild(eBtn);
+                    eDiv.appendChild(eVc);
+    
+                    vb.appendChild(eDiv);
+                    BUTTONS.producerVideo.muteAudioButton && vb.appendChild(au);
+                    BUTTONS.producerVideo.snapShotButton && vb.appendChild(ts);
+                    BUTTONS.producerVideo.videoPictureInPicture &&
+                        this.isVideoPictureInPictureSupported &&
+                        vb.appendChild(pip);
+                    BUTTONS.producerVideo.fullScreenButton && 
+                        this.isVideoFullScreenSupported && 
+                        vb.appendChild(fs);
+                    vb.appendChild(pn);
+                }
+    
                 d.appendChild(elem);
                 d.appendChild(pm);
                 d.appendChild(i);
-
+    
                 // add lightning address or lnurl for zaps
-                if (peer_lnaddress) {
+                if (this.peer_info.peer_lnaddress) {
                     const zp = document.createElement('button');
-                    zp.id = peer_lnaddress + '__zap';
+                    zp.id = this.peer_info.peer_lnaddress + '__zap';
                     zp.className = html.zapIcon;
                     zp.addEventListener('click', (event) => {
-                        event.stopPropagation(); // Prevent click from bubbling up
+                        event.stopPropagation();
                         handleLightning(zp);
                     });
                     d.appendChild(zp);
                 }
+                
                 d.appendChild(p);
                 d.appendChild(vb);
                 this.videoMediaContainer.appendChild(d);
-                
-                d.addEventListener('click', (event) => {
-                    // Check if the clicked element is the zap button
-                    if (!event.target.closest('.' + html.zapIcon.split(' ')[0])) {
-                        this.simpleToggleVideoMenuBar(this.peer_id);
-                    }
-                });
                 
                 this.attachMediaStream(elem, stream, type, 'Producer');
                 this.myVideoEl = elem;
@@ -1953,8 +2017,23 @@ class RoomClient {
 
     simpleToggleVideoMenuBar(peerId) {
         const videoMenuBar = this.getId(peerId + '__vb');
-        if (videoMenuBar) {
-            videoMenuBar.classList.toggle('active');
+        if (!videoMenuBar) return;
+    
+        const isActive = videoMenuBar.classList.contains('active');
+    
+        // Close all video menu bars
+        const allMenuBars = document.querySelectorAll('.videoMenuBar');
+        allMenuBars.forEach(bar => {
+            if (bar !== videoMenuBar) {
+                bar.classList.remove('active');
+            }
+        });
+    
+        // Toggle the clicked menu bar
+        if (!isActive) {
+            videoMenuBar.classList.add('active');
+        } else {
+            videoMenuBar.classList.remove('active');
         }
     }
 
@@ -2701,10 +2780,10 @@ class RoomClient {
         d.appendChild(p);
         d.appendChild(h);
         d.appendChild(pm);
-        d.appendChild(vb);
     
         // Append the main container to the video media container
         this.videoMediaContainer.appendChild(d);
+        this.videoMediaContainer.appendChild(vb);
     
         // Set up event handlers
         BUTTONS.videoOff.muteAudioButton && this.handleAU(au.id);
@@ -2787,6 +2866,11 @@ class RoomClient {
         }
     
         const isActive = videoMenuBar.classList.contains('active');
+    
+        // Close all other video menu bars
+        this.closeAllVideoMenuBars(peer_id);
+    
+        // Toggle the clicked menu bar
         videoMenuBar.classList.toggle('active');
         
         if (this.isMobileDevice) {
@@ -2800,6 +2884,18 @@ class RoomClient {
         }
     }
     
+    closeAllVideoMenuBars(exceptPeerId) {
+        const allMenuBars = document.querySelectorAll('.videoMenuBar');
+        allMenuBars.forEach(bar => {
+            if (bar.id !== exceptPeerId + 'vb') {
+                bar.classList.remove('active');
+                if (this.isMobileDevice) {
+                    bar.style.transform = 'translateY(100%)';
+                    bar.style.opacity = '0';
+                }
+            }
+        });
+    }    
     
     addLowLatencySwipeListener(element, peer_id) {
         let startY, currentY;

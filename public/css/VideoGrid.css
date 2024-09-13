@@ -30,7 +30,13 @@
     /* border: 3px solid lime; */
 }
 
+#videoPinMediaContainer .videoMenuBar {
+    position: absolute;
+}
+
+
 .Camera {
+    z-index: 1;
     position: relative;
     vertical-align: middle;
     align-self: center;
@@ -43,11 +49,9 @@
     animation: show 0.4s ease;
 }
 
-/* .Camera:hover {
-    border: 3px solid rgb(113, 157, 239);
-} */
 
 #videoMediaContainer i {
+    z-index: 1;
     position: absolute;
     display: none;
     top: 0;
@@ -104,16 +108,16 @@
     z-index: 1;
     position: absolute;
     left: 0;
-    top: 15px;
+    top: 10px;
     display: flex;
     align-items: center;
     padding: 5px;
     margin: 5px;
-    width: 50px; /* Set your image width */
-    height: 50px; /* Set your image height */
-    border-radius: 5px; /* Remove button border */
-    background-size: cover; /* Ensure the image covers the button */
-    cursor: pointer; /* Add pointer cursor on hover */
+    width: 50px; 
+    height: 50px; 
+    border-radius: 5px; 
+    background-size: cover; 
+    cursor: pointer; 
 }
 
 .zap-image-button {
@@ -128,8 +132,8 @@
     margin: 5px;
     width: clamp(20px, 8%, 40px); /* Responsive width */
     height: clamp(20px, 8%, 40px); /* Responsive height */
-    min-width: 40px; /* Explicit minimum width */
-    min-height: 40px; /* Explicit minimum height */
+    min-width: 30px; /* Explicit minimum width */
+    min-height: 30px; /* Explicit minimum height */
     border-radius: 5px;
     background-size: cover;
     background-position: center;
@@ -146,7 +150,7 @@
 }
 
 .username {
-    z-index: 1;
+    z-index: 9;
     position: absolute;
     right: 0;
     bottom: 0;
@@ -159,7 +163,7 @@
     width: auto;
     height: 25px;
     border-radius: 5px;
-    background: rgba(0, 0, 0, 0.1);
+    background: rgba(0, 0, 0, 0.7);
 }
 
 .fscreen {
@@ -175,13 +179,13 @@
 }
 
 .videoMenuBar {
-    z-index: 2;
+    z-index: 1000;
     position: absolute;
     display: inline;
     top: 0;
     left: 0;
     padding: 20px;
-    background: rgba(0, 0, 0, 0.2);
+    background: rgba(0, 0, 0, 1);
     font-size: small;
     font-weight: bold;
     text-align: center;
@@ -208,6 +212,17 @@
 .videoMenuBar button:hover {
     color: grey;
     transition: all 0.3s ease-in-out;
+}
+
+.videoMenuBar .peer-name {
+    font-size: 18px;
+    font-weight: bold;
+    color: #fff;
+    text-shadow: 0 0 10px rgba(0, 0, 0, 0.5);
+    background-color: rgba(36, 36, 36, 0.2);
+    border-radius: 10px;
+    padding: 10px;
+    width: 100%;
 }
 
 @media (max-width: 768px) {
