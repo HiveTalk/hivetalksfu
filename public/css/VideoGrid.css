@@ -30,13 +30,7 @@
     /* border: 3px solid lime; */
 }
 
-#videoPinMediaContainer .videoMenuBar {
-    position: absolute;
-}
-
-
 .Camera {
-    z-index: 1;
     position: relative;
     vertical-align: middle;
     align-self: center;
@@ -49,9 +43,11 @@
     animation: show 0.4s ease;
 }
 
+/* .Camera:hover {
+    border: 3px solid rgb(113, 157, 239);
+} */
 
 #videoMediaContainer i {
-    z-index: 1;
     position: absolute;
     display: none;
     top: 0;
@@ -107,17 +103,17 @@
     background-image: url('../images/nostrg.png');
     z-index: 1;
     position: absolute;
-    left: 0;
-    top: 10px;
+    left: 8px;
+    top: 20px;
     display: flex;
     align-items: center;
     padding: 5px;
     margin: 5px;
-    width: 50px; 
-    height: 50px; 
-    border-radius: 5px; 
-    background-size: cover; 
-    cursor: pointer; 
+    width: 50px;
+    height: 50px;
+    border-radius: 5px;
+    background-size: cover;
+    cursor: pointer;
 }
 
 .zap-image-button {
@@ -133,7 +129,7 @@
     width: clamp(20px, 8%, 40px); /* Responsive width */
     height: clamp(20px, 8%, 40px); /* Responsive height */
     min-width: 30px; /* Explicit minimum width */
-    min-height: 30px; /* Explicit minimum height */
+    min-height: 40px; /* Explicit minimum height */
     border-radius: 5px;
     background-size: cover;
     background-position: center;
@@ -150,7 +146,7 @@
 }
 
 .username {
-    z-index: 9;
+    z-index: 1;
     position: absolute;
     right: 0;
     bottom: 0;
@@ -163,7 +159,7 @@
     width: auto;
     height: 25px;
     border-radius: 5px;
-    background: rgba(0, 0, 0, 0.7);
+    background: rgba(0, 0, 0, 0.1);
 }
 
 .fscreen {
@@ -179,13 +175,13 @@
 }
 
 .videoMenuBar {
-    z-index: 1000;
+    z-index: 9;
     position: absolute;
     display: inline;
     top: 0;
     left: 0;
     padding: 20px;
-    background: rgba(0, 0, 0, 1);
+    background: rgba(0, 0, 0, 0.9);
     font-size: small;
     font-weight: bold;
     text-align: center;
@@ -198,6 +194,34 @@
 
 .videoMenuBar.active {
     transform: translateY(0);
+}
+
+.peer-name-container {
+    height: 60px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.videoMenuBar .peer-name-header {
+    grid-area: header;
+    width: 120px;
+    padding: 5px;
+    border-radius: 10px;
+    margin-bottom: 10px;
+    display: contents;
+
+}
+
+.videoMenuBar .peer-name {
+    font-size: 18px;
+    font-weight: bold;
+    color: #fff;
+    text-shadow: 0 0 10px rgba(0, 0, 0, 0.5);
+    background-color: rgba(36, 36, 36, 0.8);
+    border-radius: 10px;
+    padding: 6px;
+    width: 100%;
 }
 
 .videoMenuBar input,
@@ -214,18 +238,7 @@
     transition: all 0.3s ease-in-out;
 }
 
-.videoMenuBar .peer-name {
-    font-size: 18px;
-    font-weight: bold;
-    color: #fff;
-    text-shadow: 0 0 10px rgba(0, 0, 0, 0.5);
-    background-color: rgba(36, 36, 36, 0.2);
-    border-radius: 10px;
-    padding: 10px;
-    width: 100%;
-}
-
-@media (max-width: 768px) {
+@media (max-width: 1024px) {
     .videoMenuBar {
         position: fixed;
         padding: 15px;
@@ -245,15 +258,35 @@
         overflow-y: auto;
         z-index: 1000;
     }
+
+    .videoMenuBarClose {
+        position: absolute;
+        top: 10px;
+        right: 10px;
+        width: 30px;
+        height: 30px;
+        background: rgba(0, 0, 0, 0.5);
+        border-radius: 50%;
+        color: white;
+        font-size: 24px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        cursor: pointer;
+        z-index: 10;
+        user-select: none;
+        transition: background-color 0.3s ease;
+    }
     
     .videoMenuBar .nostr-image-button {
-        top: 10px;
-        left: 65px !important;
+        top: 0px;
+        left: 0px;
         width: 50px;
         height: 50px;
     }
 
     .videoMenuBar .peer-name-header {
+        position: relative; 
         grid-area: header;
         width: 100%;
         padding: 40px;
@@ -310,95 +343,8 @@
     .videoMenuBar button:active {
         background: rgba(255, 255, 255, 0.3);
     }
+
 }
-
-@media (max-width: 1024px) and (orientation: landscape) {
-    .videoMenuBar {
-        position: fixed;
-        padding: 15px;
-        padding-left: 65px;
-        bottom: 0;
-        background: rgba(0, 0, 0, 1);
-        transform: translateY(100%);
-        transition: transform 0.3s ease-out, opacity 0.3s ease-out;
-        display: grid !important;
-        grid-gap: 10px 5px;
-        grid-template-columns: 50%;
-        grid-template-areas:
-            "header header"
-            "controls controls";
-        align-content: start;
-        justify-items: start;
-        overflow-y: auto;
-        z-index: 1000;
-    }
-    
-    .videoMenuBar .nostr-image-button {
-        top: 10px;
-        left: 65px !important;
-        width: 50px;
-        height: 50px;
-    }
-
-    .videoMenuBar .peer-name-header {
-        grid-area: header;
-        width: 100%;
-        padding: 40px;
-        background-color: rgba(255, 255, 255, 0.2);
-        background-size: cover;
-        background-position: center;
-        background-repeat: no-repeat;
-        border-radius: 10px;
-        margin-bottom: 10px;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-    }
-
-    .videoMenuBar .peer-name {
-        font-size: 18px;
-        font-weight: bold;
-        color: #fff;
-        text-shadow: 0 0 10px rgba(0, 0, 0, 0.5);
-        background-color: rgba(36, 36, 36, 0.8);
-        border-radius: 10px;
-        padding: 6px;
-        width: 100%;
-    }
-
-    .videoMenuBar input,
-    .videoMenuBar button {
-        font-size: 16px;
-        color: #fff;
-        background: rgba(255, 255, 255, 0.2);
-        width: 100%;
-        height: 45px;
-        display: flex;
-        justify-content: center;
-        align-items: center;
-        border-radius: 10px;
-    }
-
-    .videoMenuBar .fas,
-    .videoMenuBar .fab {
-        font-size: 20px;
-        margin-right: 8px;
-        transition: color 0.3s;
-    }
-
-    .videoMenuBar input[type="range"] {
-        width: 100%;
-        margin: 5px 0;
-        background: rgba(255, 255, 255, 0.1);
-        border-radius: 5px;
-        height: 5px;
-    }
-
-    .videoMenuBar button:active {
-        background: rgba(255, 255, 255, 0.3);
-    }
-}
-
 
 .expand-video-content {
     position: relative;

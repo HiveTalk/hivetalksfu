@@ -1846,10 +1846,11 @@ class RoomClient {
                 vb.setAttribute('id', this.peer_id + '__vb');
                 vb.className = 'videoMenuBar fadein';
                 
-                // Add click event listener for both mobile and desktop
+                // Add click even   t listener for both mobile and desktop
                 d.addEventListener('click', (event) => {
+                    // Check if the clicked element is not the zap button
                     if (!event.target.closest('.' + html.zapIcon.split(' ')[0])) {
-                        this.simpleToggleVideoMenuBar(this.peer_id);
+                        this.openVideoMenuBar(remotePeerId);
                     }
                 });
                 
@@ -1970,6 +1971,11 @@ class RoomClient {
                     });
                     d.appendChild(zp);
                 }
+
+                if (this.isMobileDevice) {
+                    peerNameHeader.style.backgroundImage = `url('${peer_info.peer_url || image.avatar}')`;
+                    this.addMobileCloseButton(peerNameHeader, peer_id);
+                }
                 
                 d.appendChild(p);
                 d.appendChild(vb);
@@ -2015,7 +2021,7 @@ class RoomClient {
         return elem;
     }
 
-    simpleToggleVideoMenuBar(peerId) {
+    openVideoMenuBar(peerId) {
         const videoMenuBar = this.getId(peerId + '__vb');
         if (!videoMenuBar) return;
     
@@ -2029,11 +2035,9 @@ class RoomClient {
             }
         });
     
-        // Toggle the clicked menu bar
+        // Open the clicked menu bar if it's not already active
         if (!isActive) {
             videoMenuBar.classList.add('active');
-        } else {
-            videoMenuBar.classList.remove('active');
         }
     }
 
@@ -2331,11 +2335,11 @@ class RoomClient {
                 
                 // Add click event listener for both mobile and desktop
                 d.addEventListener('click', (event) => {
-                    // Check if the clicked element is the zap button
+                    // Check if the clicked element is not the zap button
                     if (!event.target.closest('.' + html.zapIcon.split(' ')[0])) {
-                        this.simpleToggleVideoMenuBar(remotePeerId);
+                        this.openVideoMenuBar(remotePeerId);
                     }
-                });                
+                });
                 // Create and append peer name header
                 const peerNameHeader = document.createElement('div');
                 peerNameHeader.className = 'peer-name-header';
@@ -2370,10 +2374,6 @@ class RoomClient {
     
                 peerNameHeader.appendChild(peerNameContainer);
                 vb.appendChild(peerNameHeader);
-
-                if (this.isMobileDevice) {
-                    peerNameHeader.style.backgroundImage = `url('${peer_info.peer_url || image.avatar}')`;
-                }
     
                 pip = document.createElement('button');
                 pip.id = id + '__pictureInPicture';
@@ -2488,6 +2488,11 @@ class RoomClient {
                     zp.className = html.zapIcon;
                     handleLightning(zp);
                     d.appendChild(zp);
+                }
+
+                if (this.isMobileDevice) {
+                    peerNameHeader.style.backgroundImage = `url('${peer_info.peer_url || image.avatar}')`;
+                    this.addMobileCloseButton(peerNameHeader, remotePeerId);
                 }
     
                 d.appendChild(p);
@@ -2650,7 +2655,7 @@ class RoomClient {
         
         if (this.isMobileDevice) {
             peerNameHeader.style.backgroundImage = `url('${peer_info.peer_url || image.avatar}')`;
-        }
+        }        
         
         if (peer_npub) {
             const nostrIcon = document.createElement('span');
@@ -2659,7 +2664,7 @@ class RoomClient {
                 event.stopPropagation();
                 this.handleNostrClick(peer_npub);
             });
-            peerNameContainer.appendChild(nostrIcon);
+            peerNameHeader.appendChild(nostrIcon);
         }
     
         peerNameHeader.appendChild(peerNameContainer);
@@ -2827,14 +2832,33 @@ class RoomClient {
         
         // Add swipe listener for mobile devices
         if (this.isMobileDevice) {
-            this.addLowLatencySwipeListener(d, peer_id);
+            this.addLowLatencySwipeListener(vb, peer_id);
         }
-    
+
+        if (this.isMobileDevice) {
+            peerNameHeader.style.backgroundImage = `url('${peer_info.peer_url || image.avatar}')`;
+            this.addMobileCloseButton(peerNameHeader, peer_id);
+        }    
+        
         console.log('[setVideoOff] Video-element-count', this.videoMediaContainer.childElementCount);
         handleAspectRatio();
         if (isParticipantsListOpen) getRoomParticipants();
         wbUpdate();
         this.handleHideMe();
+    }
+
+    addMobileCloseButton(containerElement, peerId) {
+        if (this.isMobileDevice) {
+            // Create close button for mobile devices using a div
+            const closeBtn = document.createElement('div');
+            closeBtn.className = 'videoMenuBarClose';
+            closeBtn.innerHTML = '&times;'; // Unicode for 'x'
+            closeBtn.addEventListener('click', (e) => {
+                e.stopPropagation();
+                this.toggleVideoMenuBar(peerId);
+            });
+            containerElement.appendChild(closeBtn);
+        }
     }
     
     // Helper function to handle Nostr button click
