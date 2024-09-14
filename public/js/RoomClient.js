@@ -289,7 +289,7 @@ class RoomClient {
         // Moderator
         this._moderator = {
             audio_start_muted: false,
-            video_start_hidden: false,
+            video_start_hidden: true,
             audio_cant_unmute: false,
             video_cant_unhide: false,
             screen_cant_share: false,
@@ -1949,7 +1949,7 @@ class RoomClient {
 
                 if (this.isMobileDevice) {
                     peerNameHeader.style.backgroundImage = `url('${peer_info.peer_url || image.avatar}')`;
-                    this.addMobileCloseButton(peerNameHeader, remotePeerId);
+                    this.addMobileCloseButton(peerNameHeader, this.peer_id);
 
                 }
                 
