@@ -1949,7 +1949,7 @@ class RoomClient {
 
                 if (this.isMobileDevice) {
                     peerNameHeader.style.backgroundImage = `url('${peer_info.peer_url || image.avatar}')`;
-                    this.addMobileCloseButton(peerNameHeader, this.peer_id);
+                    this.addCloseButton(peerNameHeader, this.peer_id);
 
                 }
                 
@@ -2345,7 +2345,7 @@ class RoomClient {
 
                 if (this.isMobileDevice) {
                     peerNameHeader.style.backgroundImage = `url('${peer_info.peer_url || image.avatar}')`;
-                    this.addMobileCloseButton(peerNameHeader, remotePeerId);
+                    this.addCloseButton(peerNameHeader, remotePeerId);
 
                 }
     
@@ -2778,8 +2778,9 @@ class RoomClient {
 
         if (this.isMobileDevice) {
             peerNameHeader.style.backgroundImage = `url('${peer_info.peer_url || image.avatar}')`;
-            this.addMobileCloseButton(peerNameHeader, peer_id);
+            this.addCloseButton(peerNameHeader, peer_id);
         }
+        this.addCloseButton(peerNameHeader, peer_id);
 
     
         console.log('[setVideoOff] Video-element-count', this.videoMediaContainer.childElementCount);
@@ -2897,20 +2898,19 @@ class RoomClient {
         });
     }
 
-    addMobileCloseButton(containerElement, peerId) {
-        if (this.isMobileDevice) {
-            // Create close button for mobile devices using a div
-            const closeBtn = document.createElement('div');
-            closeBtn.className = 'videoMenuBarClose';
-            closeBtn.innerHTML = '&times;'; // Unicode for 'x'
-            closeBtn.addEventListener('click', (e) => {
-                e.stopPropagation();
-                this.toggleVideoMenuBar(peerId);
-            });
-            containerElement.appendChild(closeBtn);
-        }
+    addCloseButton(containerElement, peerId) {
+        // Create close button
+        const closeBtn = document.createElement('div');
+        closeBtn.className = 'videoMenuBarClose';
+        closeBtn.innerHTML = '&times;'; // Unicode for 'x'
+        closeBtn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            this.toggleVideoMenuBar(peerId);
+        });
+        containerElement.appendChild(closeBtn);
+    
     }
-
+    
     addLowLatencySwipeListener() {
         let startY, currentY;
         let isDragging = false;

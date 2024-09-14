@@ -227,6 +227,11 @@
     transition: all 0.3s ease-in-out;
 }
 
+.videoMenuBarClose {
+    display: none;
+}
+
+
 @media (max-width: 768px) {
     .videoMenuBar {
         position: fixed;
@@ -246,6 +251,25 @@
         justify-items: start;
         overflow-y: auto;
         z-index: 1000;
+    }
+
+    .videoMenuBarClose {
+        display: flex;
+        position: absolute;
+        top: 20px;
+        right: 20px;
+        width: 30px;
+        height: 30px;
+        background: rgba(0, 0, 0, 0.5);
+        border-radius: 50%;
+        color: white;
+        font-size: 24px;
+        align-items: center;
+        justify-content: center;
+        cursor: pointer;
+        z-index: 10;
+        user-select: none;
+        transition: background-color 0.3s ease;
     }
     
     .videoMenuBar .nostr-image-button {
@@ -335,6 +359,25 @@
         overflow-y: auto;
         z-index: 1000;
     }
+
+    .videoMenuBarClose {
+        display: flex;
+        position: absolute;
+        top: 20px;
+        right: 20px;
+        width: 30px;
+        height: 30px;
+        background: rgba(0, 0, 0, 0.5);
+        border-radius: 50%;
+        color: white;
+        font-size: 24px;
+        align-items: center;
+        justify-content: center;
+        cursor: pointer;
+        z-index: 10;
+        user-select: none;
+        transition: background-color 0.3s ease;
+    }    
     
     .videoMenuBar .nostr-image-button {
         top: 10px;
