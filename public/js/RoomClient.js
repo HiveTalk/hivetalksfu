@@ -1821,8 +1821,6 @@ class RoomClient {
 
     async handleProducer(id, type, stream) {
         let elem, vb, vp, ts, d, p, i, au, pip, fs, pm, pb, pn;
-        let eDiv, eBtn, eVc; // expand buttons
-    
         switch (type) {
             case mediaType.video:
             case mediaType.screen:
@@ -1845,45 +1843,6 @@ class RoomClient {
                 vb = document.createElement('div');
                 vb.setAttribute('id', this.peer_id + '__vb');
                 vb.className = 'videoMenuBar fadein';
-                
-                // Add click even   t listener for both mobile and desktop
-                d.addEventListener('click', (event) => {
-                    // Check if the clicked element is not the zap button
-                    if (!event.target.closest('.' + html.zapIcon.split(' ')[0])) {
-                        this.toggleVideoMenuBar(this.peer_id);
-                    }
-                });
-                
-                // Create and append peer name header
-                const peerNameHeader = document.createElement('div');
-                peerNameHeader.className = 'peer-name-header';
-                
-                const peerNameContainer = document.createElement('div');
-                peerNameContainer.className = 'peer-name-container';
-                
-                const peerNameSpan = document.createElement('span');
-                peerNameSpan.className = 'peer-name';
-                peerNameSpan.textContent = this.peer_name + ' (me)';
-                
-                peerNameContainer.appendChild(peerNameSpan);
-                
-                if (this.peer_info.peer_npub) {
-                    const nostrIcon = document.createElement('span');
-                    nostrIcon.className = html.nostrIcon + ' nostr-icon-inline';
-                    nostrIcon.addEventListener('click', (event) => {
-                        event.stopPropagation();
-                        this.handleNostrClick(this.peer_info.peer_npub);
-                    });
-                    peerNameContainer.appendChild(nostrIcon);
-                }
-                
-                peerNameHeader.appendChild(peerNameContainer);
-                vb.appendChild(peerNameHeader);
-    
-                if (this.isMobileDevice) {
-                    peerNameHeader.style.backgroundImage = `url('${this.peer_info.peer_url || image.avatar}')`;
-                }
-    
                 pip = document.createElement('button');
                 pip.id = id + '__pictureInPicture';
                 pip.className = html.pip;
@@ -1897,19 +1856,19 @@ class RoomClient {
                 pn.id = id + '__pin';
                 pn.className = html.pin;
                 vp = document.createElement('button');
-                vp.id = this.peer_id + '__vp';
+                vp.id = this.peer_id + +'__vp';
                 vp.className = html.videoPrivacy;
                 au = document.createElement('button');
                 au.id = this.peer_id + '__audio';
                 au.className = this.peer_info.peer_audio ? html.audioOn : html.audioOff;
                 au.style.cursor = 'default';
-                i = document.createElement('i');
-                i.id = this.peer_id + '__hand';
-                i.className = html.userHand;
                 p = document.createElement('p');
                 p.id = this.peer_id + '__name';
                 p.className = html.userName;
                 p.innerText = (isPresenter ? '⭐️ ' : '') + this.peer_name + ' (me)';
+                i = document.createElement('i');
+                i.id = this.peer_id + '__hand';
+                i.className = html.userHand;
                 pm = document.createElement('div');
                 pb = document.createElement('div');
                 pm.setAttribute('id', this.peer_id + '_pitchMeter');
@@ -1918,74 +1877,87 @@ class RoomClient {
                 pb.className = 'bar';
                 pb.style.height = '1%';
                 pm.appendChild(pb);
-    
-                if (this.isMobileDevice) {
-                    // Mobile-specific behavior
-                    BUTTONS.producerVideo.muteAudioButton && vb.appendChild(au);
-                    BUTTONS.producerVideo.videoPrivacyButton && !isScreen && vb.appendChild(vp);
-                    BUTTONS.producerVideo.snapShotButton && vb.appendChild(ts);
-                    BUTTONS.producerVideo.videoPictureInPicture &&
-                        this.isVideoPictureInPictureSupported &&
-                        vb.appendChild(pip);
-                    BUTTONS.producerVideo.fullScreenButton && 
-                        this.isVideoFullScreenSupported && 
-                        vb.appendChild(fs);
-                } else {
-                    // Desktop behavior
-                    eDiv = document.createElement('div');
-                    eDiv.className = 'expand-video';
-                    eBtn = document.createElement('button');
-                    eBtn.id = this.peer_id + '_videoExpandBtn';
-                    eBtn.className = html.expand;
-                    eVc = document.createElement('div');
-                    eVc.className = 'expand-video-content';
-    
-                    BUTTONS.producerVideo.videoPrivacyButton && !isScreen && eVc.appendChild(vp);
-                    eDiv.appendChild(eBtn);
-                    eDiv.appendChild(eVc);
-    
-                    vb.appendChild(eDiv);
-                    BUTTONS.producerVideo.muteAudioButton && vb.appendChild(au);
-                    BUTTONS.producerVideo.snapShotButton && vb.appendChild(ts);
-                    BUTTONS.producerVideo.videoPictureInPicture &&
-                        this.isVideoPictureInPictureSupported &&
-                        vb.appendChild(pip);
-                    BUTTONS.producerVideo.fullScreenButton && 
-                        this.isVideoFullScreenSupported && 
-                        vb.appendChild(fs);
-                    vb.appendChild(pn);
-                }
-    
+                BUTTONS.producerVideo.muteAudioButton && vb.appendChild(au);
+                BUTTONS.producerVideo.videoPrivacyButton && !isScreen && vb.appendChild(vp);
+                BUTTONS.producerVideo.snapShotButton && vb.appendChild(ts);
+                BUTTONS.producerVideo.videoPictureInPicture &&
+                    this.isVideoPictureInPictureSupported &&
+                    vb.appendChild(pip);
+                BUTTONS.producerVideo.fullScreenButton && this.isVideoFullScreenSupported && vb.appendChild(fs);
+                if (!this.isMobileDevice) vb.appendChild(pn);
                 d.appendChild(elem);
                 d.appendChild(pm);
                 d.appendChild(i);
-    
+
                 // add lightning address or lnurl for zaps
-                if (this.peer_info.peer_lnaddress) {
+                if (peer_lnaddress) {
                     const zp = document.createElement('button');
-                    zp.id = this.peer_info.peer_lnaddress + '__zap';
+                    zp.id = peer_lnaddress + '__zap';
                     zp.className = html.zapIcon;
                     zp.addEventListener('click', (event) => {
-                        event.stopPropagation();
+                        event.stopPropagation(); // Prevent click from bubbling up
                         handleLightning(zp);
                     });
                     d.appendChild(zp);
                 }
+                d.appendChild(p);
+                this.videoMediaContainer.appendChild(vb);
+                this.videoMediaContainer.appendChild(d);
+
+                let pv;
+
+                // Create and append peer name header
+                const peerNameHeader = document.createElement('div');
+                peerNameHeader.className = 'peer-name-header';
+                
+                const peerNameContainer = document.createElement('div');
+                peerNameContainer.className = 'peer-name-container';
+                
+                const peerNameSpan = document.createElement('span');
+                peerNameSpan.className = 'peer-name';
+                peerNameSpan.textContent = peer_name;
+    
+                // Create and append volume control to peerNameSpan
+                pv = document.createElement('input');
+                pv.id = this.peer_id + '___pVolume';
+                pv.type = 'range';
+                pv.min = 0;
+                pv.max = 100;
+                pv.value = 100;
+                peerNameSpan.appendChild(pv);
+                
+                peerNameContainer.appendChild(peerNameSpan);
+    
+                if (peer_info.peer_npub) {
+                    const nostrIcon = document.createElement('span');
+                    nostrIcon.className = html.nostrIcon + ' nostr-icon-inline';
+                    nostrIcon.addEventListener('click', (event) => {
+                        event.stopPropagation();
+                        this.handleNostrClick(peer_info.peer_npub);
+                    });
+                    peerNameContainer.appendChild(nostrIcon);
+                }
+    
+                peerNameHeader.appendChild(peerNameContainer);
+                vb.appendChild(peerNameHeader);
 
                 if (this.isMobileDevice) {
                     peerNameHeader.style.backgroundImage = `url('${peer_info.peer_url || image.avatar}')`;
-                    this.addMobileCloseButton(peerNameHeader, peer_id);
+                    this.addMobileCloseButton(peerNameHeader, remotePeerId);
+
                 }
                 
-                d.appendChild(p);
-                d.appendChild(vb);
+                
+                d.addEventListener('click', (event) => {
+                    // Check if the clicked element is the zap button
+                    if (!event.target.closest('.' + html.zapIcon.split(' ')[0])) {
+                        this.toggleVideoMenuBar(this.peer_id);
+                    }
+                });
 
-                // Append to videoPinMediaContainer if it's a producer
-                if (type === mediaType.video || type === mediaType.screen) {
-                    this.videoPinMediaContainer.appendChild(d);
-                } else {
-                    this.videoMediaContainer.appendChild(d);
-                }
+                // Add swipe listener for mobile devices
+                if (this.isMobileDevice) {
+                }                
                 
                 this.attachMediaStream(elem, stream, type, 'Producer');
                 this.myVideoEl = elem;
@@ -2025,6 +1997,13 @@ class RoomClient {
                 break;
         }
         return elem;
+    }
+
+    simpleToggleVideoMenuBar(peerId) {
+        const videoMenuBar = this.getId(peerId + '__vb');
+        if (videoMenuBar) {
+            videoMenuBar.classList.toggle('active');
+        }
     }
 
     async pauseProducer(type) {
@@ -2321,11 +2300,16 @@ class RoomClient {
                 
                 // Add click event listener for both mobile and desktop
                 d.addEventListener('click', (event) => {
-                    // Check if the clicked element is not the zap button
+                    // Check if the clicked element is the zap button
                     if (!event.target.closest('.' + html.zapIcon.split(' ')[0])) {
                         this.toggleVideoMenuBar(remotePeerId);
                     }
-                });
+                });          
+                
+                // Add swipe listener for mobile devices
+                if (this.isMobileDevice) {
+                    this.addLowLatencySwipeListener(d, peer_id);
+                }                
                 // Create and append peer name header
                 const peerNameHeader = document.createElement('div');
                 peerNameHeader.className = 'peer-name-header';
@@ -2360,6 +2344,12 @@ class RoomClient {
     
                 peerNameHeader.appendChild(peerNameContainer);
                 vb.appendChild(peerNameHeader);
+
+                if (this.isMobileDevice) {
+                    peerNameHeader.style.backgroundImage = `url('${peer_info.peer_url || image.avatar}')`;
+                    this.addMobileCloseButton(peerNameHeader, remotePeerId);
+
+                }
     
                 pip = document.createElement('button');
                 pip.id = id + '__pictureInPicture';
@@ -2475,15 +2465,10 @@ class RoomClient {
                     handleLightning(zp);
                     d.appendChild(zp);
                 }
-
-                if (this.isMobileDevice) {
-                    peerNameHeader.style.backgroundImage = `url('${peer_info.peer_url || image.avatar}')`;
-                    this.addMobileCloseButton(peerNameHeader, remotePeerId);
-                }
     
                 d.appendChild(p);
                 d.appendChild(pm);
-                d.appendChild(vb);
+                this.videoMediaContainer.appendChild(vb);
                 this.videoMediaContainer.appendChild(d);
                 this.attachMediaStream(elem, stream, type, 'Consumer');
                 this.isVideoPictureInPictureSupported && this.handlePIP(elem.id, pip.id);
@@ -2641,7 +2626,7 @@ class RoomClient {
         
         if (this.isMobileDevice) {
             peerNameHeader.style.backgroundImage = `url('${peer_info.peer_url || image.avatar}')`;
-        }        
+        }
         
         if (peer_npub) {
             const nostrIcon = document.createElement('span');
@@ -2650,7 +2635,7 @@ class RoomClient {
                 event.stopPropagation();
                 this.handleNostrClick(peer_npub);
             });
-            peerNameHeader.appendChild(nostrIcon);
+            peerNameContainer.appendChild(nostrIcon);
         }
     
         peerNameHeader.appendChild(peerNameContainer);
@@ -2771,10 +2756,10 @@ class RoomClient {
         d.appendChild(p);
         d.appendChild(h);
         d.appendChild(pm);
+        this.videoMediaContainer.appendChild(vb);
     
         // Append the main container to the video media container
         this.videoMediaContainer.appendChild(d);
-        this.videoMediaContainer.appendChild(vb);
     
         // Set up event handlers
         BUTTONS.videoOff.muteAudioButton && this.handleAU(au.id);
@@ -2818,33 +2803,20 @@ class RoomClient {
         
         // Add swipe listener for mobile devices
         if (this.isMobileDevice) {
-            this.addLowLatencySwipeListener(vb, peer_id);
+            this.addLowLatencySwipeListener(d, peer_id);
         }
 
         if (this.isMobileDevice) {
             peerNameHeader.style.backgroundImage = `url('${peer_info.peer_url || image.avatar}')`;
             this.addMobileCloseButton(peerNameHeader, peer_id);
-        }    
-        
+        }
+
+    
         console.log('[setVideoOff] Video-element-count', this.videoMediaContainer.childElementCount);
         handleAspectRatio();
         if (isParticipantsListOpen) getRoomParticipants();
         wbUpdate();
         this.handleHideMe();
-    }
-
-    addMobileCloseButton(containerElement, peerId) {
-        if (this.isMobileDevice) {
-            // Create close button for mobile devices using a div
-            const closeBtn = document.createElement('div');
-            closeBtn.className = 'videoMenuBarClose';
-            closeBtn.innerHTML = '&times;'; // Unicode for 'x'
-            closeBtn.addEventListener('click', (e) => {
-                e.stopPropagation();
-                this.toggleVideoMenuBar(peerId);
-            });
-            containerElement.appendChild(closeBtn);
-        }
     }
     
     // Helper function to handle Nostr button click
@@ -2905,8 +2877,22 @@ class RoomClient {
                 }
             }
         });
-    }    
-    
+    }
+
+    addMobileCloseButton(containerElement, peerId) {
+        if (this.isMobileDevice) {
+            // Create close button for mobile devices using a div
+            const closeBtn = document.createElement('div');
+            closeBtn.className = 'videoMenuBarClose';
+            closeBtn.innerHTML = '&times;'; // Unicode for 'x'
+            closeBtn.addEventListener('click', (e) => {
+                e.stopPropagation();
+                this.toggleVideoMenuBar(peerId);
+            });
+            containerElement.appendChild(closeBtn);
+        }
+    }
+
     addLowLatencySwipeListener(element, peer_id) {
         let startY, currentY;
         const videoMenuBar = this.getId(peer_id + 'vb');
