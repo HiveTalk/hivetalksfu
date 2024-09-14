@@ -2308,7 +2308,7 @@ class RoomClient {
                 
                 // Add swipe listener for mobile devices
                 if (this.isMobileDevice) {
-                    this.addLowLatencySwipeListener(d, peer_id);
+                    this.addLowLatencySwipeListener(this.videoMediaContainer, remotePeerId);
                 }                
                 // Create and append peer name header
                 const peerNameHeader = document.createElement('div');
