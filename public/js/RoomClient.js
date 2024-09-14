@@ -2803,7 +2803,7 @@ class RoomClient {
         
         // Add swipe listener for mobile devices
         if (this.isMobileDevice) {
-            this.addLowLatencySwipeListener(d, peer_id);
+            this.addLowLatencySwipeListener(this.videoMediaContainer, peer_id);
         }
 
         if (this.isMobileDevice) {
