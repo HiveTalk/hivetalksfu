@@ -403,6 +403,12 @@ class RoomClient {
         this.debug = false;
         this.debug ? window.localStorage.setItem('debug', 'mediasoup*') : window.localStorage.removeItem('debug');
 
+        // VideoMenuBar Behavior
+        if (this.isMobileDevice) {
+            this.addLowLatencySwipeListener();
+        }
+    
+
         console.log('06 ----> Load MediaSoup Client v', mediasoupClient.version);
         console.log('06.1 ----> PEER_ID', this.peer_id);
 
@@ -1955,10 +1961,6 @@ class RoomClient {
                     }
                 });
 
-                // Add swipe listener for mobile devices
-                if (this.isMobileDevice) {
-                }                
-                
                 this.attachMediaStream(elem, stream, type, 'Producer');
                 this.myVideoEl = elem;
                 this.isVideoPictureInPictureSupported && this.handlePIP(elem.id, pip.id);
@@ -2306,10 +2308,6 @@ class RoomClient {
                     }
                 });          
                 
-                // Add swipe listener for mobile devices
-                if (this.isMobileDevice) {
-                    this.addLowLatencySwipeListener(this.videoMediaContainer, remotePeerId);
-                }                
                 // Create and append peer name header
                 const peerNameHeader = document.createElement('div');
                 peerNameHeader.className = 'peer-name-header';
@@ -2655,30 +2653,7 @@ class RoomClient {
             pv.max = 100;
             pv.value = 100;
             peerNameSpan.appendChild(pv);
-            
-            let startX;
-
-            pv.addEventListener('touchstart', (e) => {
-                e.stopPropagation();
-                startX = e.touches[0].clientX;
-            });
-    
-            pv.addEventListener('touchmove', (e) => {
-                e.stopPropagation();
-                e.preventDefault();
-                const moveX = e.touches[0].clientX - startX;
-    
-                const sliderRect = pv.getBoundingClientRect();
-                const newPosition = (e.touches[0].clientX - sliderRect.left) / sliderRect.width;
-                pv.value = Math.max(0, Math.min(100, newPosition * 100));
-                
-                pv.dispatchEvent(new Event('input', { bubbles: true }));
-            });
-    
-            pv.addEventListener('touchend', (e) => {
-                e.stopPropagation();
-            });
-        
+                    
 
             sf = document.createElement('button');
             sf.id = 'remotePeer___' + peer_id + '___sendFile';
@@ -2800,11 +2775,6 @@ class RoomClient {
                 this.toggleVideoMenuBar(peer_id);
             }
         });
-        
-        // Add swipe listener for mobile devices
-        if (this.isMobileDevice) {
-            this.addLowLatencySwipeListener(this.videoMediaContainer, peer_id);
-        }
 
         if (this.isMobileDevice) {
             peerNameHeader.style.backgroundImage = `url('${peer_info.peer_url || image.avatar}')`;
@@ -2840,30 +2810,78 @@ class RoomClient {
     }
     
     toggleVideoMenuBar(peer_id) {
-        console.log('Toggling video menu bar for:', peer_id);
-        const videoMenuBar = this.getId(peer_id + 'vb');
-        if (!videoMenuBar) {
-            console.error('Video menu bar not found for peer:', peer_id);
-            return;
-        }
+        const videoMenuBar = this.findVideoMenuBar(peer_id);
+        if (!videoMenuBar) return;
     
         const isActive = videoMenuBar.classList.contains('active');
+        
+        if (isActive) {
+            // Close the menu bar
+            videoMenuBar.classList.remove('active');
+            if (this.isMobileDevice) {
+                document.body.style.overflow = '';
+                videoMenuBar.style.transition = 'transform 0.3s, opacity 0.3s';
+                videoMenuBar.style.transform = 'translateY(100%)';
+                videoMenuBar.style.opacity = '0';
+                setTimeout(() => {
+                    if (videoMenuBar && videoMenuBar.style) {
+                        videoMenuBar.style.transition = '';
+                    }
+                }, 300);
+            }
+        } else {
+            // Open the menu bar
+            this.closeAllVideoMenuBars();
+            videoMenuBar.classList.add('active');
+            if (this.isMobileDevice) {
+                document.body.style.overflow = 'hidden';
+                videoMenuBar.style.transition = 'transform 0.3s, opacity 0.3s';
+                videoMenuBar.style.transform = 'translateY(0)';
+                videoMenuBar.style.opacity = '1';
+                setTimeout(() => {
+                    if (videoMenuBar && videoMenuBar.style) {
+                        videoMenuBar.style.transition = '';
+                    }
+                }, 300);
+            }
+        }
+    }
+
+    closeVideoMenuBar(peer_id) {
+        const videoMenuBar = this.findVideoMenuBar(peer_id);
+        if (!videoMenuBar) return;
     
-        // Close all other video menu bars
-        this.closeAllVideoMenuBars(peer_id);
-    
-        // Toggle the clicked menu bar
-        videoMenuBar.classList.toggle('active');
+        videoMenuBar.classList.remove('active');
         
         if (this.isMobileDevice) {
-            document.body.style.overflow = isActive ? '' : 'hidden';
+            document.body.style.overflow = '';
             videoMenuBar.style.transition = 'transform 0.3s, opacity 0.3s';
-            videoMenuBar.style.transform = isActive ? 'translateY(100%)' : 'translateY(0)';
-            videoMenuBar.style.opacity = isActive ? '0' : '1';
+            videoMenuBar.style.transform = 'translateY(100%)';
+            videoMenuBar.style.opacity = '0';
             setTimeout(() => {
                 videoMenuBar.style.transition = '';
             }, 300);
         }
+    }
+    
+    findVideoMenuBar(peer_id) {
+        const relatedElements = document.querySelectorAll(`[id*="${peer_id}"]`);
+        for (let elem of relatedElements) {
+            if (elem.classList.contains('videoMenuBar')) {
+                return elem;
+            }
+        }
+        return null;
+    }
+    
+    closeAllVideoMenuBars() {
+        const allMenuBars = document.querySelectorAll('.videoMenuBar.active');
+        allMenuBars.forEach(menuBar => {
+            const peerId = this.findPeerId(menuBar);
+            if (peerId) {
+                this.closeVideoMenuBar(peerId);
+            }
+        });
     }
     
     closeAllVideoMenuBars(exceptPeerId) {
@@ -2893,74 +2911,77 @@ class RoomClient {
         }
     }
 
-    addLowLatencySwipeListener(element, peer_id) {
+    addLowLatencySwipeListener() {
         let startY, currentY;
-        const videoMenuBar = this.getId(peer_id + 'vb');
         let isDragging = false;
-        let animationFrameId = null;
-        let isVolumeSliderActive = false;
+        let activeMenuBar = null;
+        let activePeerId = null;
     
-        const updateMenuBarPosition = () => {
-            if (!isDragging) return;
+        const findPeerId = (element) => {
+            while (element && !element.id) {
+                element = element.parentElement;
+            }
+            if (!element) return null;
+            const idParts = element.id.split('__');
+            return idParts[0];
+        };
+    
+        const handleTouchStart = (e) => {
+            if (e.target.type === 'range') return;
+    
+            activeMenuBar = e.target.closest('.videoMenuBar');
+            if (!activeMenuBar) return;
+    
+            activePeerId = findPeerId(activeMenuBar);
+            if (!activePeerId) return;
+    
+            startY = currentY = e.touches[0].clientY;
+            isDragging = true;
+        };
+    
+        const handleTouchMove = (e) => {
+            if (!isDragging || !activeMenuBar) return;
+            e.preventDefault();
+            currentY = e.touches[0].clientY;
     
             const deltaY = currentY - startY;
             if (deltaY > 0) {
-                const progress = Math.min(deltaY / videoMenuBar.offsetHeight, 1);
+                const progress = Math.min(deltaY / activeMenuBar.offsetHeight, 1);
                 const opacity = 1 - progress;
-                videoMenuBar.style.transform = `translateY(${deltaY}px)`;
-                videoMenuBar.style.opacity = opacity.toFixed(2);
+                activeMenuBar.style.transform = `translateY(${deltaY}px)`;
+                activeMenuBar.style.opacity = opacity.toFixed(2);
             }
-    
-            animationFrameId = requestAnimationFrame(updateMenuBarPosition);
         };
     
-        element.addEventListener('touchstart', (e) => {
-            if (e.target.type === 'range') {
-                isVolumeSliderActive = true;
-                return;
-            }
-    
-            if (videoMenuBar.classList.contains('active')) {
-                startY = currentY = e.touches[0].clientY;
-                isDragging = true;
-                cancelAnimationFrame(animationFrameId);
-                animationFrameId = requestAnimationFrame(updateMenuBarPosition);
-            }
-        });
-    
-        element.addEventListener('touchmove', (e) => {
-            if (isVolumeSliderActive) return;
-    
-            if (!isDragging) return;
-            e.preventDefault(); // Prevent scrolling
-            currentY = e.touches[0].clientY;
-        }, { passive: false });
-    
-        element.addEventListener('touchend', (e) => {
-            if (isVolumeSliderActive) {
-                isVolumeSliderActive = false;
-                return;
-            }
-    
-            if (!isDragging) return;
-    
+        const handleTouchEnd = (e) => {
+            if (!isDragging || !activeMenuBar || !activePeerId) return;
+
             isDragging = false;
-            cancelAnimationFrame(animationFrameId);
-    
             const finalDeltaY = currentY - startY;
-            if (finalDeltaY > videoMenuBar.offsetHeight / 4) { // Increased threshold
-                this.toggleVideoMenuBar(peer_id);
+
+            if (finalDeltaY > activeMenuBar.offsetHeight / 4) {
+                this.toggleVideoMenuBar(activePeerId);
             } else {
-                videoMenuBar.style.transition = 'transform 0.3s, opacity 0.3s';
-                videoMenuBar.style.transform = 'translateY(0)';
-                videoMenuBar.style.opacity = '1';
+                const menuBar = activeMenuBar; // Store reference to activeMenuBar
+                menuBar.style.transition = 'transform 0.3s, opacity 0.3s';
+                menuBar.style.transform = 'translateY(0)';
+                menuBar.style.opacity = '1';
                 setTimeout(() => {
-                    videoMenuBar.style.transition = '';
+                    if (menuBar && menuBar.style) {
+                        menuBar.style.transition = '';
+                    }
                 }, 300);
             }
-        });
-    }
+
+            activeMenuBar = null;
+            activePeerId = null;
+        };
+
     
+        this.videoMediaContainer.addEventListener('touchstart', handleTouchStart);
+        this.videoMediaContainer.addEventListener('touchmove', handleTouchMove, { passive: false });
+        this.videoMediaContainer.addEventListener('touchend', handleTouchEnd);
+    }
 
     removeVideoOff(peer_id) {
         let pvOff = this.getId(peer_id + '__videoOff');
