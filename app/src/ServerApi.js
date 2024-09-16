@@ -23,31 +23,34 @@ module.exports = class ServerApi {
 
     getMeetings(roomList) {
         const meetings = Array.from(roomList.entries()).map(([id, room]) => {
-            const peers = Array.from(room.peers.values()).map(
-                ({
-                    peer_info: {
-                        peer_name,
-                        peer_presenter,
-                        peer_npub,
-                        peer_pubkey,
-                        peer_lnaddress,
-                        // peer_video,
-                        // peer_audio,
-                        // peer_screen,
-                        // peer_hand,
-                    },
-                }) => ({
-                    name: peer_name,
-                    presenter: peer_presenter,
-                    npub: peer_npub,
-                    pubkey: peer_pubkey,
-                    lnaddress: peer_lnaddress,
-                }),
-            );
-            return {
-                roomId: id,
-                peers: peers,
-            };
+            // hide room if locked
+            if (!room.isLocked()) {
+                const peers = Array.from(room.peers.values()).map(
+                    ({
+                        peer_info: {
+                            peer_name,
+                            peer_presenter,
+                            peer_npub,
+                            peer_pubkey,
+                            peer_lnaddress,
+                            // peer_video,
+                            // peer_audio,
+                            // peer_screen,
+                            // peer_hand,
+                        },
+                    }) => ({
+                        name: peer_name,
+                        presenter: peer_presenter,
+                        npub: peer_npub,
+                        pubkey: peer_pubkey,
+                        lnaddress: peer_lnaddress,
+                    }),
+                );
+                return {
+                    roomId: id,
+                    peers: peers,
+                };
+            }
         });
         return meetings;
     }
