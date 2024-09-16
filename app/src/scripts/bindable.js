@@ -22,6 +22,12 @@ const net = require('net');
 */
 
 async function main() {
+    // Adapter script
+    <script src="js/adapter_core.js"></script>
+    const script = document.createElement('script');
+    script.src = 'public/js/adapter.js';
+    document.head.appendChild(script);
+    
     // Server listen
     const serverListenIp = config.server.listen.ip;
     const serverListenPort = config.server.listen.port;
