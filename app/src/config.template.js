@@ -450,8 +450,8 @@ module.exports = {
             We use our Self-hosted Umami to track aggregated usage statistics in order to improve our service.
         */
         enabled: true,
-        src: 'https://stats.mirotalk.com/script.js',
-        id: '41d26670-f275-45bb-af82-3ce91fe57756',
+        src: '', //'https://stats.mirotalk.com/script.js',
+        id: '', //'41d26670-f275-45bb-af82-3ce91fe57756',
     },
     mediasoup: {
         // Worker settings
