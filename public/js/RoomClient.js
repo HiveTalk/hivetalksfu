@@ -2436,9 +2436,9 @@ class RoomClient {
         };
     }
 
-    async handleConsumer(id, type, stream, peer_name, peer_info) {
-        let elem, vb, d, p, i, cm, au, pip, fs, ts, sf, sm, sv, gl, ban, ko, pb, pm, pv, pn, ha;
-
+    handleConsumer(id, type, stream, peer_name, peer_info) {
+        let elem, vb, d, p, i, cm, au, pip, fs, ts, sf, sm, sv, gl, ban, ko, pb, pm, pv, pn;
+    
         let eDiv, eBtn, eVc; // expand buttons
     
         console.log('PEER-INFO', peer_info);
@@ -2512,11 +2512,10 @@ class RoomClient {
     
                 peerNameHeader.appendChild(peerNameContainer);
                 vb.appendChild(peerNameHeader);
-
+    
                 if (this.isMobileDevice) {
                     peerNameHeader.style.backgroundImage = `url('${peer_info.peer_url || image.avatar}')`;
                     this.addCloseButton(peerNameHeader, remotePeerId);
-
                 }
     
                 pip = document.createElement('button');
@@ -2531,9 +2530,6 @@ class RoomClient {
                 pn = document.createElement('button');
                 pn.id = id + '__pin';
                 pn.className = html.pin;
-                ha = document.createElement('button');
-                ha.id = id + '__hideALL';
-                ha.className = html.hideALL + ' focusMode';
                 sf = document.createElement('button');
                 sf.id = id + '___' + remotePeerId + '___sendFile';
                 sf.className = html.sendFile;
@@ -2573,30 +2569,18 @@ class RoomClient {
                 pb.className = 'bar';
                 pb.style.height = '1%';
                 pm.appendChild(pb);
-                BUTTONS.consumerVideo.sendMessageButton && eVc.appendChild(sm);
-                BUTTONS.consumerVideo.sendFileButton && eVc.appendChild(sf);
-                BUTTONS.consumerVideo.sendVideoButton && eVc.appendChild(sv);
-                BUTTONS.consumerVideo.geolocationButton && eVc.appendChild(gl);
-                BUTTONS.consumerVideo.banButton && eVc.appendChild(ban);
-                BUTTONS.consumerVideo.ejectButton && eVc.appendChild(ko);
-                eDiv.appendChild(eBtn);
-                eDiv.appendChild(eVc);
-
-                vb.appendChild(eDiv);
-                BUTTONS.consumerVideo.audioVolumeInput && !this.isMobileDevice && vb.appendChild(pv);
-                vb.appendChild(au);
-                vb.appendChild(cm);
-                BUTTONS.consumerVideo.snapShotButton && vb.appendChild(ts);
-                BUTTONS.consumerVideo.videoPictureInPicture &&
-                    this.isVideoPictureInPictureSupported &&
-                    vb.appendChild(pip);
-                BUTTONS.consumerVideo.fullScreenButton && this.isVideoFullScreenSupported && vb.appendChild(fs);
-                BUTTONS.consumerVideo.focusVideoButton && vb.appendChild(ha);
-                if (!this.isMobileDevice) vb.appendChild(pn);
     
-     /*     TODO: REVIEW THIS      
-                 if (this.isMobileDevice) {
+                eDiv = document.createElement('div');
+                eDiv.className = 'expand-video';
+                eBtn = document.createElement('button');
+                eBtn.id = remotePeerId + '_videoExpandBtn';
+                eBtn.className = html.expand;
+                eVc = document.createElement('div');
+                eVc.className = 'expand-video-content';
+    
+                if (this.isMobileDevice) {
                     // Mobile-specific behavior
+                    eVc.classList.add('mobile-optimized');
                     BUTTONS.consumerVideo.sendMessageButton && vb.appendChild(sm);
                     BUTTONS.consumerVideo.sendFileButton && vb.appendChild(sf);
                     BUTTONS.consumerVideo.sendVideoButton && vb.appendChild(sv);
@@ -2605,24 +2589,8 @@ class RoomClient {
                     BUTTONS.consumerVideo.ejectButton && vb.appendChild(ko);
                     vb.appendChild(au);
                     vb.appendChild(cm);
-                    BUTTONS.consumerVideo.snapShotButton && vb.appendChild(ts);
-                    BUTTONS.consumerVideo.videoPictureInPicture &&
-                        this.isVideoPictureInPictureSupported &&
-                        vb.appendChild(pip);
-                    BUTTONS.consumerVideo.fullScreenButton && 
-                        this.isVideoFullScreenSupported && 
-                        vb.appendChild(fs);
-    
                 } else {
                     // Desktop behavior
-                    eDiv = document.createElement('div');
-                    eDiv.className = 'expand-video';
-                    eBtn = document.createElement('button');
-                    eBtn.id = remotePeerId + '_videoExpandBtn';
-                    eBtn.className = html.expand;
-                    eVc = document.createElement('div');
-                    eVc.className = 'expand-video-content';
-    
                     BUTTONS.consumerVideo.sendMessageButton && eVc.appendChild(sm);
                     BUTTONS.consumerVideo.sendFileButton && eVc.appendChild(sf);
                     BUTTONS.consumerVideo.sendVideoButton && eVc.appendChild(sv);
@@ -2631,20 +2599,20 @@ class RoomClient {
                     BUTTONS.consumerVideo.ejectButton && eVc.appendChild(ko);
                     eDiv.appendChild(eBtn);
                     eDiv.appendChild(eVc);
-    
                     vb.appendChild(eDiv);
                     vb.appendChild(au);
                     vb.appendChild(cm);
-                    BUTTONS.consumerVideo.snapShotButton && vb.appendChild(ts);
-                    BUTTONS.consumerVideo.videoPictureInPicture &&
-                        this.isVideoPictureInPictureSupported &&
-                        vb.appendChild(pip);
-                    BUTTONS.consumerVideo.fullScreenButton && 
-                        this.isVideoFullScreenSupported && 
-                        vb.appendChild(fs);
-                    vb.appendChild(pn);
                 }
-     */    
+    
+                BUTTONS.consumerVideo.snapShotButton && vb.appendChild(ts);
+                BUTTONS.consumerVideo.videoPictureInPicture &&
+                    this.isVideoPictureInPictureSupported &&
+                    vb.appendChild(pip);
+                BUTTONS.consumerVideo.fullScreenButton && 
+                    this.isVideoFullScreenSupported && 
+                    vb.appendChild(fs);
+                if (!this.isMobileDevice) vb.appendChild(pn);
+    
                 d.appendChild(elem);
                 d.appendChild(i);
     
@@ -2662,13 +2630,12 @@ class RoomClient {
                 d.appendChild(pm);
                 this.videoMediaContainer.appendChild(vb);
                 this.videoMediaContainer.appendChild(d);
-                await this.attachMediaStream(elem, stream, type, 'Consumer');
+                this.attachMediaStream(elem, stream, type, 'Consumer');
                 this.isVideoPictureInPictureSupported && this.handlePIP(elem.id, pip.id);
                 this.isVideoFullScreenSupported && this.handleFS(elem.id, fs.id);
                 this.handleDD(elem.id, remotePeerId);
                 this.handleTS(elem.id, ts.id);
                 this.handleSF(sf.id);
-                this.handleHA(ha.id, d.id);
                 this.handleSM(sm.id, peer_name);
                 this.handleSV(sv.id);
                 BUTTONS.consumerVideo.muteVideoButton && this.handleCM(cm.id);
@@ -2682,22 +2649,12 @@ class RoomClient {
                 this.popupPeerInfo(p.id, peer_info);
                 this.checkPeerInfoStatus(peer_info);
                 if (!remoteIsScreen && remotePrivacyOn) this.setVideoPrivacyStatus(remotePeerId, remotePrivacyOn);
-                if (remoteIsScreen && !isHideALLVideosActive) pn.click();
-                if (isHideALLVideosActive) {
-                    isHideALLVideosActive = false;
-                    const children = this.videoMediaContainer.children;
-                    const btnsHA = document.querySelectorAll('.focusMode');
-                    for (let child of children) {
-                        child.style.display = 'block';
-                    }
-                    btnsHA.forEach((btn) => {
-                        btn.style.color = 'white';
-                    });
-                }
+                if (remoteIsScreen) pn.click();
+                this.sound('joined');
+                handleAspectRatio();
                 console.log('[addConsumer] Video-element-count', this.videoMediaContainer.childElementCount);
                 if (!this.isMobileDevice) {
                     this.setTippy(pn.id, 'Toggle Pin', 'bottom');
-                    this.setTippy(ha.id, 'Toggle Focus mode', 'bottom');
                     this.setTippy(pip.id, 'Toggle picture in picture', 'bottom');
                     this.setTippy(ts.id, 'Snapshot', 'bottom');
                     this.setTippy(sf.id, 'Send file', 'bottom');
@@ -2711,8 +2668,6 @@ class RoomClient {
                     this.setTippy(ko.id, 'Eject', 'bottom');
                 }
                 this.setPeerAudio(remotePeerId, remotePeerAudio);
-                handleAspectRatio();
-                this.sound('joined');
                 break;
             case mediaType.audio:
                 elem = document.createElement('audio');
@@ -2720,7 +2675,7 @@ class RoomClient {
                 elem.autoplay = true;
                 elem.audio = 1.0;
                 this.remoteAudioEl.appendChild(elem);
-                await this.attachMediaStream(elem, stream, type, 'Consumer');
+                this.attachMediaStream(elem, stream, type, 'Consumer');
                 let audioConsumerId = remotePeerId + '___pVolume';
                 this.audioConsumers.set(audioConsumerId, id);
                 let inputPv = this.getId(audioConsumerId);
@@ -2738,7 +2693,7 @@ class RoomClient {
         }
         return elem;
     }
-
+    
     removeConsumer(consumer_id, consumer_kind) {
         console.log('Remove consumer', { consumer_id: consumer_id, consumer_kind: consumer_kind });
 
