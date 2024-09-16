@@ -14,6 +14,7 @@ const { audioLevelObserverEnabled, activeSpeakerObserverEnabled } = config.media
 
 module.exports = class Room {
     constructor(room_id, worker, io) {
+        this._autoPlayMedia = false; 
         this.id = room_id;
         this.worker = worker;
         this.webRtcServer = worker.appData.webRtcServer;
@@ -71,30 +72,31 @@ module.exports = class Room {
     // ROOM INFO
     // ####################################################
 
-    toJson() {
-        return {
-            id: this.id,
-            broadcasting: this._isBroadcasting,
-            recording: this.recording,
-            config: {
-                isLocked: this._isLocked,
-                isLobbyEnabled: this._isLobbyEnabled,
-                hostOnlyRecording: this._hostOnlyRecording,
-            },
-            rtmp: {
-                enabled: this.rtmp && this.rtmp.enabled,
-                fromFile: this.rtmp && this.rtmp.fromFile,
-                fromUrl: this.rtmp && this.rtmp.fromUrl,
-                fromStream: this.rtmp && this.rtmp.fromStream,
-            },
-            moderator: this._moderator,
-            survey: this.survey,
-            redirect: this.redirect,
-            videoAIEnabled: this.videoAIEnabled,
-            thereIsPolls: this.thereIsPolls(),
-            peers: JSON.stringify([...this.peers]),
-        };
-    }
+toJson() {
+    return {
+        id: this.id,
+        broadcasting: this._isBroadcasting,
+        recording: this.recording,
+        config: {
+            isLocked: this._isLocked,
+            isLobbyEnabled: this._isLobbyEnabled,
+            hostOnlyRecording: this._hostOnlyRecording,
+            autoPlayMedia: this._autoPlayMedia, 
+        },
+        rtmp: {
+            enabled: this.rtmp && this.rtmp.enabled,
+            fromFile: this.rtmp && this.rtmp.fromFile,
+            fromUrl: this.rtmp && this.rtmp.fromUrl,
+            fromStream: this.rtmp && this.rtmp.fromStream,
+        },
+        moderator: this._moderator,
+        survey: this.survey,
+        redirect: this.redirect,
+        videoAIEnabled: this.videoAIEnabled,
+        thereIsPolls: this.thereIsPolls(),
+        peers: JSON.stringify([...this.peers]),
+    };
+}
 
     // ##############################################
     // POLLS
@@ -144,40 +146,44 @@ module.exports = class Room {
     }
 
     async startRTMP(socket_id, room, host = 'localhost', port = 1935, file = '../rtmp/BigBuckBunny.mp4') {
-        if (!this.rtmp || !this.rtmp.enabled) {
-            log.debug('[startRTMP] Server is not enabled or missing the config');
-            return false;
-        }
-
-        if (this.rtmpFileStreamer) {
-            log.debug('[startRTMP] Already in progress');
-            return false;
-        }
-
-        const inputFilePath = path.join(__dirname, file);
-
-        if (!fs.existsSync(inputFilePath)) {
-            log.error(`[startRTMP] File not found: ${inputFilePath}`);
-            return false;
-        }
-
-        log.debug('[startRTMP] Read all stream from file', inputFilePath);
-
-        this.rtmpFileStreamer = new RtmpFile(socket_id, room);
-
-        const inputStream = fs.createReadStream(inputFilePath);
-
-        const rtmpUrl = this.getRTMPUrl(host, port);
-
-        const rtmpRun = await this.rtmpFileStreamer.start(inputStream, rtmpUrl);
-
-        if (!rtmpRun) {
-            this.rtmpFileStreamer = false;
-            return this.rtmpFileStreamer;
-        }
-        return rtmpUrl;
+    if (!this.rtmp || !this.rtmp.enabled) {
+        log.debug('[startRTMP] Server is not enabled or missing the config');
+        return false;
     }
 
+    if (this.rtmpFileStreamer) {
+        log.debug('[startRTMP] Already in progress');
+        return false;
+    }
+
+    if (!this._autoPlayMedia) {
+        log.debug('[startRTMP] Auto-play is disabled');
+        return false;
+    }
+
+    const inputFilePath = path.join(__dirname, file);
+
+    if (!fs.existsSync(inputFilePath)) {
+        log.error(`[startRTMP] File not found: ${inputFilePath}`);
+        return false;
+    }
+
+    log.debug('[startRTMP] Read all stream from file', inputFilePath);
+
+    this.rtmpFileStreamer = new RtmpFile(socket_id, room);
+
+    const inputStream = fs.createReadStream(inputFilePath);
+
+    const rtmpUrl = this.getRTMPUrl(host, port);
+
+    const rtmpRun = await this.rtmpFileStreamer.start(inputStream, rtmpUrl);
+
+    if (!rtmpRun) {
+        this.rtmpFileStreamer = false;
+        return this.rtmpFileStreamer;
+    }
+    return rtmpUrl;
+}
     stopRTMP() {
         if (!this.rtmp || !this.rtmp.enabled) {
             log.debug('[stopRTMP] Server is not enabled or missing the config');
@@ -722,6 +728,9 @@ module.exports = class Room {
     getPassword() {
         return this._roomPassword;
     }
+    getAutoPlayMedia() {
+    return this._autoPlayMedia;
+}
 
     // BOOL
     isLocked() {
@@ -748,6 +757,9 @@ module.exports = class Room {
     setHostOnlyRecording(status) {
         this._hostOnlyRecording = status;
     }
+    setAutoPlayMedia(status) {
+    this._autoPlayMedia = status;
+}
 
     // ####################################################
     // SENDER
