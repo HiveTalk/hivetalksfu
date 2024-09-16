@@ -6748,7 +6748,7 @@ class RoomClient {
             case 'lock':
                 this.sound('locked');
                 this.event(_EVENTS.roomLock);
-                this.userLog('info', `${icons.lock} LOCKED the room by the password`, 'top-end');
+                this.userLog('info', `${icons.lock} Room LOCKED and is invisible on Frontpage and API`, 'top-end');
                 break;
             case 'unlock':
                 this.event(_EVENTS.roomUnlock);
