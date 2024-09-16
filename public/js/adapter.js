@@ -1,17 +1,16 @@
-/*!
- *  Copyright (c) 2014 The WebRTC project authors. All Rights Reserved.
+/*
+ *  Copyright (c) 2016 The WebRTC project authors. All Rights Reserved.
  *
  *  Use of this source code is governed by a BSD-style license
  *  that can be found in the LICENSE file in the root of the source
  *  tree.
  */
+/* eslint-env node */
 
-/* More information about adapter.js can be found at:
- * https://github.com/webrtc/adapter
- */
+'use strict';
 
-(function() {
-  // Adapter.js code goes here.
-  // This is a placeholder for the actual adapter.js code.
-  // You can download the latest version from https://github.com/webrtc/adapter
-})();
+import {adapterFactory} from './adapter_factory.js';
+
+const adapter =
+  adapterFactory({window: typeof window === 'undefined' ? undefined : window});
+export default adapter;
