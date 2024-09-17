@@ -22,9 +22,13 @@ module.exports = class ServerApi {
     }
 
     getMeetings(roomList) {
+        // Check if roomList is empty
+        if (roomList.size === 0) {
+            return [];  // Return an empty array if there are no rooms
+        }
         const meetings = Array.from(roomList.entries()).map(([id, room]) => {
             // hide room if locked
-            if (!room.isLocked()) {
+            if (!room._isLocked) {
                 const peers = Array.from(room.peers.values()).map(
                     ({
                         peer_info: {
@@ -33,10 +37,6 @@ module.exports = class ServerApi {
                             peer_npub,
                             peer_pubkey,
                             peer_lnaddress,
-                            // peer_video,
-                            // peer_audio,
-                            // peer_screen,
-                            // peer_hand,
                         },
                     }) => ({
                         name: peer_name,

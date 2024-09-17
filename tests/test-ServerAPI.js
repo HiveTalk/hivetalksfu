@@ -43,7 +43,8 @@ describe('test-ServerAPI', () => {
             const roomList = new Map([
                 [
                     'room1',
-                    {
+                    {  
+                        _isLocked: false,
                         peers: new Map([
                             [
                                 'peer1',
@@ -51,14 +52,9 @@ describe('test-ServerAPI', () => {
                                     peer_info: {
                                         peer_name: 'John Doe',
                                         peer_presenter: true,
-                                        peer_video: true,
-                                        peer_audio: true,
-                                        peer_screen: false,
-                                        peer_hand: false,
-                                        os_name: 'Windows',
-                                        os_version: '10',
-                                        browser_name: 'Chrome',
-                                        browser_version: '100',
+                                        peer_npub: 'johndoe@npub1',
+                                        peer_pubkey: 'johndoe@pubkey1',
+                                        peer_lnaddress: 'johndoe@lnpeer1.com',
                                     },
                                 },
                             ],
@@ -75,12 +71,9 @@ describe('test-ServerAPI', () => {
                         {
                             name: 'John Doe',
                             presenter: true,
-                            video: true,
-                            audio: true,
-                            screen: false,
-                            hand: false,
-                            os: 'Windows 10',
-                            browser: 'Chrome 100',
+                            npub: 'johndoe@npub1',
+                            pubkey: 'johndoe@pubkey1',
+                            lnaddress: 'johndoe@lnpeer1.com',
                         },
                     ],
                 },

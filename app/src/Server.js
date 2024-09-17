@@ -875,18 +875,25 @@ function startServer() {
         const { host, authorization } = req.headers;
         const api = new ServerApi(host, authorization);
         // Get meetings
-        const meetings = api.getMeetings(roomList);
-        meetings.forEach((room) => {
-            // Replace the "peers" array with its length
-            room.peers = room.peers.length;
-        });
-        res.json({ meetings: meetings });
-        // log.debug the output if all done
-        log.debug('HiveTalk get meetings - Authorized', {
-            header: req.headers,
-            body: req.body,
-            meetings: meetings,
-        });
+        try {
+            const meetings = api.getMeetings(roomList);
+            meetings.forEach((room) => {
+                // Replace the "peers" array with its length
+                room.peers = room.peers.length;
+            });
+            res.json({ meetings: meetings });
+            // log.debug the output if all done
+            log.debug('HiveTalk get meetings - Authorized', {
+                header: req.headers,
+                body: req.body,
+                meetings: meetings,
+            });
+        } catch (error) {
+            // assume error thrown if no meetings is undefined,
+            // so return an empty array
+            return res.json({ meetings: [] });
+        }
+
     });
 
     // request meetings list
