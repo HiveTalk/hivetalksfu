@@ -1873,7 +1873,7 @@ async function showAnnouncements(useNavigator = false) {
             <p align="left"><ul style="text-align: left;">
             <li>Locked Rooms are now hidden.</li>
             <li>New mobile first navigation</li>
-            <li>Latest Github release - <a href="https://github.com/HiveTalk/hivetalksfu">v0.0.2 Fall Forest Run</a></li>
+            <li>Latest Github release - <a href="https://github.com/HiveTalk/hivetalksfu" target="_blank">v0.0.2 Fall Forest Run</a></li>
             </ul>
             </p>
             </div>`,
