@@ -32,7 +32,6 @@ const pool = new SimplePool();
 let defaultRelays = [
     'wss://relay.primal.net',
     'wss://relay.damus.io/',
-    //    'wss://relay.nostr.band/all',
     'wss://nos.lol',
     //    'wss://hivetalk.nostr1.com',
 ];
@@ -718,7 +717,9 @@ function nostrLogin() {
         allowEscapeKey: false,
         background: swalBackground,
         title: '<img src="../images/hivelogo50x200.svg"/>',
-        html: 'Welcome! Questions? see the <a href="/faq" target="_blank">FAQ</a> ',
+        html: 'Welcome! <div>Questions? see the <a href="/faq" target="_blank">FAQ</a> or '+ 
+        '<a href="https://t.me/+2Ll1IFwXwCJlMGFl">Chat.</a></div></br>'+
+        ' <div><a href="https://hivetalk.printify.me/products" target="_blank"><img src="/images/bluemerch.png"/></a> </div>',
         showDenyButton: true,
         denyButtonText: `Just set a Name`,
         denyButtonColor: 'green',
