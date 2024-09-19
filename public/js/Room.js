@@ -718,8 +718,7 @@ function nostrLogin() {
         background: swalBackground,
         title: '<img src="../images/hivelogo50x200.svg"/>',
         html: 'Welcome! <div>Questions? see the <a href="/faq" target="_blank">FAQ</a> or '+ 
-        '<a href="https://t.me/+2Ll1IFwXwCJlMGFl">Chat.</a></div></br>'+
-        ' <div><a href="https://hivetalk.printify.me/products" target="_blank"><img src="/images/bluemerch.png"/></a> </div>',
+        '<a href="https://t.me/+2Ll1IFwXwCJlMGFl">Chat.</a></div></br>',
         showDenyButton: true,
         denyButtonText: `Just set a Name`,
         denyButtonColor: 'green',
@@ -1846,6 +1845,58 @@ async function shareRoomOnNostr(pubkey) {
 }
 
 // ####################################################
+// SHOW latest Announcements
+// ####################################################
+
+async function showAnnouncements(useNavigator = false) {
+        if (navigator.share && useNavigator) {
+            try {
+                await navigator.share({ url: RoomURL });
+                userLog('info', 'Room Shared successfully', 'top-end');
+            } catch (err) {
+                show();
+            }
+        } else {
+            console.log('share room info on button click');
+            show();
+        }
+    function show() {
+        sound('open');
+
+        Swal.fire({
+            background: swalBackground,
+            position: 'center',
+            title: 'Latest Updates',
+            html: `
+            <div><a href="https://hivetalk.printify.me/products" target="_blank"><img src="/images/bluemerch.png"></a></div>
+            <div>            
+            <p align="left"><ul style="text-align: left;">
+            <li>Locked Rooms are now hidden.</li>
+            <li>New mobile first navigation</li>
+            <li>Latest Github release - <a href="https://github.com/HiveTalk/hivetalksfu">v0.0.2 Fall Forest Run</a></li>
+            </ul>
+            </p>
+            </div>`,
+            showDenyButton: false,
+            showCancelButton: true,
+            showConfirmButton:false,
+            cancelButtonColor: 'red',
+            confirmButtonText: `Copy URL`,
+            cancelButtonText: `Close`,
+            showClass: { popup: 'animate__animated animate__fadeInDown' },
+            hideClass: { popup: 'animate__animated animate__fadeOutUp' },
+        }).then((result) => {
+            if (result.isConfirmed) {
+                copyRoomURL();
+            }
+            if (isScreenAllowed) {
+                rc.shareScreen();
+            }
+        });
+    }
+}
+
+// ####################################################
 // SHARE ROOM
 // ####################################################
 
@@ -1877,7 +1928,7 @@ async function shareRoom(useNavigator = false) {
             <div id="qrRoomContainer">
                 <canvas id="qrRoom"></canvas>
             </div>
-            <br/>
+            <br/>            
             <p style="background:transparent; color:rgb(8, 189, 89);">Join from your mobile device</p>
             <p style="background:transparent; color:white; font-family: Arial, Helvetica, sans-serif;">No need for apps, simply capture the QR code with your mobile camera Or Invite someone else to join by sending them the following URL</p>
             <p style="background:transparent; color:rgb(8, 189, 89);">${RoomURL}</p>`,
