@@ -2109,10 +2109,9 @@ class RoomClient {
 
                 if (this.isMobileDevice) {
                     peerNameHeader.style.backgroundImage = `url('${peer_info.peer_url || image.avatar}')`;
-                    this.addCloseButton(peerNameHeader, vb);
-
                 }
-                
+                this.addCloseButton(peerNameHeader, vb);
+
                 
                 // Update the event listener
                 d.addEventListener('click', (event) => {
@@ -2518,8 +2517,9 @@ class RoomClient {
     
                 if (this.isMobileDevice) {
                     peerNameHeader.style.backgroundImage = `url('${peer_info.peer_url || image.avatar}')`;
-                    this.addCloseButton(peerNameHeader, vb);
                 }
+                this.addCloseButton(peerNameHeader, vb);
+
     
                 pip = document.createElement('button');
                 pip.id = id + '__pictureInPicture';
@@ -2948,10 +2948,6 @@ class RoomClient {
             }
         });
 
-        if (this.isMobileDevice) {
-            peerNameHeader.style.backgroundImage = `url('${peer_info.peer_url || image.avatar}')`;
-            this.addCloseButton(peerNameHeader, vb);
-        }
         this.addCloseButton(peerNameHeader, vb);
 
     
