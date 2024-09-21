@@ -1720,7 +1720,7 @@ async function signSampleEvent(publicKey) {
             pubkey: publicKey,
             created_at: Math.floor(Date.now() / 1000),
             tags: [],
-            content: "Hi I'm using \n #HiveTalk",
+            content: "Signing event to prove you own this npub\n #HiveTalk",
         };
         console.log('Kind 1 - Event created', event);
         // Request the nos2x extension to sign the event
