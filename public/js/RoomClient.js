@@ -2163,13 +2163,6 @@ class RoomClient {
         return elem;
     }
 
-    simpleToggleVideoMenuBar(peerId) {
-        const videoMenuBar = this.getId(peerId + '__vb');
-        if (videoMenuBar) {
-            videoMenuBar.classList.toggle('active');
-        }
-    }
-
     async pauseProducer(type) {
         if (!this.producerLabel.has(type)) {
             return console.warn('There is no producer for this type ' + type);
