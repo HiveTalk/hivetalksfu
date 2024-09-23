@@ -5315,6 +5315,12 @@ function showAbout() {
         position: 'center',
         title: 'HiveTalk',
         html: `
+        <div> 
+        <a href="https://hivetalk.printify.me/" target="_blank">
+        <img src="/images/shophivetalk.png" alt="Hive Shop" id="Shop" width="300"/>
+        </a>
+        </div>
+        <br/></br/>
         <div id="about">
             <b>  Zap the developer: ${extractedIdentifier} </b><br/><br/>
                 <label for="amount" style="font-size: 1.2em;">
