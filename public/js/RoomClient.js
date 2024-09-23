@@ -2163,13 +2163,6 @@ class RoomClient {
         return elem;
     }
 
-    simpleToggleVideoMenuBar(peerId) {
-        const videoMenuBar = this.getId(peerId + '__vb');
-        if (videoMenuBar) {
-            videoMenuBar.classList.toggle('active');
-        }
-    }
-
     async pauseProducer(type) {
         if (!this.producerLabel.has(type)) {
             return console.warn('There is no producer for this type ' + type);
@@ -2439,18 +2432,26 @@ class RoomClient {
     }
 
     handleConsumer(id, type, stream, peer_name, peer_info) {
+        const {
+            peer_id: remotePeerId,
+            peer_audio: remotePeerAudio,
+            peer_video_privacy: remotePrivacyOn,
+            peer_presenter: remotePeerPresenter,
+            peer_lnaddress: remoteLNAddress,
+            peer_npub,
+            peer_url
+        } = peer_info;
+    
+        const isScreen = type === mediaType.screen;
+    
+        const createButton = (id, className) => {
+            const button = document.createElement('button');
+            button.id = id;
+            button.className = className;
+            return button;
+        };
+    
         let elem, vb, d, p, i, cm, au, pip, fs, ts, sf, sm, sv, gl, ban, ko, pb, pm, pv, pn;
-    
-        let eDiv, eBtn, eVc; // expand buttons
-    
-        console.log('PEER-INFO', peer_info);
-    
-        const remotePeerId = peer_info.peer_id;
-        const remoteIsScreen = type == mediaType.screen;
-        const remotePeerAudio = peer_info.peer_audio;
-        const remotePrivacyOn = peer_info.peer_video_privacy;
-        const remotePeerPresenter = peer_info.peer_presenter;
-        const remoteLNAddress = peer_info.peer_lnaddress;
     
         switch (type) {
             case mediaType.video:
@@ -2461,25 +2462,16 @@ class RoomClient {
                 d.id = id + '__video';
                 elem = document.createElement('video');
                 elem.setAttribute('id', id);
-                !remoteIsScreen && elem.setAttribute('name', remotePeerId);
+                !isScreen && elem.setAttribute('name', remotePeerId);
                 elem.setAttribute('playsinline', true);
                 elem.controls = isVideoControlsOn;
                 elem.autoplay = true;
                 elem.className = '';
                 elem.poster = image.poster;
-                elem.style.objectFit = remoteIsScreen || isBroadcastingEnabled ? 'contain' : 'var(--videoObjFit)';
+                elem.style.objectFit = isScreen || isBroadcastingEnabled ? 'contain' : 'var(--videoObjFit)';
                 vb = document.createElement('div');
                 vb.setAttribute('id', remotePeerId + '__vb');
                 vb.className = 'videoMenuBar fadein';
-                
-                // Update the event listener
-                d.addEventListener('click', (event) => {
-                    if (!event.target.closest('.' + html.zapIcon.split(' ')[0])) {
-                        const menuBarElement = vb; // Reference to the videoMenuBar element
-                        this.toggleVideoMenuBar(menuBarElement);
-                    }
-                });
-        
                 
                 // Create and append peer name header
                 const peerNameHeader = document.createElement('div');
@@ -2503,12 +2495,12 @@ class RoomClient {
                 
                 peerNameContainer.appendChild(peerNameSpan);
     
-                if (peer_info.peer_npub) {
+                if (peer_npub) {
                     const nostrIcon = document.createElement('span');
                     nostrIcon.className = html.nostrIcon + ' nostr-icon-inline';
                     nostrIcon.addEventListener('click', (event) => {
                         event.stopPropagation();
-                        this.handleNostrClick(peer_info.peer_npub);
+                        this.handleNostrClick(peer_npub);
                     });
                     peerNameContainer.appendChild(nostrIcon);
                 }
@@ -2517,47 +2509,23 @@ class RoomClient {
                 vb.appendChild(peerNameHeader);
     
                 if (this.isMobileDevice) {
-                    peerNameHeader.style.backgroundImage = `url('${peer_info.peer_url || image.avatar}')`;
+                    peerNameHeader.style.backgroundImage = `url('${peer_url || image.avatar}')`;
                 }
                 this.addCloseButton(peerNameHeader, vb);
-
     
-                pip = document.createElement('button');
-                pip.id = id + '__pictureInPicture';
-                pip.className = html.pip;
-                fs = document.createElement('button');
-                fs.id = id + '__fullScreen';
-                fs.className = html.fullScreen;
-                ts = document.createElement('button');
-                ts.id = id + '__snapshot';
-                ts.className = html.snapshot;
-                pn = document.createElement('button');
-                pn.id = id + '__pin';
-                pn.className = html.pin;
-                sf = document.createElement('button');
-                sf.id = id + '___' + remotePeerId + '___sendFile';
-                sf.className = html.sendFile;
-                sm = document.createElement('button');
-                sm.id = id + '___' + remotePeerId + '___sendMsg';
-                sm.className = html.sendMsg;
-                sv = document.createElement('button');
-                sv.id = id + '___' + remotePeerId + '___sendVideo';
-                sv.className = html.sendVideo;
-                cm = document.createElement('button');
-                cm.id = id + '___' + remotePeerId + '___video';
-                cm.className = html.videoOn;
-                au = document.createElement('button');
-                au.id = remotePeerId + '__audio';
-                au.className = remotePeerAudio ? html.audioOn : html.audioOff;
-                gl = document.createElement('button');
-                gl.id = id + '___' + remotePeerId + '___geoLocation';
-                gl.className = html.geolocation;
-                ban = document.createElement('button');
-                ban.id = id + '___' + remotePeerId + '___ban';
-                ban.className = html.ban;
-                ko = document.createElement('button');
-                ko.id = id + '___' + remotePeerId + '___kickOut';
-                ko.className = html.kickOut;
+                pip = createButton(id + '__pictureInPicture', html.pip);
+                fs = createButton(id + '__fullScreen', html.fullScreen);
+                ts = createButton(id + '__snapshot', html.snapshot);
+                pn = createButton(id + '__pin', html.pin);
+                sf = createButton(id + '___' + remotePeerId + '___sendFile', html.sendFile);
+                sm = createButton(id + '___' + remotePeerId + '___sendMsg', html.sendMsg);
+                sv = createButton(id + '___' + remotePeerId + '___sendVideo', html.sendVideo);
+                cm = createButton(id + '___' + remotePeerId + '___video', html.videoOn);
+                au = createButton(remotePeerId + '__audio', remotePeerAudio ? html.audioOn : html.audioOff);
+                gl = createButton(id + '___' + remotePeerId + '___geoLocation', html.geolocation);
+                ban = createButton(id + '___' + remotePeerId + '___ban', html.ban);
+                ko = createButton(id + '___' + remotePeerId + '___kickOut', html.kickOut);
+    
                 i = document.createElement('i');
                 i.id = remotePeerId + '__hand';
                 i.className = html.userHand;
@@ -2574,56 +2542,48 @@ class RoomClient {
                 pb.style.height = '1%';
                 pm.appendChild(pb);
     
-                eDiv = document.createElement('div');
-                eDiv.className = 'expand-video';
-                eBtn = document.createElement('button');
-                eBtn.id = remotePeerId + '_videoExpandBtn';
-                eBtn.className = html.expand;
-                eVc = document.createElement('div');
-                eVc.className = 'expand-video-content';
+                const appendButtons = (parent, buttons) => {
+                    buttons.forEach(button => parent.appendChild(button));
+                };
     
                 if (this.isMobileDevice) {
-                    // Mobile-specific behavior
-                    eVc.classList.add('mobile-optimized');
-                    BUTTONS.consumerVideo.sendMessageButton && vb.appendChild(sm);
-                    BUTTONS.consumerVideo.sendFileButton && vb.appendChild(sf);
-                    BUTTONS.consumerVideo.sendVideoButton && vb.appendChild(sv);
-                    BUTTONS.consumerVideo.geolocationButton && vb.appendChild(gl);
-                    BUTTONS.consumerVideo.banButton && vb.appendChild(ban);
-                    BUTTONS.consumerVideo.ejectButton && vb.appendChild(ko);
-                    vb.appendChild(au);
-                    vb.appendChild(cm);
+                    appendButtons(vb, [sm, sf, sv, gl, ban, ko, au, cm]);
                 } else {
-                    // Desktop behavior
-                    BUTTONS.consumerVideo.sendMessageButton && eVc.appendChild(sm);
-                    BUTTONS.consumerVideo.sendFileButton && eVc.appendChild(sf);
-                    BUTTONS.consumerVideo.sendVideoButton && eVc.appendChild(sv);
-                    BUTTONS.consumerVideo.geolocationButton && eVc.appendChild(gl);
-                    BUTTONS.consumerVideo.banButton && eVc.appendChild(ban);
-                    BUTTONS.consumerVideo.ejectButton && eVc.appendChild(ko);
+                    const eDiv = document.createElement('div');
+                    eDiv.className = 'expand-video';
+                    const eBtn = createButton(remotePeerId + '_videoExpandBtn', html.expand);
+                    const eVc = document.createElement('div');
+                    eVc.className = 'expand-video-content';
                     eDiv.appendChild(eBtn);
+                    appendButtons(eVc, [sm, sf, sv, gl, ban, ko]);
                     eDiv.appendChild(eVc);
+                    appendButtons(vb, [au, cm]);
                     vb.appendChild(eDiv);
-                    vb.appendChild(au);
-                    vb.appendChild(cm);
+                
+                    // Add event listener for expand button
+                    eBtn.addEventListener('click', (e) => {
+                        e.stopPropagation();
+                        eDiv.classList.toggle('show');
+                    });
+                
+                    // Close expand menu when clicking outside
+                    document.addEventListener('click', () => {
+                        eDiv.classList.remove('show');
+                    });
+                
+                    eDiv.addEventListener('click', (e) => {
+                        e.stopPropagation();
+                    });
                 }
-    
-                BUTTONS.consumerVideo.snapShotButton && vb.appendChild(ts);
-                BUTTONS.consumerVideo.videoPictureInPicture &&
-                    this.isVideoPictureInPictureSupported &&
-                    vb.appendChild(pip);
-                BUTTONS.consumerVideo.fullScreenButton && 
-                    this.isVideoFullScreenSupported && 
-                    vb.appendChild(fs);
+                
+                appendButtons(vb, [ts, pip, fs]);
                 if (!this.isMobileDevice) vb.appendChild(pn);
-    
+                    
                 d.appendChild(elem);
                 d.appendChild(i);
     
-                // add remote lightning address or lnurl for zaps
                 if (remoteLNAddress) {
-                    let zp = document.createElement('button');
-                    console.log('remote lnaddress: ', remoteLNAddress);
+                    const zp = document.createElement('button');
                     zp.id = remoteLNAddress + '__zap';
                     zp.className = html.zapIcon;
                     handleLightning(zp);
@@ -2632,6 +2592,13 @@ class RoomClient {
     
                 d.appendChild(p);
                 d.appendChild(pm);
+
+                d.addEventListener('click', (e) => {
+                    if (!e.target.closest('.' + html.zapIcon.split(' ')[0])) {
+                        this.toggleVideoMenuBar(vb);
+                    }
+                });
+                
                 this.videoMediaContainer.appendChild(vb);
                 this.videoMediaContainer.appendChild(d);
                 this.attachMediaStream(elem, stream, type, 'Consumer');
@@ -2648,12 +2615,12 @@ class RoomClient {
                 this.handleGL(gl.id);
                 this.handleBAN(ban.id);
                 this.handleKO(ko.id);
-                this.handlePN(elem.id, pn.id, d.id, remoteIsScreen);
+                this.handlePN(elem.id, pn.id, d.id, isScreen);
                 this.handleZV(elem.id, d.id, remotePeerId);
                 this.popupPeerInfo(p.id, peer_info);
                 this.checkPeerInfoStatus(peer_info);
-                if (!remoteIsScreen && remotePrivacyOn) this.setVideoPrivacyStatus(remotePeerId, remotePrivacyOn);
-                if (remoteIsScreen) pn.click();
+                if (!isScreen && remotePrivacyOn) this.setVideoPrivacyStatus(remotePeerId, remotePrivacyOn);
+                if (isScreen) pn.click();
                 this.sound('joined');
                 handleAspectRatio();
                 console.log('[addConsumer] Video-element-count', this.videoMediaContainer.childElementCount);
@@ -2697,7 +2664,7 @@ class RoomClient {
         }
         return elem;
     }
-    
+
     removeConsumer(consumer_id, consumer_kind) {
         console.log('Remove consumer', { consumer_id: consumer_id, consumer_kind: consumer_kind });
 

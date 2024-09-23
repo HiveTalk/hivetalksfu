@@ -216,6 +216,7 @@
 
 .videoMenuBar input,
 .videoMenuBar button {
+    display: inline !important;
     float: right;
     color: #fff;
     background: transparent;
@@ -309,6 +310,7 @@
 
     .videoMenuBar input,
     .videoMenuBar button {
+        display: inline !important;
         font-size: 16px;
         color: #fff;
         background: rgba(255, 255, 255, 0.2);
@@ -328,6 +330,7 @@
     }
 
     .videoMenuBar input[type="range"] {
+        display: inline !important;
         width: 100%;
         margin: 5px 0;
         background: rgba(255, 255, 255, 0.1);
@@ -415,6 +418,7 @@
 
     .videoMenuBar input,
     .videoMenuBar button {
+        display: inline !important;
         font-size: 16px;
         color: #fff;
         background: rgba(255, 255, 255, 0.2);
@@ -434,6 +438,7 @@
     }
 
     .videoMenuBar input[type="range"] {
+        display: inline !important;
         width: 100%;
         margin: 5px 0;
         background: rgba(255, 255, 255, 0.1);
@@ -525,7 +530,7 @@ video:fullscreen {
 }
 
 input[type='range'] {
-    /* display: none; */
+    display: inline !important;
     color: #fff;
     width: 50px;
     cursor: pointer;
