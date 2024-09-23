@@ -1866,9 +1866,11 @@ async function showAnnouncements(useNavigator = false) {
         Swal.fire({
             background: swalBackground,
             position: 'center',
-            title: 'Latest Updates',
+            //title: 'Latest Updates',
             html: `
-            <div><a href="https://hivetalk.printify.me/products" target="_blank"><img src="/images/bluemerch.png"></a></div>
+            <div><a href="https://hivetalk.printify.me/products" target="_blank">
+                <img src="/images/shophivetalk.gif" width="100%" height="50%"></a>
+            </div>
             <div>            
             <p align="left"><ul style="text-align: left;">
             <li>Locked Rooms are now hidden.</li>
