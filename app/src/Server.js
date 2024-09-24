@@ -863,6 +863,34 @@ function startServer() {
     // REST API
     // ####################################################
 
+
+    app.get([restApi.basePath + '/count'], (req, res) => {
+        // Check if endpoint allowed
+        if (restApi.allowed && !restApi.allowed.meetings) {
+            return res.status(403).json({
+                error: 'This endpoint has been disabled. Please contact the administrator for further information.',
+            });
+        }
+        // check if user was authorized for the api call
+        const { host, authorization } = req.headers;
+        const api = new ServerApi(host, authorization);
+        // Get meetings
+        try {
+            const total = api.getMeetingCount(roomList);
+            res.json({ total: total });
+            // log.debug the output if all done
+            log.debug('HiveTalk get count - Authorized', {
+                header: req.headers,
+                body: req.body,
+                meetings: meetings,
+            });
+        } catch (error) {
+            // assume error thrown if no meetings is undefined,
+            // so return an empty array
+            return "error" + error;
+        }
+    });
+
     // get basic room info with room name and number of peers
     app.get([restApi.basePath + '/meetinfo'], (req, res) => {
         // Check if endpoint allowed
@@ -893,7 +921,6 @@ function startServer() {
             // so return an empty array
             return res.json({ meetings: [] });
         }
-
     });
 
     // request meetings list

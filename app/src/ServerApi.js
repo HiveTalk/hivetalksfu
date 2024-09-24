@@ -21,6 +21,11 @@ module.exports = class ServerApi {
         return true;
     }
 
+    getMeetingCount(roomList) { 
+        // include count of all rooms including locked rooms.
+        return roomList.size
+    }
+
     getMeetings(roomList) {
         // Check if roomList is empty
         if (roomList.size === 0) {
@@ -50,7 +55,7 @@ module.exports = class ServerApi {
                     roomId: id,
                     peers: peers,
                 };
-            }
+            } 
         });
         return meetings;
     }
