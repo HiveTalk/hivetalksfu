@@ -332,7 +332,7 @@
     .videoMenuBar input[type="range"] {
         display: inline !important;
         width: 100%;
-        margin: 5px 0;
+        margin: 10px 0;
         background: rgba(255, 255, 255, 0.1);
         border-radius: 5px;
         height: 5px;
@@ -449,6 +449,7 @@
     .videoMenuBar button:active {
         background: rgba(255, 255, 255, 0.3);
     }
+
 }
 
 
