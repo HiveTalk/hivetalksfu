@@ -4111,9 +4111,13 @@ function showButtons() {
 
 function checkButtonsBar() {
     if (localStorageSettings.keep_buttons_visible) {
-        toggleExtraButtons('show');
+        // Always show buttons if keep_buttons_visible is true
+        control.style.display = 'flex';
+        toggleExtraButton.innerHTML = icons.up;
+        bottomButtons.style.display = 'flex';
         isButtonsVisible = true;
     } else {
+        // Only hide if not hovering and keep_buttons_visible is false
         if (!isButtonsBarOver) {
             control.style.display = 'none';
             toggleExtraButton.innerHTML = icons.up;
@@ -4122,6 +4126,7 @@ function checkButtonsBar() {
         }
     }
 
+    // Maintain your existing timeout check
     setTimeout(() => {
         checkButtonsBar();
     }, 10000);
