@@ -281,6 +281,14 @@
         height: 50px;
     }
 
+    .peer-name-container {
+        display: row;
+        width: 100%;
+        height: 100%;
+        padding: 10px;
+        margin: 10px;
+      }
+
     .videoMenuBar .peer-name-header {
         grid-area: header;
         width: 100%;
@@ -332,10 +340,9 @@
     .videoMenuBar input[type="range"] {
         display: inline !important;
         width: 100%;
-        margin: 5px 0;
+        margin: 16px 0;
         background: rgba(255, 255, 255, 0.1);
-        border-radius: 5px;
-        height: 5px;
+        height: 6px;
     }
 
     .videoMenuBar button:active {
@@ -440,15 +447,16 @@
     .videoMenuBar input[type="range"] {
         display: inline !important;
         width: 100%;
-        margin: 5px 0;
-        background: rgba(255, 255, 255, 0.1);
+        margin: 20px 0;
+        background: rgba(98, 0, 255, 0.1);
         border-radius: 5px;
-        height: 5px;
+        height: 7px;
     }
 
     .videoMenuBar button:active {
         background: rgba(255, 255, 255, 0.3);
     }
+
 }
 
 

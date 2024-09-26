@@ -3980,15 +3980,34 @@ function showButtons() {
 }
 
 function checkButtonsBar() {
-    if (!isButtonsBarOver) {
-        toggleClassElements('videoMenuBar', 'none');
-        control.style.display = 'none';
-        bottomButtons.style.display = 'none';
-        isButtonsVisible = false;
+    if (localStorageSettings.keep_buttons_visible) {
+        // If keep_buttons_visible is true, always show the buttons
+        toggleButtonsBar('show');
+        isButtonsVisible = true;
+    } else {
+        // If keep_buttons_visible is false, toggle as before
+        if (!isButtonsVisible) {
+            toggleButtonsBar('show');
+            isButtonsVisible = true;
+        } else {
+            toggleButtonsBar('hide');
+            isButtonsVisible = false;
+        }
     }
-    setTimeout(() => {
-        checkButtonsBar();
-    }, 10000);
+}
+
+function toggleButtonsBar(action = 'toggle') {
+    if (action === 'show') {
+        control.style.display = 'flex';
+        isButtonsBarOver = false;
+    } else if (action === 'hide' && !localStorageSettings.keep_buttons_visible) {
+        // Only hide if keep_buttons_visible is false
+        control.style.display = 'none';
+        isButtonsBarOver = false;
+    } else if (action === 'toggle' && !localStorageSettings.keep_buttons_visible) {
+        // Only toggle if keep_buttons_visible is false
+        control.style.display = control.style.display === 'flex' ? 'none' : 'flex';
+    }
 }
 
 function toggleClassElements(className, displayState) {
