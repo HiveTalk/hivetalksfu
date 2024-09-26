@@ -2091,7 +2091,7 @@ class RoomClient {
                 pv.min = 0;
                 pv.max = 100;
                 pv.value = 100;
-                peerNameSpan.appendChild(pv);
+                peerNameContainer.appendChild(pv);
                 
                 peerNameContainer.appendChild(peerNameSpan);
     
@@ -2490,10 +2490,9 @@ class RoomClient {
                 pv.type = 'range';
                 pv.min = 0;
                 pv.max = 100;
-                pv.value = 100;
-                peerNameSpan.appendChild(pv);
-                
+                pv.value = 100;                
                 peerNameContainer.appendChild(peerNameSpan);
+                peerNameContainer.appendChild(pv);
     
                 if (peer_npub) {
                     const nostrIcon = document.createElement('span');
@@ -2792,7 +2791,7 @@ class RoomClient {
             pv.min = 0;
             pv.max = 100;
             pv.value = 100;
-            peerNameSpan.appendChild(pv);
+            peerNameContainer.appendChild(pv);
                     
 
             sf = document.createElement('button');
@@ -3756,16 +3755,22 @@ class RoomClient {
             document.fullscreenEnabled ||
             document.webkitFullscreenEnabled ||
             document.mozFullScreenEnabled ||
-            document.msFullscreenEnabled
+            document.msFullscreenEnabled ||
+            ('webkitEnterFullscreen' in document.createElement('video'))
         );
     }
-
+    
     toggleFullScreen(elem = null) {
         const element = elem ? elem : document.documentElement;
         const fullScreen = this.isFullScreen();
-        fullScreen ? this.goOutFullscreen(element) : this.goInFullscreen(element);
+        if (fullScreen) {
+            this.goOutFullscreen(element);
+        } else {
+            this.goInFullscreen(element);
+        }
         if (elem === null) this.isVideoOnFullScreen = fullScreen;
     }
+    
 
     isFullScreen() {
         const elementFullScreen =
@@ -3783,16 +3788,26 @@ class RoomClient {
         else if (element.mozRequestFullScreen) element.mozRequestFullScreen();
         else if (element.webkitRequestFullscreen) element.webkitRequestFullscreen();
         else if (element.msRequestFullscreen) element.msRequestFullscreen();
-        else this.userLog('warning', 'Full screen mode not supported by this browser on this device', 'top-end');
+        else if (element.webkitEnterFullscreen) {
+            // iOS Safari
+            element.webkitEnterFullscreen();
+        } else {
+            this.userLog('warning', 'Full screen mode not supported by this browser on this device', 'top-end');
+        }
     }
+    
 
     goOutFullscreen(element) {
-        if (element.exitFullscreen) element.exitFullscreen();
-        else if (element.mozCancelFullScreen) element.mozCancelFullScreen();
-        else if (element.webkitExitFullscreen) element.webkitExitFullscreen();
-        else if (element.msExitFullscreen) element.msExitFullscreen();
+        if (document.exitFullscreen) document.exitFullscreen();
+        else if (document.mozCancelFullScreen) document.mozCancelFullScreen();
+        else if (document.webkitExitFullscreen) document.webkitExitFullscreen();
+        else if (document.msExitFullscreen) document.msExitFullscreen();
+        else {
+            // On iOS Safari, cannot exit fullscreen programmatically
+            this.userLog('info', 'Tap "Done" to exit fullscreen mode on iOS devices', 'top-end');
+        }
     }
-
+    
     handleFS(elemId, fsId) {
         let videoPlayer = this.getId(elemId);
         let btnFs = this.getId(fsId);
@@ -3833,6 +3848,15 @@ class RoomClient {
                 this.isVideoOnFullScreen = !!document.msFullscreenElement;
                 videoPlayer.style.pointerEvents = 'auto';
             });
+            videoPlayer.addEventListener('webkitbeginfullscreen', () => {
+                this.isVideoOnFullScreen = true;
+                videoPlayer.style.pointerEvents = 'auto';
+            });
+            videoPlayer.addEventListener('webkitendfullscreen', () => {
+                this.isVideoOnFullScreen = false;
+                videoPlayer.style.pointerEvents = 'auto';
+            });
+        
         }
     }
 
