@@ -7286,41 +7286,44 @@ class RoomClient {
     // HANDLE PEER VOLUME
     // ###################################################
 
-    handlePV(uid) {
-        const words = uid.split('___');
-        let peer_id = words[1] + '___pVolume';
-        let audioConsumerId = this.audioConsumers.get(peer_id);
-        let audioConsumerPlayer = this.getId(audioConsumerId);
-        let inputPv = this.getId(peer_id);
-        if (inputPv && audioConsumerPlayer) {
-            inputPv.style.display = 'inline';
-            inputPv.value = 100;
-            
-            const updateVolume = () => {
-                const volume = inputPv.value / 100;
-                console.log('Attempting to set volume:', volume);
-                
-                // Try different methods to set the volume
-                if (audioConsumerPlayer.setVolume) {
-                    audioConsumerPlayer.setVolume(volume);
-                } else if (audioConsumerPlayer.volume !== undefined) {
-                    audioConsumerPlayer.volume = volume;
-                } else if (audioConsumerPlayer.mediaElement) {
-                    audioConsumerPlayer.mediaElement.volume = volume;
-                }
-                
-                console.log('Current volume:', audioConsumerPlayer.volume);
-            };
+// Add this method to the RoomClient class
+updateVolume(audioConsumerPlayer, volume) {
+    console.log('Attempting to set volume:', volume);
     
-            // Use both input and change events
-            inputPv.addEventListener('input', updateVolume);
-            inputPv.addEventListener('change', updateVolume);
-            
-            // Initial volume set
-            updateVolume();
-        }
+    if (audioConsumerPlayer.setVolume) {
+        audioConsumerPlayer.setVolume(volume);
+    } else if (audioConsumerPlayer.volume !== undefined) {
+        audioConsumerPlayer.volume = volume;
+    } else if (audioConsumerPlayer.mediaElement) {
+        audioConsumerPlayer.mediaElement.volume = volume;
     }
-    // ####################################################
+    
+    // console.log('Current volume:', audioConsumerPlayer.volume);
+}
+
+handlePV(uid) {
+    const words = uid.split('___');
+    let peer_id = words[1] + '___pVolume';
+    let audioConsumerId = this.audioConsumers.get(peer_id);
+    let audioConsumerPlayer = this.getId(audioConsumerId);
+    let inputPv = this.getId(peer_id);
+    if (inputPv && audioConsumerPlayer) {
+        inputPv.style.display = 'inline';
+        inputPv.value = 100;
+        
+        const handleVolumeChange = () => {
+            const volume = inputPv.value / 100;
+            this.updateVolume(audioConsumerPlayer, volume);
+        };
+
+        // Use both input and change events
+        inputPv.addEventListener('input', handleVolumeChange);
+        inputPv.addEventListener('change', handleVolumeChange);
+        
+        // Initial volume set
+        handleVolumeChange();
+    }
+}    // ####################################################
     // HANDLE DOMINANT SPEAKER
     // ###################################################
 
