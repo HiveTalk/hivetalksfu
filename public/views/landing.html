@@ -1,6 +1,77 @@
 <!doctype html>
 <html lang="en" class="no-js">
     <head>
+        <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+        <script type="module">
+            import {
+                onConnected,
+                requestProvider,
+                launchPaymentModal,
+            } from 'https://esm.sh/@getalby/bitcoin-connect@3.5.1';
+            import { LightningAddress } from 'https://esm.sh/@getalby/lightning-tools@5.0.0';
+
+            onConnected((provider) => {
+                window.webln = provider;
+            });
+
+            window.moduleFunctions = {
+                handleDonation: async (address, amount) => {
+                    return new Promise(async (resolve, reject) => {
+                        console.log('handleDonation called with LN: ' + address + ' amount: ' + amount);
+
+                        if (!address || !amount) {
+                            alert('Please fill in both Lightning Address and Amount.');
+                            reject('Missing address or amount');
+                            return;
+                        }
+                        const ln = new LightningAddress(address);
+                        await ln.fetch();
+                        const invoice = await ln.requestInvoice({ satoshi: amount });
+                        let checkPaymentInterval;
+                        const { setPaid } = launchPaymentModal({
+                            invoice: invoice.paymentRequest,
+                            onPaid: ({ preimage }) => {
+                                clearInterval(checkPaymentInterval);
+                                // todo make alert pretty
+                                alert(
+                                    'Paid to:  ' +
+                                        address +
+                                        ' amount: ' +
+                                        amount +
+                                        ' sats \n\n ' +
+                                        'preimage: ' +
+                                        preimage,
+                                );
+                                let result = ' zapped ' + address + ' ' + amount + ' sats';
+                                console.log(result);
+                                resolve(result); // Resolve the promise with the result string
+                            },
+                            onCancelled: () => {
+                                clearInterval(checkPaymentInterval); // Clear the interval on cancel
+                                // todo: make alert pretty
+                                alert('Payment cancelled');
+                                reject('Payment cancelled');
+                            },
+                        });
+
+                        checkPaymentInterval = setInterval(async () => {
+                            try {
+                                const paid = await invoice.verifyPayment();
+                                if (paid && invoice.preimage) {
+                                    setPaid({
+                                        preimage: invoice.preimage,
+                                    });
+                                }
+                            } catch (error) {
+                                console.log('waiting inside check payment interval....');
+                                // console.error(error);
+                            }
+                        }, 1000);
+                    });
+                },
+            };
+        </script>
+
         <!-- Title and Icon -->
 
         <title id="title">HiveTalk, Video Calls, Messaging and Screen Sharing</title>
@@ -252,7 +323,7 @@
                         <div class="footer-copyright">
                             &copy; 2024 HiveTalk, all rights reserved. 
                             <br />
-                            Commit: af80be570c39d0d25ddf07907edafb66a052846f
+                            Commit: f2800068f2b5d6331058bcd7abc38ea9b43ce104
                             <div id="content-placeholder"><!-- Content will be inserted here --></div>
                         </div>
                     </div>
@@ -289,5 +360,45 @@
                 }
             });
         </script>
+        <script>
+            document.getElementById('zaplink').addEventListener('click', function (e) {
+                e.preventDefault();
+                Swal.fire({
+                    background: `radial-gradient(#333, #000`,
+                    color: '#fff',
+                    title: '<strong>Zap HiveTalk</strong>',
+                    html:
+                        '<input id="amount" class="swal2-input" type="number" placeholder="Amount (sats)" value="2100">',
+                    showCancelButton: true,
+                    confirmButtonText: 'Zap',
+                    confirmButtonColor: '#3085d6',
+                    cancelButtonText: 'Cancel',
+                    focusConfirm: false,
+                    reverseButtons: true,
+                    preConfirm: () => {
+                        const sats = Swal.getPopup().querySelector('#amount').value;
+                        if (!sats) {
+                            Swal.showValidationMessage(`Please enter the amount of sats`);
+                        }
+                        return { sats: sats };
+                    },
+                }).then((result) => {
+                    if (result.isConfirmed) {
+                        let amount = result.value.sats;
+                        let lnaddress = 'donate@hivetalk.org';
+
+                        window.moduleFunctions
+                            .handleDonation(lnaddress, amount)
+                            .then((result) => {
+                                console.log('handleDonationResult:', result);
+                            })
+                            .catch((error) => {
+                                console.log('Error:', error);
+                            });
+                    }
+                });
+            });
+        </script>
+
     </body>
 </html>
