@@ -1,17 +1,10 @@
 {
-  "minSendable": 1000,
-  "maxSendable": 100000000,
-  "commentAllowed": 150,
+  "status": "OK",
   "tag": "payRequest",
-  "metadata": "[[\"text/plain\",\"donate\"]]",
-  "callback": "https://api.zebedee.io/v0/process-static-charges/e522adeb-3924-45f5-b4db-1aca26b8374f",
-  "payerData": {
-    "name": {
-      "mandatory": false
-    },
-    "identifier": {
-      "mandatory": false
-    }
-  },
-  "disposable": false
+  "callback": "https://primal.net/lnurlp/bitkarrot/callback",
+  "metadata": "[[\"text/plain\",\"sats for bitkarrot@primal.net\"]]",
+  "minSendable": 1000,
+  "maxSendable": 11000000000,
+  "nostrPubkey": "f81611363554b64306467234d7396ec88455707633f54738f6c4683535098cd3",
+  "allowsNostr": true
 }
