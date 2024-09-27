@@ -7295,13 +7295,31 @@ class RoomClient {
         if (inputPv && audioConsumerPlayer) {
             inputPv.style.display = 'inline';
             inputPv.value = 100;
-            // Not work on Mobile?
-            inputPv.addEventListener('input', () => {
-                audioConsumerPlayer.volume = inputPv.value / 100;
-            });
+            
+            const updateVolume = () => {
+                const volume = inputPv.value / 100;
+                console.log('Attempting to set volume:', volume);
+                
+                // Try different methods to set the volume
+                if (audioConsumerPlayer.setVolume) {
+                    audioConsumerPlayer.setVolume(volume);
+                } else if (audioConsumerPlayer.volume !== undefined) {
+                    audioConsumerPlayer.volume = volume;
+                } else if (audioConsumerPlayer.mediaElement) {
+                    audioConsumerPlayer.mediaElement.volume = volume;
+                }
+                
+                console.log('Current volume:', audioConsumerPlayer.volume);
+            };
+    
+            // Use both input and change events
+            inputPv.addEventListener('input', updateVolume);
+            inputPv.addEventListener('change', updateVolume);
+            
+            // Initial volume set
+            updateVolume();
         }
     }
-
     // ####################################################
     // HANDLE DOMINANT SPEAKER
     // ###################################################
