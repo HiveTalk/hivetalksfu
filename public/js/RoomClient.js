@@ -7286,7 +7286,6 @@ class RoomClient {
     // HANDLE PEER VOLUME
     // ###################################################
 
-// Add this method to the RoomClient class
 updateVolume(audioConsumerPlayer, volume) {
     console.log('Attempting to set volume:', volume);
     
@@ -7323,7 +7322,9 @@ handlePV(uid) {
         // Initial volume set
         handleVolumeChange();
     }
-}    // ####################################################
+}   
+
+// ####################################################
     // HANDLE DOMINANT SPEAKER
     // ###################################################
 
