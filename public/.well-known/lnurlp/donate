@@ -4,7 +4,7 @@
   "commentAllowed": 150,
   "tag": "payRequest",
   "metadata": "[[\"text/plain\",\"donate\"]]",
-  "callback": "https://api.zebedee.io/v0/process-static-charges/e522adeb-3924-45f5-b4db-1aca26b8374f",
+  "callback": "https://api.zebedee.io/v0/process-static-charges/e2f3d6ad-e3f3-4ca8-8658-67f5a909856a",
   "payerData": {
     "name": {
       "mandatory": false
