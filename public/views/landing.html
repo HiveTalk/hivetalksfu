@@ -34,7 +34,7 @@
                                 clearInterval(checkPaymentInterval);
                                 // todo make alert pretty
                                 alert(
-                                    'Paid to:  ' +
+                                    'Lightning sent to:  ' +
                                         address +
                                         ' amount: ' +
                                         amount +
@@ -43,7 +43,7 @@
                                         preimage,
                                 );
                                 let result = ' zapped ' + address + ' ' + amount + ' sats';
-                                console.log(result);
+                                // console.log(result);
                                 resolve(result); // Resolve the promise with the result string
                             },
                             onCancelled: () => {
@@ -262,13 +262,16 @@
                                 </div>
                             </a>
                         </div>
-                        <ul class="footer-links list-reset">
+                        <ul class="footer-links">
                             <li><a href="/">Home</a></li>
                             <li><a href="https://hivetalk.printify.me/products">Shop</a></li>
-                            <li><a href="/faq">FAQ</a></li>
-                            <li><a href="/about">About</a></li>
+                            <li><a href="/about">About</a></li>                            
                             <li><a href="/support">Support</a></li>
+                        </ul>
+                        <ul class="footer-links">
                             <li><a href="/privacy">Privacy</a></li>
+                            <li><a href="/faq">FAQ</a></li>
+                            <li><a href="https://status.hivetalk.org/">Status</a></li>
                             <li><a href="/api/v1/docs/">API</a></li>
                         </ul>
                         <ul class="footer-social-links list-reset">
@@ -323,7 +326,7 @@
                         <div class="footer-copyright">
                             &copy; 2024 HiveTalk, all rights reserved. 
                             <br />
-                            Commit: f2800068f2b5d6331058bcd7abc38ea9b43ce104
+                            Commit: edf1c1372ac8cbf5f2eb0e5068a8d2ae07b0cfae
                             <div id="content-placeholder"><!-- Content will be inserted here --></div>
                         </div>
                     </div>
