@@ -3167,11 +3167,9 @@ function handleSelects() {
         isButtonsBarOver = e.currentTarget.checked;
         localStorageSettings.keep_buttons_visible = isButtonsBarOver;
         lS.setSettings(localStorageSettings);
-        checkButtonsBar();
-        const status = isButtonsBarOver ? 'enabled' : 'disabled';
-        userLog('info', `Buttons always visible ${status}`, 'top-end');
         e.target.blur();
     };
+
     // audio options
     switchAutoGainControl.onchange = (e) => {
         localStorageSettings.mic_auto_gain_control = e.currentTarget.checked;
