@@ -1601,6 +1601,10 @@ label {
 .cta-inner > * {
     position: relative;
 }
+.container .br-12 .cta-inner {
+    justify-content: center;
+}
+
 @media (min-width: 641px) {
     .cta {
         text-align: left;
@@ -1626,6 +1630,7 @@ label {
     overflow: hidden;
     display: flex;
     flex-direction: column;
+    -ms-flex-item-align: center;
     min-height: 100vh;
 }
 .boxed-container {

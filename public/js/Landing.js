@@ -417,3 +417,89 @@
                 });
             }
     })();
+
+    (function () {
+        'use strict';
+    
+        function initializeElements() {
+            // Room name input validation
+            const roomNameInput = document.getElementById('roomName');
+            if (roomNameInput) {
+                roomNameInput.addEventListener('input', function (event) {
+                    const input = event.target;
+                    const value = input.value;
+                    const isValid = /^[a-zA-Z0-9-_ ]*$/.test(value);
+                    if (!isValid) {
+                        input.setCustomValidity('Only alphanumeric characters, "-" and "_" are allowed.');
+                        input.reportValidity();
+                    } else {
+                        input.setCustomValidity('');
+                    }
+                });
+            }
+    
+            // Join room button validation
+            const joinRoomButton = document.getElementById('joinRoomButton');
+            if (joinRoomButton) {
+                joinRoomButton.addEventListener('click', function (event) {
+                    const input = document.getElementById('roomName');
+                    const value = input.value;
+                    const isValid = /^[a-zA-Z0-9-_ ]*$/.test(value);
+    
+                    if (!isValid) {
+                        alert('Only alphanumeric characters, "-" and "_" are allowed.');
+                        event.preventDefault(); // Prevents the form from being submitted
+                    }
+                });
+            }
+    
+            // Zap link functionality
+            const zapLink = document.getElementById('zaplink');
+            if (zapLink) {
+                zapLink.addEventListener('click', function (e) {
+                    e.preventDefault();
+                    Swal.fire({
+                        background: `radial-gradient(#333, #000`,
+                        color: '#fff',
+                        title: '<strong>Zap HiveTalk</strong>',
+                        html:
+                            '<input id="amount" class="swal2-input" type="number" placeholder="Amount (sats)" value="2100">',
+                        showCancelButton: true,
+                        confirmButtonText: 'Zap',
+                        confirmButtonColor: '#3085d6',
+                        cancelButtonText: 'Cancel',
+                        focusConfirm: false,
+                        reverseButtons: true,
+                        preConfirm: () => {
+                            const sats = Swal.getPopup().querySelector('#amount').value;
+                            if (!sats) {
+                                Swal.showValidationMessage(`Please enter the amount of sats`);
+                            }
+                            return { sats: sats };
+                        },
+                    }).then((result) => {
+                        if (result.isConfirmed) {
+                            let amount = result.value.sats;
+                            let lnaddress = 'donate@hivetalk.org';
+    
+                            window.moduleFunctions
+                                .handleDonation(lnaddress, amount)
+                                .then((result) => {
+                                    console.log('handleDonationResult:', result);
+                                })
+                                .catch((error) => {
+                                    console.log('Error:', error);
+                                });
+                        }
+                    });
+                });
+            }
+        }
+    
+        // Run initializeElements when the DOM is fully loaded
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', initializeElements);
+        } else {
+            initializeElements();
+        }
+    })();
