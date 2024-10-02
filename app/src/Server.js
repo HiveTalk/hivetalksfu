@@ -902,6 +902,13 @@ function startServer() {
         // check if user was authorized for the api call
         const { host, authorization } = req.headers;
         const api = new ServerApi(host, authorization);
+        if (!api.isAuthorized()) {
+            log.debug('HiveTalk get meetings - Unauthorized', {
+                header: req.headers,
+                body: req.body,
+            });
+            return res.status(403).json({ error: 'Unauthorized!' });
+        }
         // Get meetings
         try {
             const meetings = api.getMeetings(roomList);
