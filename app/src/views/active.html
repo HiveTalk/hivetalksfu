@@ -1,0 +1,348 @@
+<!doctype html>
+<html lang="en" class="no-js">
+    <head>
+        <title><%= title %></title>
+
+        <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+        <script type="module">
+            import {
+                onConnected,
+                requestProvider,
+                launchPaymentModal,
+            } from 'https://esm.sh/@getalby/bitcoin-connect@3.5.1';
+            import { LightningAddress } from 'https://esm.sh/@getalby/lightning-tools@5.0.0';
+
+            onConnected((provider) => {
+                window.webln = provider;
+            });
+
+            window.moduleFunctions = {
+                handleDonation: async (address, amount) => {
+                    return new Promise(async (resolve, reject) => {
+                        console.log('handleDonation called with LN: ' + address + ' amount: ' + amount);
+
+                        if (!address || !amount) {
+                            alert('Please fill in both Lightning Address and Amount.');
+                            reject('Missing address or amount');
+                            return;
+                        }
+                        const ln = new LightningAddress(address);
+                        await ln.fetch();
+                        const invoice = await ln.requestInvoice({ satoshi: amount });
+                        let checkPaymentInterval;
+                        const { setPaid } = launchPaymentModal({
+                            invoice: invoice.paymentRequest,
+                            onPaid: ({ preimage }) => {
+                                clearInterval(checkPaymentInterval);
+                                // todo make alert pretty
+                                alert(
+                                    'Lightning sent to:  ' +
+                                        address +
+                                        ' amount: ' +
+                                        amount +
+                                        ' sats \n\n ' +
+                                        'preimage: ' +
+                                        preimage,
+                                );
+                                let result = ' zapped ' + address + ' ' + amount + ' sats';
+                                // console.log(result);
+                                resolve(result); // Resolve the promise with the result string
+                            },
+                            onCancelled: () => {
+                                clearInterval(checkPaymentInterval); // Clear the interval on cancel
+                                // todo: make alert pretty
+                                alert('Payment cancelled');
+                                reject('Payment cancelled');
+                            },
+                        });
+
+                        checkPaymentInterval = setInterval(async () => {
+                            try {
+                                const paid = await invoice.verifyPayment();
+                                if (paid && invoice.preimage) {
+                                    setPaid({
+                                        preimage: invoice.preimage,
+                                    });
+                                }
+                            } catch (error) {
+                                console.log('waiting inside check payment interval....');
+                                // console.error(error);
+                            }
+                        }, 1000);
+                    });
+                },
+            };
+        </script>
+
+        <!-- Title and Icon -->
+
+        <title id="title">HiveTalk, Video Calls, Messaging and Screen Sharing</title>
+        <link id="icon" rel="shortcut icon" href="../images/logo.svg" />
+        <link id="appleTouchIcon" rel="apple-touch-icon" href="../images/logo200x200.png" />
+        <link rel="apple-touch-icon" sizes="180x180" href="../images/logo200x200.png">
+
+        <!-- Meta Information -->
+
+        <meta charset="utf-8" />
+        <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
+        <meta
+            id="description"
+            name="description"
+            content="HiveTalk powered by WebRTC and mediasoup, Real-time Simple Secure Fast video calls, messaging and screen sharing capabilities in the browser."
+        />
+        <meta
+            id="keywords"
+            name="keywords"
+            content="webrtc, miro, mediasoup, mediasoup-client, self hosted, voip, sip, real-time communications, chat, messaging, meet, webrtc stun, webrtc turn, webrtc p2p, webrtc sfu, video meeting, video chat, video conference, multi video chat, multi video conference, peer to peer, p2p, sfu, rtc, alternative to, zoom, microsoft teams, google meet, jitsi, meeting"
+        />
+
+        <!-- https://ogp.me -->
+
+        <meta id="ogType" property="og:type" content="app-webrtc" />
+        <meta id="ogSiteName" property="og:site_name" content="HiveTalk" />
+        <meta id="ogTitle" property="og:title" content="Click the link to make a call." />
+        <meta
+            id="ogDescription"
+            property="og:description"
+            content="HiveTalk calling provides real-time video calls, messaging and screen sharing."
+        />
+        <meta id="ogImage" property="og:image" content="https://hivetalk.org/images/hivetalk.png" />
+        <meta id="ogUrl" property="og:url" content="https://hivetalk.org" />
+
+        <!-- StyleSheet -->
+
+        <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.1.1/css/all.min.css" />
+        <link rel="stylesheet" type="text/css" href="../css/landing.css" />
+
+        <!-- Snow effects -->
+
+        <link rel="stylesheet" href="../css/Snow.css" />
+        <script async src="../js/Snow.js"></script>
+
+        <!-- Js scripts -->
+        <script defer src="../js/Brand.js"></script>
+        <script async src="../js/Umami.js"></script>
+
+        <script src="https://unpkg.com/animejs@3.0.1/lib/anime.min.js"></script>
+        <script src="https://unpkg.com/scrollreveal@4.0.0/dist/scrollreveal.min.js"></script>
+        <script src="https://cdn.jsdelivr.net/npm/xss/dist/xss.min.js"></script>
+        <script src="https://unpkg.com/nostr-tools/lib/nostr.bundle.js"></script>
+        <script
+            src="https://www.unpkg.com/nostr-login@latest/dist/unpkg.js"
+            data-methods="extension,connect"
+            data-perms="sign_event:1,sign_event:0,nip04_encrypt"
+            data-theme="default"
+            data-dark-mode="true"
+        ></script>
+    </head>
+    <body class="is-boxed has-animations">
+        <div id="snow-container"></div>
+        <div class="body-wrap">
+            <header class="site-header">
+                <div class="container">
+                    <div class="site-header-inner">
+                        <div class="brand header-brand">
+                            <div class="m-0">
+                                <a href="/">
+                                    <img
+                                        class="header-logo-image"
+                                        src="../images/logo.svg"
+                                        alt="mirotalksfu-webrtc-logo"
+                                    />
+                                    <!-- <img
+                                        class="header-logo-image reveal-from-left"
+                                        src="../images/mirotalk-mc.png"
+                                        alt="mirotalksfu-webrtc-logo"
+                                        width="96"
+                                        height="auto"
+                                    /> -->
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </header>
+
+            <main>
+                <section class="hero reveal-from-bottom">
+                    <div class="container">
+                        <div class="hero-inner">
+                            <div class="hero-copy">
+                                <h1 id="appTitle" class="hero-title mt-0">
+                                    HiveTalk <br />Free browser based Real-time video calls.<br />
+                                    Simple, Secure, Fast.
+                                </h1>
+                                <p id="appDescription" class="hero-paragraph">
+                                    Start your next video call with a single click. No download, plug-in, or login is
+                                    required. Just get straight to talking, messaging, and sharing your screen.
+                                </p>
+                            </div>
+                            <div class="hero-figure anime-element">
+                                <svg class="placeholder" width="528" height="396" viewBox="0 0 528 396">
+                                    <rect width="528" height="396" style="fill: transparent" />
+                                </svg>
+                                <div class="hero-figure-box" data-rotation="45deg"></div>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+                <section class="cta section">
+                    <div class="container">
+                        <div class="br-12">
+                            <h3 class="cta-inner mt-0" style="border-radius: 12px">
+                                <button class="button-donate button-wide-mobile pulse" id="zaplink">
+                                    ⚡️ Zap Hivetalk
+                                </button>                
+                            </h3>   
+                                <iframe src="https://zapgoalsvr.vercel.app/" class="mx-auto" style="width: 100%; height: 150px; border: none; border-radius: 12px "></iframe>
+                        </div>
+                    </div>
+                </section>
+                <section class="cta section">
+                    <div class="container">
+                        <div class="cta-inner section-inner br-12">
+                            <h3 class="section-title mt-0">
+                                Pick a room name.<br />
+                                How about this one?
+                            </h3>
+                            <div>
+                                <div class="mb-24">
+                                    <label for="roomName"></label>
+                                    <div class="form-group-desktop">
+                                        <input id="roomName" class="form-input" type="text" maxlength="36" value="" />
+                                        <button
+                                            id="genRoomButton"
+                                            class="button button-primary br-6 mr-8 mb-8 fas fa-arrows-rotate"
+                                        ></button>
+                                        <button id="joinRoomButton" class="button button-primary pulse">
+                                            Join Room
+                                        </button>
+                                    </div>
+                                </div>
+                                <div id="lastRoomContainer" class="last-room">
+                                    <span>Your recent room:</span>
+                                    <a id="lastRoom"></a>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+                <section class="cta section">
+                    <div class="features-wrap mb-24"><h2>Active Rooms</h2></div>
+                    <div class="features-wrap">
+                        <div id="meetingsContainer"></div>
+                    </div>
+                </section>
+
+                <section class="cta section mt-48"> 
+                    <div class="features-wrap mt-24">
+                        <a href="https://hivetalk.printify.me/" target="_blank">
+                            <img src="/images/shophivetalk.png" alt="Hive Shop" id="Shop" width="450"/>
+                        </a>    
+                    </div>
+                </section>
+
+                <!-- <section class="cta section">
+                    <div class="features-wrap"><h2> Scheduled Rooms </h2></div>
+                        <div class="features-wrap">
+                            <div id="scheduledContainer"></div>
+                        </div>
+                </section> -->
+
+                <br /><br />
+            </main>
+
+            <footer id="footer" class="site-footer">
+                <div class="container">
+                    <div class="site-footer-inner">
+                        <div class="brand footer-brand">
+                            <a href="/">
+                                <div class="form-group-desktop">
+                                    <img class="header-logo-image" src="../images/hivelogo50x200.svg" alt="Logo" />
+                                </div>
+                            </a>
+                        </div>
+                        <ul class="footer-links">
+                            <li><a href="/">Home</a></li>
+                            <li><a href="https://hivetalk.printify.me/products">Shop</a></li>
+                            <li><a href="/about">About</a></li>                            
+                            <li><a href="/support">Support</a></li>
+                        </ul>
+                        <ul class="footer-links">
+                            <li><a href="/privacy">Privacy</a></li>
+                            <li><a href="/faq">FAQ</a></li>
+                            <li><a href="https://status.hivetalk.org/">Status</a></li>
+                            <li><a href="/api/v1/docs/">API</a></li>
+                        </ul>
+                        <ul class="footer-social-links list-reset">
+                            <li>
+                                <a href="https://github.com/hivetalk" target="_blank" rel="noopener noreferrer">
+                                    <svg
+                                        xmlns="http://www.w3.org/2000/svg"
+                                        width="24"
+                                        height="24"
+                                        viewBox="0 0 24 24"
+                                        fill="currentColor"
+                                    >
+                                        <title>Github</title>
+                                        <path
+                                            d="M12 0c-6.626 0-12 5.373-12 12 0 5.302 3.438 9.8 8.207 11.387.599.111.793-.261.793-.577v-2.234c-3.338.726-4.033-1.416-4.033-1.416-.546-1.387-1.333-1.756-1.333-1.756-1.089-.745.083-.729.083-.729 1.205.084 1.839 1.237 1.839 1.237 1.07 1.834 2.807 1.304 3.492.997.107-.775.418-1.305.762-1.604-2.665-.305-5.467-1.334-5.467-5.931 0-1.311.469-2.381 1.236-3.221-.124-.303-.535-1.524.117-3.176 0 0 1.008-.322 3.301 1.23.957-.266 1.983-.399 3.003-.404 1.02.005 2.047.138 3.006.404 2.291-1.552 3.297-1.23 3.297-1.23.653 1.653.242 2.874.118 3.176.77.84 1.235 1.911 1.235 3.221 0 4.609-2.807 5.624-5.479 5.921.43.372.823 1.102.823 2.222v3.293c0 .319.192.694.801.576 4.765-1.589 8.199-6.086 8.199-11.386 0-6.627-5.373-12-12-12z"
+                                        />
+                                    </svg>
+                                </a>
+                            </li>
+                            <li>
+                                <a href="https://t.me/+2Ll1IFwXwCJlMGFl" target="_blank" rel="noopener noreferrer">
+                                    <svg
+                                        role="img"
+                                        viewBox="0 0 24 24"
+                                        xmlns="http://www.w3.org/2000/svg"
+                                        fill="currentColor"
+                                        width="24"
+                                        height="24"
+                                    >
+                                        <title>Telegram</title>
+                                        <path
+                                            d="M11.944 0A12 12 0 0 0 0 12a12 12 0 0 0 12 12 12 12 0 0 0 12-12A12 12 0 0 0 12 0a12 12 0 0 0-.056 0zm4.962 7.224c.1-.002.321.023.465.14a.506.506 0 0 1 .171.325c.016.093.036.306.02.472-.18 1.898-.962 6.502-1.36 8.627-.168.9-.499 1.201-.82 1.23-.696.065-1.225-.46-1.9-.902-1.056-.693-1.653-1.124-2.678-1.8-1.185-.78-.417-1.21.258-1.91.177-.184 3.247-2.977 3.307-3.23.007-.032.014-.15-.056-.212s-.174-.041-.249-.024c-.106.024-1.793 1.14-5.061 3.345-.48.33-.913.49-1.302.48-.428-.008-1.252-.241-1.865-.44-.752-.245-1.349-.374-1.297-.789.027-.216.325-.437.893-.663 3.498-1.524 5.83-2.529 6.998-3.014 3.332-1.386 4.025-1.627 4.476-1.635z"
+                                        />
+                                    </svg>
+                                </a>
+                            </li>
+                            <li>
+                                <a href="https://hivetalk.nostr1.com" target="_blank" rel="noopener noreferrer">
+                                    <img src="/images/relaygr.png" alt="nostr" width="24" height="24" />
+                                </a>
+                            </li>
+                            <li>
+                                <a
+                                    href="https://njump.me/npub18pudjhdhhp2v8gxnkttt00um729nv93tuepjda2jrwn3eua5tf5s80a699"
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                >
+                                    <img src="/images/nostrgr.png" alt="nostr" width="24" height="24" />
+                                </a>
+                            </li>
+                        </ul>
+                        <div class="footer-copyright">
+                            &copy; <%= currentYear %> HiveTalk, all rights reserved. 
+                            <br />
+                            Commit: b2c98604cca94e9ef40baa12da58bd269f72e278
+                            <div id="content-placeholder"><!-- Content will be inserted here --></div>
+                        </div>
+                    </div>
+                </div>
+            </footer>
+        </div>
+
+        <script defer src="../js/Landing.js"></script>
+        <script defer src="../js/Common.js"></script>
+        <script async defer src="https://buttons.github.io/buttons.js"></script>
+
+    </body>
+</html>
+
+
+

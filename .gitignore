@@ -21,3 +21,4 @@ docker-push.sh
 rec
 rtmp
 .aider*
+.env

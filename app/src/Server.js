@@ -60,6 +60,7 @@ dev dependencies: {
  */
 
 const express = require('express');
+const exphbs = require('express-handlebars');
 const { auth, requiresAuth } = require('express-openid-connect');
 const cors = require('cors');
 const compression = require('compression');
@@ -111,6 +112,16 @@ const slackSigningSecret = config.slack.signingSecret;
 const bodyParser = require('body-parser');
 
 const app = express();
+
+const hbs = exphbs.create({
+    extname: '.handlebars',
+    // Helpers can be used in both .html and .handlebars files
+    helpers: {
+        formatDate: function(date) {
+            return new Date(date).toLocaleDateString();
+        }
+    }
+});
 
 const options = {
     cert: fs.readFileSync(path.join(__dirname, config.server.ssl.cert), 'utf-8'),
@@ -329,6 +340,35 @@ function startServer() {
     // IP Whitelist check ...
     app.use(restrictAccessByIP);
 
+    app.engine('handlebars', hbs.engine);
+    app.set('view engine', 'handlebars');
+
+    // Configure HTML template engine
+    app.engine('html', require('ejs').renderFile);
+
+    // Important: Set the views directory
+    app.set('views', path.join(__dirname, 'views'));
+
+    // Middleware to handle both .html and .handlebars templates
+    app.use((req, res, next) => {
+        // Extend res.render to try both .html and .handlebars
+        const originalRender = res.render;
+        res.render = function(view, locals, callback) {
+            // Try .handlebars first
+            originalRender.call(this, view + '.handlebars', locals, (err, html) => {
+                if (!err) {
+                    return callback ? callback(null, html) : this.send(html);
+                }
+                // If .handlebars fails, try .html
+                originalRender.call(this, view + '.html', locals, callback || ((err, html) => {
+                    if (err) return next(err);
+                    this.send(html);
+                }));
+            });
+        };
+        next();
+    });
+
     // Logs requests
     /*
     app.use((req, res, next) => {
@@ -379,6 +419,14 @@ function startServer() {
             process.exit(1);
         }
     }
+
+    app.get('/active', (req, res) => {
+        res.render('active', {
+            title: 'Active Rooms',
+            currentYear: new Date().getFullYear()
+        });
+    });
+    
 
     // Route to display user information
     app.get('/profile', OIDCAuth, (req, res) => {
