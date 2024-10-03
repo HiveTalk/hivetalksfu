@@ -60,6 +60,7 @@ dev dependencies: {
  */
 
 const express = require('express');
+const exphbs = require('express-handlebars');
 const { auth, requiresAuth } = require('express-openid-connect');
 const cors = require('cors');
 const compression = require('compression');
@@ -111,6 +112,19 @@ const slackSigningSecret = config.slack.signingSecret;
 const bodyParser = require('body-parser');
 
 const app = express();
+
+const hbs = exphbs.create({
+    extname: '.handlebars',
+    // Helpers can be used in both .html and .handlebars files
+    helpers: {
+        formatDate: function(date) {
+            return new Date(date).toLocaleDateString();
+        },
+        json: function(context) {
+            return JSON.stringify(context);
+        }
+    }
+});
 
 const options = {
     cert: fs.readFileSync(path.join(__dirname, config.server.ssl.cert), 'utf-8'),
@@ -316,6 +330,26 @@ function OIDCAuth(req, res, next) {
     }
 }
 
+function getMeetCount(roomList) {
+    // Check if roomList is empty
+    if (roomList.size === 0) {
+        return [];  // Return an empty array if there are no rooms
+    }
+    const meetings = Array.from(roomList.entries()).map(([id, room]) => {
+        // hide room if locked
+        if (!room._isLocked) {
+            const peerCount = room.peers.size; // Use .size instead of converting to array
+            return {
+              roomId: id,
+              peerCount: peerCount, // Changed from 'peers' to 'peerCount'
+   
+            }}
+        });
+
+    return meetings;
+}
+
+
 function startServer() {
     // Start the app
     app.use(cors(corsOptions));
@@ -328,6 +362,35 @@ function startServer() {
 
     // IP Whitelist check ...
     app.use(restrictAccessByIP);
+
+    app.engine('handlebars', hbs.engine);
+    app.set('view engine', 'handlebars');
+
+    // Configure HTML template engine
+    app.engine('html', require('ejs').renderFile);
+
+    // Important: Set the views directory
+    app.set('views', path.join(__dirname, 'views'));
+
+    // Middleware to handle both .html and .handlebars templates
+    app.use((req, res, next) => {
+        // Extend res.render to try both .html and .handlebars
+        const originalRender = res.render;
+        res.render = function(view, locals, callback) {
+            // Try .handlebars first
+            originalRender.call(this, view + '.handlebars', locals, (err, html) => {
+                if (!err) {
+                    return callback ? callback(null, html) : this.send(html);
+                }
+                // If .handlebars fails, try .html
+                originalRender.call(this, view + '.html', locals, callback || ((err, html) => {
+                    if (err) return next(err);
+                    this.send(html);
+                }));
+            });
+        };
+        next();
+    });
 
     // Logs requests
     /*
@@ -380,6 +443,33 @@ function startServer() {
         }
     }
 
+    app.get('/active', (req, res) => {
+        let meetings = getMeetCount(roomList);
+        // console.log(meetings)
+        let activeHtml = fs.readFileSync(path.join(__dirname, '../../', 'public/views/active.html'), 'utf8');    
+        
+        const dynamicContent = {
+            currentYear: new Date().getFullYear(), 
+            rooms: meetings,           
+        }
+        activeHtml = activeHtml.replace('{{currentYear}}', dynamicContent.currentYear);
+
+        // Create HTML for room data matching the client-side structure
+        const roomsHtml = dynamicContent.rooms.map(room => `
+            <a href="/join/${room.roomId}" target="_blank">
+                <div class="feature text-center button-like">
+                    <h4 class="room-id">Room ID: ${room.roomId}</h4>
+                    <b class="peers">Bees: ${room.peerCount}</b>
+                </div>
+            </a>
+        `).join('');
+
+        // Replace room data placeholder
+        activeHtml = activeHtml.replace('{{activeMeetings}}', roomsHtml);
+        res.send(activeHtml);
+    });
+    
+
     // Route to display user information
     app.get('/profile', OIDCAuth, (req, res) => {
         if (OIDC.enabled) {
@@ -431,14 +521,16 @@ function startServer() {
         if ((!OIDC.enabled && hostCfg.protected && !hostCfg.authenticated) || authHost.isRoomActive()) {
             const ip = getIP(req);
             if (allowedIP(ip)) {
-                res.sendFile(views.landing);
+                //res.sendFile(views.landing);
                 hostCfg.authenticated = true;
+                res.redirect('/active');
             } else {
                 hostCfg.authenticated = false;
                 res.sendFile(views.login);
             }
         } else {
-            res.sendFile(views.landing);
+            res.redirect('/active');
+            //res.sendFile(views.landing);
         }
     });
 
@@ -518,7 +610,7 @@ function startServer() {
                     log.error('Direct Join JWT error', { error: err.message, token: token });
                     return hostCfg.protected || hostCfg.user_auth
                         ? res.sendFile(views.login)
-                        : res.sendFile(views.landing);
+                        : res.sendFile(views.newRoom);
                 }
             } else {
                 const allowRoomAccess = isAllowedRoomAccess('/join/params', req, hostCfg, authHost, roomList, room);
@@ -632,7 +724,7 @@ function startServer() {
     app.get(['/logged'], (req, res) => {
         const ip = getIP(req);
         if (allowedIP(ip)) {
-            res.sendFile(views.landing);
+            res.sendFile(views.newRoom);
             hostCfg.authenticated = true;
         } else {
             hostCfg.authenticated = false;
