@@ -1,8 +1,6 @@
 <!doctype html>
 <html lang="en" class="no-js">
     <head>
-        <title><%= title %></title>
-
         <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
         <script type="module">
             import {
@@ -232,11 +230,13 @@
 
                 <section class="cta section">
                     <div class="features-wrap mb-24"><h2>Active Rooms</h2></div>
-                    <div class="features-wrap">
-                        <div id="meetingsContainer"></div>
+                    <div class="features-wrap">                          
+                        <div id="meetingsContainer">
+                            {{activeMeetings}}                    
+                        </div>
                     </div>
                 </section>
-
+                
                 <section class="cta section mt-48"> 
                     <div class="features-wrap mt-24">
                         <a href="https://hivetalk.printify.me/" target="_blank">
@@ -327,7 +327,7 @@
                             </li>
                         </ul>
                         <div class="footer-copyright">
-                            &copy; <%= currentYear %> HiveTalk, all rights reserved. 
+                            &copy; {{currentYear}} HiveTalk, all rights reserved. 
                             <br />
                             Commit: b2c98604cca94e9ef40baa12da58bd269f72e278
                             <div id="content-placeholder"><!-- Content will be inserted here --></div>

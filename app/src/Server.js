@@ -119,6 +119,9 @@ const hbs = exphbs.create({
     helpers: {
         formatDate: function(date) {
             return new Date(date).toLocaleDateString();
+        },
+        json: function(context) {
+            return JSON.stringify(context);
         }
     }
 });
@@ -327,6 +330,26 @@ function OIDCAuth(req, res, next) {
     }
 }
 
+function getMeetCount(roomList) {
+    // Check if roomList is empty
+    if (roomList.size === 0) {
+        return [];  // Return an empty array if there are no rooms
+    }
+    const meetings = Array.from(roomList.entries()).map(([id, room]) => {
+        // hide room if locked
+        if (!room._isLocked) {
+            const peerCount = room.peers.size; // Use .size instead of converting to array
+            return {
+              roomId: id,
+              peerCount: peerCount, // Changed from 'peers' to 'peerCount'
+   
+            }}
+        });
+
+    return meetings;
+}
+
+
 function startServer() {
     // Start the app
     app.use(cors(corsOptions));
@@ -421,10 +444,30 @@ function startServer() {
     }
 
     app.get('/active', (req, res) => {
-        res.render('active', {
-            title: 'Active Rooms',
-            currentYear: new Date().getFullYear()
-        });
+        let meetings = getMeetCount(roomList);
+        console.log("activerooms: ")
+        console.log(meetings)
+        let activeHtml = fs.readFileSync(path.join(__dirname, '../../', 'public/views/active.html'), 'utf8');    
+        
+        const dynamicContent = {
+            currentYear: new Date().getFullYear(), 
+            rooms: meetings,           
+        }
+        activeHtml = activeHtml.replace('{{currentYear}}', dynamicContent.currentYear);
+
+        // Create HTML for room data matching the client-side structure
+        const roomsHtml = dynamicContent.rooms.map(room => `
+            <a href="/join/${room.roomId}" target="_blank">
+                <div class="feature text-center button-like">
+                    <h4 class="room-id">Room ID: ${room.roomId}</h4>
+                    <b class="peers">Bees: ${room.peerCount}</b>
+                </div>
+            </a>
+        `).join('');
+
+        // Replace room data placeholder
+        activeHtml = activeHtml.replace('{{activeMeetings}}', roomsHtml);
+        res.send(activeHtml);
     });
     
 
@@ -479,14 +522,16 @@ function startServer() {
         if ((!OIDC.enabled && hostCfg.protected && !hostCfg.authenticated) || authHost.isRoomActive()) {
             const ip = getIP(req);
             if (allowedIP(ip)) {
-                res.sendFile(views.landing);
+                //res.sendFile(views.landing);
                 hostCfg.authenticated = true;
+                res.redirect('/active');
             } else {
                 hostCfg.authenticated = false;
                 res.sendFile(views.login);
             }
         } else {
-            res.sendFile(views.landing);
+            res.redirect('/active');
+            //res.sendFile(views.landing);
         }
     });
 
@@ -566,7 +611,7 @@ function startServer() {
                     log.error('Direct Join JWT error', { error: err.message, token: token });
                     return hostCfg.protected || hostCfg.user_auth
                         ? res.sendFile(views.login)
-                        : res.sendFile(views.landing);
+                        : res.sendFile(views.newRoom);
                 }
             } else {
                 const allowRoomAccess = isAllowedRoomAccess('/join/params', req, hostCfg, authHost, roomList, room);
@@ -680,7 +725,7 @@ function startServer() {
     app.get(['/logged'], (req, res) => {
         const ip = getIP(req);
         if (allowedIP(ip)) {
-            res.sendFile(views.landing);
+            res.sendFile(views.newRoom);
             hostCfg.authenticated = true;
         } else {
             hostCfg.authenticated = false;
