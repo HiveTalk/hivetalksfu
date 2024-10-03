@@ -445,8 +445,7 @@ function startServer() {
 
     app.get('/active', (req, res) => {
         let meetings = getMeetCount(roomList);
-        console.log("activerooms: ")
-        console.log(meetings)
+        // console.log(meetings)
         let activeHtml = fs.readFileSync(path.join(__dirname, '../../', 'public/views/active.html'), 'utf8');    
         
         const dynamicContent = {
