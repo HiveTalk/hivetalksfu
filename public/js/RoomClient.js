@@ -4649,7 +4649,7 @@ class RoomClient {
             : `<span class="message-data-time">${time}, ${getFromName} </span>`;
 
         const formatMessage = this.formatMsg(getMsg);
-        console.log('FormatMessage', formatMessage);
+        // console.log('FormatMessage', formatMessage);
         const speechButton = this.isSpeechSynthesisSupported
             ? `<button 
                     id="msg-speech-${chatMessagesId}" 
@@ -4771,7 +4771,7 @@ class RoomClient {
             return this.getPre(message);
         }
         if (this.getLineBreaks(message) > 1) return this.getPre(message);
-        console.log('FormatMsg', message);
+        // log.debug('FormatMsg', message);
         return message;
     }
 

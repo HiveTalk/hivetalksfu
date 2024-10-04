@@ -2264,8 +2264,8 @@ function startServer() {
                 });
                 return;
             }
-
-            log.info('message', data);
+            // add link check here
+            log.info('sent message', data);
 
             data.to_peer_id == 'all'
                 ? room.broadCast(socket.id, 'message', data)
