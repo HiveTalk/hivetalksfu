@@ -4406,6 +4406,18 @@ class RoomClient {
         }
     }
 
+    wrapLongStrings(message) {
+        const words = message.split(' ');
+        const wrappedWords = words.map(word => {
+            // Check if the word starts with 'npub' and is longer than a certain length
+            if (word.startsWith('npub') && word.length > 30) {
+                return `"${word}"`;
+            }
+            return word;
+        });
+        return wrappedWords.join(' ');
+    }    
+
     sendMessage() {
         // comment out for testing,  allow send if no participants
         // if (!this.thereAreParticipants() && !isChatGPTOn) {
@@ -4449,12 +4461,13 @@ class RoomClient {
         this.chatMessageTimeLast = currentTime;
 
         chatMessage.value = filterXSS(chatMessage.value.trim());
-        const peer_msg = this.formatMsg(chatMessage.value);
+        const wrappedMessage = this.wrapLongStrings(chatMessage.value);
+        const peer_msg = this.formatMsg(wrappedMessage);
         if (!peer_msg) {
             return this.cleanMessage();
         }
         this.peer_name = filterXSS(this.peer_name);
-
+    
         const data = {
             room_id: this.room_id,
             peer_name: this.peer_name,
@@ -4463,7 +4476,7 @@ class RoomClient {
             to_peer_name: 'ChatGPT',
             peer_msg: peer_msg,
         };
-
+        
         if (isChatGPTOn) {
             console.log('Send message:', data);
             this.socket.emit('message', data);
