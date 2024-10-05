@@ -4475,12 +4475,13 @@ class RoomClient {
             to_peer_id: 'ChatGPT',
             to_peer_name: 'ChatGPT',
             peer_msg: peer_msg,
+            peer_info: this.peer_info,
         };
         
         if (isChatGPTOn) {
             console.log('Send message:', data);
             this.socket.emit('message', data);
-            this.setMsgAvatar('left', this.peer_name);
+            this.setMsgAvatar('left', this.peer_name, this.peer_info);
             this.appendMessage(
                 'left',
                 this.leftMsgAvatar,
@@ -4489,6 +4490,7 @@ class RoomClient {
                 peer_msg,
                 data.to_peer_id,
                 data.to_peer_name,
+                this.peer_info,
             );
             this.cleanMessage();
 
@@ -4537,6 +4539,7 @@ class RoomClient {
                         peer_msg,
                         data.to_peer_id,
                         data.to_peer_name,
+                        this.peer_info,
                     );
                     this.cleanMessage();
                 }
@@ -4587,6 +4590,7 @@ class RoomClient {
                     peer_msg,
                     to_peer_id,
                     toPeerName,
+                    data.to_peer_name,
                 );
                 if (!this.isChatOpen) this.toggleChat();
             }
@@ -4595,7 +4599,7 @@ class RoomClient {
 
     async showMessage(data) {
         if (!this.isChatOpen && this.showChatOnMessage) await this.toggleChat();
-        this.setMsgAvatar('right', data.peer_name);
+        this.setMsgAvatar('right', data.peer_name, data.peer_info);
         this.appendMessage(
             'right',
             this.rightMsgAvatar,
@@ -4604,6 +4608,7 @@ class RoomClient {
             data.peer_msg,
             data.to_peer_id,
             data.to_peer_name,
+            data.peer_info,
         );
         if (!this.showChatOnMessage) {
             this.userLog('info', `💬 New message from: ${data.peer_name}`, 'top-end');
@@ -4643,7 +4648,7 @@ class RoomClient {
         avatar === 'left' ? (this.leftMsgAvatar = avatarImg) : (this.rightMsgAvatar = avatarImg);
     }
 
-    appendMessage(side, img, fromName, fromId, msg, toId, toName) {
+    appendMessage(side, img, fromName, fromId, msg, toId, toName, peerInfo) {
         //
         const getSide = filterXSS(side);
         const getImg = filterXSS(img);
@@ -4672,9 +4677,11 @@ class RoomClient {
                 </button>`
             : '';
 
+        const avatarImg = peerInfo && peerInfo.peer_url ? peerInfo.peer_url : img;
+
         const positionFirst = myMessage
-            ? `<img src="${getImg}" alt="avatar" />${timeAndName}`
-            : `${timeAndName}<img src="${getImg}" alt="avatar" />`;
+            ? `<img src="${avatarImg}" alt="avatar" />${timeAndName}`
+            : `${timeAndName}<img src="${avatarImg}" alt="avatar" />`;
 
         const message = getFromName === 'ChatGPT' ? `<pre>${getMsg}</pre>` : getMsg;
 
