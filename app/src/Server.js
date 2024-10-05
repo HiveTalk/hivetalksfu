@@ -444,31 +444,40 @@ function startServer() {
     }
 
     app.get('/active', (req, res) => {
-        let meetings = getMeetCount(roomList);
-        // console.log(meetings)
+        let currentYear = new Date().getFullYear()
         let activeHtml = fs.readFileSync(path.join(__dirname, '../../', 'public/views/active.html'), 'utf8');    
-        
-        const dynamicContent = {
-            currentYear: new Date().getFullYear(), 
-            rooms: meetings,           
+        activeHtml = activeHtml.replace('{{currentYear}}', currentYear);
+        let roomsHtml = '0';
+        try  {
+            let meetings = getMeetCount(roomList);
+            //console.log("meetings", meetings)
+            //console.log("meetings length", meetings.length)
+
+            if (meetings?.length) {
+                // Create HTML for room data matching the client-side structure
+                // console.log("meetings available")
+                roomsHtml = meetings.map(room => `                    
+                    <a href="/join/${room.roomId}" target="_blank">
+                        <div class="feature text-center button-like">
+                            <h4 class="room-id">Room ID: ${room.roomId}</h4>
+                            <b class="peers">Bees: ${room.peerCount}</b>
+                        </div>
+                    </a>
+                `).join('');
+                // console.log("roomsHtml", roomsHtml)
+                // Replace room data placeholder
+                activeHtml = activeHtml.replace('{{activeMeetings}}', roomsHtml);
+            }
+            else { 
+                activeHtml = activeHtml.replace('{{activeMeetings}}', '');                
+            }
+            res.send(activeHtml);
+        } catch (err) {
+            console.log("error in active meetings", err)
+            res.send(activeHtml);       
         }
-        activeHtml = activeHtml.replace('{{currentYear}}', dynamicContent.currentYear);
-
-        // Create HTML for room data matching the client-side structure
-        const roomsHtml = dynamicContent.rooms.map(room => `
-            <a href="/join/${room.roomId}" target="_blank">
-                <div class="feature text-center button-like">
-                    <h4 class="room-id">Room ID: ${room.roomId}</h4>
-                    <b class="peers">Bees: ${room.peerCount}</b>
-                </div>
-            </a>
-        `).join('');
-
-        // Replace room data placeholder
-        activeHtml = activeHtml.replace('{{activeMeetings}}', roomsHtml);
-        res.send(activeHtml);
     });
-    
+
 
     // Route to display user information
     app.get('/profile', OIDCAuth, (req, res) => {
