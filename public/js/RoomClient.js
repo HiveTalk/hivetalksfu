@@ -4407,16 +4407,41 @@ class RoomClient {
     }
 
     wrapLongStrings(message) {
-        const words = message.split(' ');
-        const wrappedWords = words.map(word => {
-            // Check if the word starts with 'npub' and is longer than a certain length
-            if (word.startsWith('npub') && word.length > 30) {
-                return `"${word}"`;
-            }
-            return word;
-        });
-        return wrappedWords.join(' ');
-    }    
+        const allowedPrefixes = ['npub', 'nprofile', 'note', 'nevent', 'nrelay', 'naddr',]; // You can add more prefixes here
+    
+        try {
+            const words = message.split(' ');
+            const wrappedWords = words.map(word => {
+                            // Ignore words that start with 'https'
+                if (word.startsWith('https')) {
+                    return word; // Ignore this word, return it as is
+                }
+
+                // Check if the word starts with any of the allowed prefixes
+                const hasPrefix = allowedPrefixes.some(prefix => word.startsWith(prefix));
+    
+                if (hasPrefix && word.length > 30) {
+                    // If it has a prefix and is longer than 30, wrap it in quotes
+                    return `"${word}"`;
+                } else if (!hasPrefix && word.length > 30) {
+                    // If it doesn't have a prefix and is longer than 30, alert and stop processing
+                    alert(`The entered text "${word}" is too long and cannot be processed for security reasons.`);
+                    throw new Error(`Text "${word}" exceeds allowed length without a valid prefix.`);
+                }
+    
+                // Return the word unmodified if none of the above conditions are met
+                return word;
+            });
+    
+            // Join the modified words back into a string and return
+            return wrappedWords.join(' ');
+    
+        } catch (error) {
+            console.error('An error occurred: ', error.message);
+            return null; // or you can return a different message if needed
+        }
+    }
+    
 
     sendMessage() {
         // comment out for testing,  allow send if no participants
@@ -7315,10 +7340,35 @@ class RoomClient {
         if (inputPv && audioConsumerPlayer) {
             inputPv.style.display = 'inline';
             inputPv.value = 100;
-            // Not work on Mobile?
-            inputPv.addEventListener('input', () => {
-                audioConsumerPlayer.volume = inputPv.value / 100;
-            });
+            
+            const updateVolume = () => {
+                const volume = inputPv.value / 100;
+                this.setAudioVolume(audioConsumerPlayer, volume);
+            };
+        
+            inputPv.addEventListener('input', updateVolume);
+            inputPv.addEventListener('change', updateVolume);
+            
+            if (this.isMobileDevice) {
+                inputPv.addEventListener('touchstart', updateVolume);
+                inputPv.addEventListener('touchmove', updateVolume);
+            }
+        }
+    }
+
+    setAudioVolume(audioConsumerPlayer, volume) {
+        if (audioConsumerPlayer) {
+            if (this.isMobileDevice) {
+                // On mobile, we'll use a different approach
+                audioConsumerPlayer.muted = volume === 0;
+                if (!audioConsumerPlayer.muted) {
+                    // We can only set volume to 1 on mobile, so we'll adjust playback rate instead
+                    audioConsumerPlayer.playbackRate = Math.max(0.1, volume);
+                }
+            } else {
+                // On desktop, we can directly set the volume
+                audioConsumerPlayer.volume = volume;
+            }
         }
     }
 
