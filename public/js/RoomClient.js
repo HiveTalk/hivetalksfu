@@ -4555,7 +4555,7 @@ class RoomClient {
                     data.to_peer_name = li.getAttribute('data-to-name');
                     console.log('Send message:', data);
                     this.socket.emit('message', data);
-                    this.setMsgAvatar('left', this.peer_name);
+                    this.setMsgAvatar('left', this.peer_name, this.peer_info);
                     this.appendMessage(
                         'left',
                         this.leftMsgAvatar,
@@ -4606,7 +4606,7 @@ class RoomClient {
                 };
                 console.log('Send message:', data);
                 this.socket.emit('message', data);
-                this.setMsgAvatar('left', this.peer_name);
+                this.setMsgAvatar('left', this.peer_name, this.peer_info);
                 this.appendMessage(
                     'left',
                     this.leftMsgAvatar,
@@ -4661,18 +4661,47 @@ class RoomClient {
         }
     }
 
-    setMsgAvatar(avatar, peerName) {
-        let avatarImg = rc.isValidEmail(peerName) ? this.genGravatar(peerName) : this.genAvatarSvg(peerName, 32);
-        // this line below doesn't work
-        //  avatarImg = peer_url ? peer_url : this.genAvatarSvg(peerName, 32);
-        // isValidLightningAddress(peerName).then(isValid => {
-        //     if (isValid) {
-        //         avatarImg = boltavatar;
-        //     }
-        // });
-        avatar === 'left' ? (this.leftMsgAvatar = avatarImg) : (this.rightMsgAvatar = avatarImg);
+    setMsgAvatar(avatar, peerName, peerInfo) {
+        let avatarImg;
+        
+        // Log the input parameters to see what values are passed in
+        console.log("Function setMsgAvatar called with:", { avatar, peerName, peerInfo });
+    
+        if (peerInfo && peerInfo.peer_url) {
+            // Use the avatar URL from peerInfo
+            console.log("peerInfo is available and contains a peer_url:", peerInfo.peer_url);
+            avatarImg = peerInfo.peer_url;
+        } else if (rc.isValidEmail(peerName)) {
+            // Use Gravatar if peerName is an email
+            console.log("peerName is a valid email:", peerName);
+            avatarImg = this.genGravatar(peerName);
+            console.log("Generated Gravatar URL:", avatarImg);
+        } else {
+            // Generate an avatar SVG based on peerName
+            console.log("peerName is not an email, generating avatar SVG for:", peerName);
+            avatarImg = this.genAvatarSvg(peerName, 32);
+            console.log("Generated avatar SVG:", avatarImg);
+        }
+        
+        // Log the avatar side to be set (left or right)
+        console.log("Setting avatar for side:", avatar);
+    
+        // Set the avatar image for the appropriate side
+        if (avatar === 'left') {
+            console.log("Setting leftMsgAvatar to:", avatarImg);
+            this.leftMsgAvatar = avatarImg;
+        } else {
+            console.log("Setting rightMsgAvatar to:", avatarImg);
+            this.rightMsgAvatar = avatarImg;
+        }
+    
+        // Final check for debugging
+        console.log("Avatar set successfully. Current state:", {
+            leftMsgAvatar: this.leftMsgAvatar,
+            rightMsgAvatar: this.rightMsgAvatar
+        });
     }
-
+    
     appendMessage(side, img, fromName, fromId, msg, toId, toName, peerInfo) {
         //
         const getSide = filterXSS(side);
