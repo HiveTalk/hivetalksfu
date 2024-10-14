@@ -4555,7 +4555,7 @@ class RoomClient {
                     data.to_peer_name = li.getAttribute('data-to-name');
                     console.log('Send message:', data);
                     this.socket.emit('message', data);
-                    this.setMsgAvatar('left', this.peer_name);
+                    this.setMsgAvatar('left', this.peer_name, this.peer_info);
                     this.appendMessage(
                         'left',
                         this.leftMsgAvatar,
@@ -4606,7 +4606,7 @@ class RoomClient {
                 };
                 console.log('Send message:', data);
                 this.socket.emit('message', data);
-                this.setMsgAvatar('left', this.peer_name);
+                this.setMsgAvatar('left', this.peer_name, this.peer_info);
                 this.appendMessage(
                     'left',
                     this.leftMsgAvatar,
@@ -4661,18 +4661,28 @@ class RoomClient {
         }
     }
 
-    setMsgAvatar(avatar, peerName) {
-        let avatarImg = rc.isValidEmail(peerName) ? this.genGravatar(peerName) : this.genAvatarSvg(peerName, 32);
-        // this line below doesn't work
-        //  avatarImg = peer_url ? peer_url : this.genAvatarSvg(peerName, 32);
-        // isValidLightningAddress(peerName).then(isValid => {
-        //     if (isValid) {
-        //         avatarImg = boltavatar;
-        //     }
-        // });
-        avatar === 'left' ? (this.leftMsgAvatar = avatarImg) : (this.rightMsgAvatar = avatarImg);
+    setMsgAvatar(avatar, peerName, peerInfo) {
+        let avatarImg;
+    
+        if (peerInfo && peerInfo.peer_url) {
+            // Use the avatar URL from peerInfo
+            avatarImg = peerInfo.peer_url;
+        } else if (rc.isValidEmail(peerName)) {
+            // Use Gravatar if peerName is an email
+            avatarImg = this.genGravatar(peerName);
+        } else {
+            // Generate an avatar SVG based on peerName
+            avatarImg = this.genAvatarSvg(peerName, 32);
+        }
+    
+        // Set the avatar image for the appropriate side
+        if (avatar === 'left') {
+            this.leftMsgAvatar = avatarImg;
+        } else {
+            this.rightMsgAvatar = avatarImg;
+        }
     }
-
+        
     appendMessage(side, img, fromName, fromId, msg, toId, toName, peerInfo) {
         //
         const getSide = filterXSS(side);
