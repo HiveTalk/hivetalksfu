@@ -24,8 +24,8 @@ loginBtn.onclick = (e) => {
 };
 
 function login() {
-    const username = filterXSS(document.getElementById('username').value);
-    const password = filterXSS(document.getElementById('password').value);
+    //const username = filterXSS(document.getElementById('username').value);
+    //const password = filterXSS(document.getElementById('password').value);
 
     // http://localhost:3010/join/?room=test
     // http://localhost:3010/join/?room=test&roomPassword=0&name=mirotalksfu&audio=0&video=0&screen=0&notify=0
@@ -38,11 +38,33 @@ function login() {
     const pathParts = window.location.pathname.split('/');
     const roomPath = pathParts[pathParts.length - 1];
 
-    if (username && password) {
+    let event = null;
+    let signedEvent = null;
+    const asyncKeyWrangler = async () => {
+        const publicKey = await window.nostr.getPublicKey();
+        event = {
+            kind: 27235,
+            pubkey: publicKey,
+            created_at: Math.floor(Date.now() / 1000),
+            content: "hivelogin",
+            tags: [],
+        };
+        // Request the nos2x extension to sign the event
+        signedEvent = await window.nostr.signEvent(event);
+        return signedEvent;
+    }
+
+    asyncKeyWrangler().then((signedEvent) => {
+
+    if (signedEvent) {
         axios
             .post('/login', {
-                username: username,
-                password: password,
+                id: signedEvent.id,
+                kind: signedEvent.kind,
+                pubkey: signedEvent.pubkey,
+                content: signedEvent.content,
+                created_at: signedEvent.created_at,
+                sig: signedEvent.sig,
             })
             .then(function (response) {
                 console.log(response);
@@ -52,12 +74,12 @@ function login() {
                 window.sessionStorage.peer_token = token;
 
                 if (room) {
-                    return (window.location.href = '/join/' + window.location.search);
-                    // return (window.location.href = '/join/?room=' + room + '&token=' + token);
+                    //return (window.location.href = '/join/' + window.location.search);
+                    return (window.location.href = '/join/?room=' + room + '&token=' + token);
                 }
                 if (roomPath) {
-                    return (window.location.href = '/join/' + roomPath);
-                    // return (window.location.href ='/join/?room=' + roomPath + '&token=' + token);
+                    //return (window.location.href = '/join/' + roomPath);
+                    return (window.location.href ='/join/?room=' + roomPath + '&token=' + token);
                 }
 
                 return (window.location.href = '/logged');
@@ -68,6 +90,8 @@ function login() {
             });
         return;
     }
+});
+    /*
     if (!username && !password) {
         alert('Username and Password required');
         return;
@@ -80,4 +104,5 @@ function login() {
         alert('Password required');
         return;
     }
+        */
 }
