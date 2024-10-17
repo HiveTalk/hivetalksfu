@@ -4886,7 +4886,7 @@ function getParticipantsList(peers) {
 
     // CHAT-GPT
     if (chatGPT) {
-        const chatgpt_active = !rc.isChatOpen && rc.chatPeerName === 'ChatGPT' ? ' active' : '';
+        const chatgpt_active = rc.chatPeerName === 'ChatGPT' ? ' active' : '';
 
         li = `
         <li 
@@ -4907,7 +4907,7 @@ function getParticipantsList(peers) {
         </li>`;
     }
 
-    const public_chat_active = !rc.isChatOpen && rc.chatPeerName === 'all' ? ' active' : '';
+    const public_chat_active = rc.chatPeerName === 'all' ? ' active' : '';
 
     // ALL
     li += `
@@ -5000,7 +5000,7 @@ function getParticipantsList(peers) {
         const avatarImg = peer_info.peer_url || getParticipantAvatar(peer_name);
         // || rc.genAvatarSvg(peer_name, 32);
 
-        const peer_chat_active = !rc.isChatOpen && rc.chatPeerId === peer_id ? ' active' : '';
+        const peer_chat_active = rc.chatPeerId === peer_id ? ' active' : '';
 
         // NOT ME
         if (socket.id !== peer_id) {
