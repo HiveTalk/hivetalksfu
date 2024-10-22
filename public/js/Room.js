@@ -3603,9 +3603,11 @@ function loadSettingsFromLocalStorage() {
     switchPitchBar.checked = isPitchBarEnabled;
     switchSounds.checked = isSoundEnabled;
     switchShare.checked = notify;
-    isButtonsBarOver = localStorageSettings.keep_buttons_visible || false;
-    document.getElementById('switchKeepButtonsVisible').checked = isButtonsBarOver;
-
+    isButtonsBarOver = false;
+    const keepVisible = localStorageSettings.keep_buttons_visible || false;
+    document.getElementById('switchKeepButtonsVisible').checked = keepVisible;
+    localStorageSettings.keep_buttons_visible = keepVisible;
+    
     recPrioritizeH264 = localStorageSettings.rec_prioritize_h264;
     switchH264Recording.checked = recPrioritizeH264;
 
@@ -3980,19 +3982,19 @@ function showButtons() {
 
 function checkButtonsBar() {
     if (localStorageSettings.keep_buttons_visible) {
-        // If keep_buttons_visible is true, always show the buttons
         toggleButtonsBar('show');
         isButtonsVisible = true;
     } else {
-        // If keep_buttons_visible is false, toggle as before
-        if (!isButtonsVisible) {
-            toggleButtonsBar('show');
-            isButtonsVisible = true;
-        } else {
+        if (!isButtonsBarOver && isButtonsVisible) {  // Only hide if visible and not being hovered
             toggleButtonsBar('hide');
+            bottomButtons.style.display = 'none';
             isButtonsVisible = false;
         }
     }
+    
+    setTimeout(() => {
+        checkButtonsBar();
+    }, 10000);
 }
 
 function toggleButtonsBar(action = 'toggle') {
