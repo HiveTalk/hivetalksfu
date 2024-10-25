@@ -4011,6 +4011,110 @@ function toggleButtonsBar(action = 'toggle') {
     }
 }
 
+let isSidebarCollapsed = false;
+const collapseButton = document.getElementById('collapseButtonBar');
+const sidebar = document.getElementById('control');
+const buttons = sidebar.querySelectorAll('button:not(#collapseButtonBar)');
+collapseButton.textContent = '⇑';
+
+function toggleSidebar() {
+    isSidebarCollapsed = !isSidebarCollapsed;
+    
+    if (isSidebarCollapsed) {
+        collapseButton.textContent = '⇓';
+        collapseSidebar();
+    } else {
+        collapseButton.textContent = '⇑';
+        expandSidebar();
+    }
+}
+
+function collapseSidebar() {
+    const sidebarRect = sidebar.getBoundingClientRect();
+    const sidebarStyle = window.getComputedStyle(sidebar);
+    const paddingLeft = parseFloat(sidebarStyle.paddingLeft);
+    const paddingRight = parseFloat(sidebarStyle.paddingRight);
+    const paddingTop = parseFloat(sidebarStyle.paddingTop);
+    const paddingBottom = parseFloat(sidebarStyle.paddingBottom);
+
+    const centerX = (sidebarRect.width - paddingLeft - paddingRight) / 2;
+    const centerY = (sidebarRect.height - paddingTop - paddingBottom) / 2;
+
+    // Hide collapse button immediately
+    collapseButton.style.opacity = '0';
+    collapseButton.style.transition = 'opacity 0.2s ease-in-out';
+
+    buttons.forEach((button) => {
+        const buttonRect = button.getBoundingClientRect();
+        const buttonCenterX = buttonRect.left - sidebarRect.left + buttonRect.width / 2;
+        const buttonCenterY = buttonRect.top - sidebarRect.top + buttonRect.height / 2;
+
+        const translateX = centerX - buttonCenterX + paddingLeft;
+        const translateY = centerY - buttonCenterY + paddingTop;
+
+        button.style.transition = 'all 0.5s ease-in-out';
+        button.style.transform = `translate(${translateX}px, ${translateY}px) scale(0.1)`;
+        button.style.opacity = '0';
+    });
+
+    setTimeout(() => {
+        buttons.forEach(button => button.style.display = 'none');
+        sidebar.style.width = '50px';
+        sidebar.style.height = '50px';
+
+        // Show and position collapse button after animation
+        collapseButton.style.transition = 'opacity 0.2s ease-in-out';
+        collapseButton.style.position = 'relative';
+        collapseButton.style.left = '50%';
+        collapseButton.style.top = '50%';
+        collapseButton.style.transform = 'translate(-50%, -50%)';
+        collapseButton.style.opacity = '1';
+    }, 500);
+}
+
+function expandSidebar() {
+    // Hide collapse button first, keeping its position
+    collapseButton.style.opacity = '0';
+    collapseButton.style.transition = 'opacity 0.2s ease-in-out';
+
+    // Wait for the button to fade out before changing its position
+    setTimeout(() => {
+        // Reset sidebar size
+        sidebar.style.width = '';
+        sidebar.style.height = '';
+        
+        // Reset collapse button position
+        collapseButton.style.position = '';
+        collapseButton.style.left = '';
+        collapseButton.style.top = '';
+        collapseButton.style.transform = '';
+
+        buttons.forEach((button) => {
+            button.style.display = '';
+            button.style.opacity = '0';
+            
+            // Trigger reflow
+            button.offsetHeight;
+
+            button.style.transition = 'all 0.5s ease-in-out';
+            button.style.transform = 'translate(0, 0) scale(1)';
+            button.style.opacity = '1';
+        });
+
+        // Show collapse button after animation
+        setTimeout(() => {
+            collapseButton.style.opacity = '1';
+        }, 500);
+    }, 200); // This matches the fade-out transition time
+}
+
+collapseButton.onclick = toggleSidebar;
+
+// Minimal initial setup
+sidebar.style.overflow = 'hidden';
+sidebar.style.transition = 'all 0.5s ease-in-out';
+collapseButton.style.zIndex = '1';
+
 function toggleClassElements(className, displayState) {
     let elements = rc.getEcN(className);
     for (let i = 0; i < elements.length; i++) {
