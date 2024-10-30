@@ -4011,20 +4011,22 @@ function toggleButtonsBar(action = 'toggle') {
     }
 }
 
-let isSidebarCollapsed = false;
+let isSidebarCollapsed = true;
 const collapseButton = document.getElementById('collapseButtonBar');
 const sidebar = document.getElementById('control');
 const buttons = sidebar.querySelectorAll('button:not(#collapseButtonBar)');
-collapseButton.textContent = '⇑';
+collapseButton.textContent = '+';
+collapseButton.style.color= '#FFF';
+collapseButton.style.backgroundColor= '#1CD4F0';
 
 function toggleSidebar() {
     isSidebarCollapsed = !isSidebarCollapsed;
     
     if (isSidebarCollapsed) {
-        collapseButton.textContent = '⇓';
+        collapseButton.textContent = '+';
         collapseSidebar();
     } else {
-        collapseButton.textContent = '⇑';
+        collapseButton.textContent = '-';
         expandSidebar();
     }
 }
