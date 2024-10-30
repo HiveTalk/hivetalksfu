@@ -269,7 +269,10 @@ body {
 
 #mySettings {
     z-index: 6;
-    position: absolute;
+    max-height: 90vh; /* Add max-height */
+    max-width: 95vw; /* Add max-width */
+    min-width: 320px; /* Add min-width */
+    position: absolute; /* Change from absolute to fixed */
     margin: auto;
     padding: 10px;
     width: 50%;
@@ -623,7 +626,7 @@ th {
     width: 65%;
     background-color: var(--body-bg);
     min-height: 480px;
-    max-height: 680px;
+    max-height: calc(90vh - 100px); /* Update max-height to be relative to viewport */
     overflow-x: hidden;
     overflow-y: auto;
 }
