@@ -221,6 +221,7 @@ let peer_npub = null;
 let peer_lnaddress = null;
 
 let peer_info = null;
+let isSidebarCollapsed = null; 
 
 let isPushToTalkActive = false;
 let isSpaceDown = false;
@@ -2188,6 +2189,8 @@ function roomIsReady() {
     BUTTONS.main.aboutButton && show(aboutButton);
     if (!DetectRTC.isMobileDevice) show(pinUnpinGridDiv);
     if (!isSpeechSynthesisSupported) hide(speechMsgDiv);
+    // If we want the sidebar collapsed and it's not already collapsed
+    toggleSidebar();
     handleButtons();
     handleSelects();
     handleInputs();
@@ -4011,51 +4014,32 @@ function toggleButtonsBar(action = 'toggle') {
     }
 }
 
-let isSidebarCollapsed = true;
 const collapseButton = document.getElementById('collapseButtonBar');
 const sidebar = document.getElementById('control');
 const buttons = sidebar.querySelectorAll('button:not(#collapseButtonBar)');
-collapseButton.textContent = '+';
-collapseButton.style.color= '#FFF';
-collapseButton.style.backgroundColor= '#1CD4F0';
 
+collapseButton.style.color = '#66beff';
 function toggleSidebar() {
     isSidebarCollapsed = !isSidebarCollapsed;
     
     if (isSidebarCollapsed) {
-        collapseButton.textContent = '+';
+        collapseButton.innerHTML = '<i class="fas fa-chevron-up"></i>';
         collapseSidebar();
     } else {
-        collapseButton.textContent = '-';
+        collapseButton.innerHTML = '<i class="fas fa-chevron-down"></i>';
         expandSidebar();
     }
 }
 
 function collapseSidebar() {
     const sidebarRect = sidebar.getBoundingClientRect();
-    const sidebarStyle = window.getComputedStyle(sidebar);
-    const paddingLeft = parseFloat(sidebarStyle.paddingLeft);
-    const paddingRight = parseFloat(sidebarStyle.paddingRight);
-    const paddingTop = parseFloat(sidebarStyle.paddingTop);
-    const paddingBottom = parseFloat(sidebarStyle.paddingBottom);
-
-    const centerX = (sidebarRect.width - paddingLeft - paddingRight) / 2;
-    const centerY = (sidebarRect.height - paddingTop - paddingBottom) / 2;
-
-    // Hide collapse button immediately
-    collapseButton.style.opacity = '0';
-    collapseButton.style.transition = 'opacity 0.2s ease-in-out';
+    
+    // Calculate the bottom position for the collapse
+    const bottomY = sidebarRect.height;
 
     buttons.forEach((button) => {
-        const buttonRect = button.getBoundingClientRect();
-        const buttonCenterX = buttonRect.left - sidebarRect.left + buttonRect.width / 2;
-        const buttonCenterY = buttonRect.top - sidebarRect.top + buttonRect.height / 2;
-
-        const translateX = centerX - buttonCenterX + paddingLeft;
-        const translateY = centerY - buttonCenterY + paddingTop;
-
         button.style.transition = 'all 0.5s ease-in-out';
-        button.style.transform = `translate(${translateX}px, ${translateY}px) scale(0.1)`;
+        button.style.transform = `translateY(${bottomY}px) scale(0.1)`;
         button.style.opacity = '0';
     });
 
@@ -4063,43 +4047,30 @@ function collapseSidebar() {
         buttons.forEach(button => button.style.display = 'none');
         sidebar.style.width = '50px';
         sidebar.style.height = '50px';
-
-        // Show and position collapse button after animation
-        collapseButton.style.transition = 'opacity 0.2s ease-in-out';
-        collapseButton.style.position = 'relative';
-        collapseButton.style.left = '50%';
-        collapseButton.style.top = '50%';
-        collapseButton.style.transform = 'translate(-50%, -50%)';
-        collapseButton.style.opacity = '1';
+        sidebar.style.position = 'absolute';
+        sidebar.style.bottom = '20px'; // Add some padding from bottom
     }, 500);
 }
 
 function expandSidebar() {
-    // Hide collapse button first, keeping its position
-    collapseButton.style.opacity = '0';
-    collapseButton.style.transition = 'opacity 0.2s ease-in-out';
 
-    // Wait for the button to fade out before changing its position
     setTimeout(() => {
-        // Reset sidebar size
+        // Reset sidebar position and size
         sidebar.style.width = '';
         sidebar.style.height = '';
+        sidebar.style.position = '';
+        sidebar.style.bottom = '';
         
-        // Reset collapse button position
-        collapseButton.style.position = '';
-        collapseButton.style.left = '';
-        collapseButton.style.top = '';
-        collapseButton.style.transform = '';
-
         buttons.forEach((button) => {
             button.style.display = '';
             button.style.opacity = '0';
+            button.style.transform = 'translateY(100%)';
             
             // Trigger reflow
             button.offsetHeight;
 
             button.style.transition = 'all 0.5s ease-in-out';
-            button.style.transform = 'translate(0, 0) scale(1)';
+            button.style.transform = 'translateY(0) scale(1)';
             button.style.opacity = '1';
         });
 
@@ -4107,7 +4078,7 @@ function expandSidebar() {
         setTimeout(() => {
             collapseButton.style.opacity = '1';
         }, 500);
-    }, 200); // This matches the fade-out transition time
+    }, 200);
 }
 
 collapseButton.onclick = toggleSidebar;
