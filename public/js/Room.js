@@ -221,6 +221,7 @@ let peer_npub = null;
 let peer_lnaddress = null;
 
 let peer_info = null;
+let isSidebarCollapsed = null; 
 
 let isPushToTalkActive = false;
 let isSpaceDown = false;
@@ -2188,6 +2189,8 @@ function roomIsReady() {
     BUTTONS.main.aboutButton && show(aboutButton);
     if (!DetectRTC.isMobileDevice) show(pinUnpinGridDiv);
     if (!isSpeechSynthesisSupported) hide(speechMsgDiv);
+    // If we want the sidebar collapsed and it's not already collapsed
+    toggleSidebar();
     handleButtons();
     handleSelects();
     handleInputs();
@@ -4010,6 +4013,80 @@ function toggleButtonsBar(action = 'toggle') {
         control.style.display = control.style.display === 'flex' ? 'none' : 'flex';
     }
 }
+
+const collapseButton = document.getElementById('collapseButtonBar');
+const sidebar = document.getElementById('control');
+const buttons = sidebar.querySelectorAll('button:not(#collapseButtonBar)');
+
+collapseButton.style.color = '#66beff';
+function toggleSidebar() {
+    isSidebarCollapsed = !isSidebarCollapsed;
+    
+    if (isSidebarCollapsed) {
+        collapseButton.innerHTML = '<i class="fas fa-chevron-up"></i>';
+        collapseSidebar();
+    } else {
+        collapseButton.innerHTML = '<i class="fas fa-chevron-down"></i>';
+        expandSidebar();
+    }
+}
+
+function collapseSidebar() {
+    const sidebarRect = sidebar.getBoundingClientRect();
+    
+    // Calculate the bottom position for the collapse
+    const bottomY = sidebarRect.height;
+
+    buttons.forEach((button) => {
+        button.style.transition = 'all 0.5s ease-in-out';
+        button.style.transform = `translateY(${bottomY}px) scale(0.1)`;
+        button.style.opacity = '0';
+    });
+
+    setTimeout(() => {
+        buttons.forEach(button => button.style.display = 'none');
+        sidebar.style.width = '50px';
+        sidebar.style.height = '50px';
+        sidebar.style.position = 'absolute';
+        sidebar.style.bottom = '20px'; // Add some padding from bottom
+    }, 500);
+}
+
+function expandSidebar() {
+
+    setTimeout(() => {
+        // Reset sidebar position and size
+        sidebar.style.width = '';
+        sidebar.style.height = '';
+        sidebar.style.position = '';
+        sidebar.style.bottom = '';
+        
+        buttons.forEach((button) => {
+            button.style.display = '';
+            button.style.opacity = '0';
+            button.style.transform = 'translateY(100%)';
+            
+            // Trigger reflow
+            button.offsetHeight;
+
+            button.style.transition = 'all 0.5s ease-in-out';
+            button.style.transform = 'translateY(0) scale(1)';
+            button.style.opacity = '1';
+        });
+
+        // Show collapse button after animation
+        setTimeout(() => {
+            collapseButton.style.opacity = '1';
+        }, 500);
+    }, 200);
+}
+
+collapseButton.onclick = toggleSidebar;
+
+// Minimal initial setup
+sidebar.style.overflow = 'hidden';
+sidebar.style.transition = 'all 0.5s ease-in-out';
+collapseButton.style.zIndex = '1';
 
 function toggleClassElements(className, displayState) {
     let elements = rc.getEcN(className);
