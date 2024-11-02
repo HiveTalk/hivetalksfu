@@ -2138,10 +2138,17 @@ class RoomClient {
                 handleAspectRatio();
                 if (!this.isMobileDevice) {
                     this.setTippy(pn.id, 'Toggle Pin', 'bottom');
-                    this.setTippy(pip.id, 'Toggle picture in picture', 'bottom');
+                    this.setTippy(pip.id, 'Toggle picture in picture', 'bottom'); 
                     this.setTippy(ts.id, 'Snapshot', 'bottom');
-                    this.setTippy(vp.id, 'Toggle video privacy', 'bottom');
-                    this.setTippy(au.id, 'Audio status', 'bottom');
+                    this.setTippy(sf.id, 'Send file', 'bottom');
+                    this.setTippy(sm.id, 'Send message', 'bottom');
+                    this.setTippy(sv.id, 'Send video', 'bottom');
+                    this.setTippy(cm.id, 'Hide', 'bottom');
+                    this.setTippy(au.id, 'Mute', 'bottom');  // Note: This one says 'Mute' vs 'status'
+                    this.setTippy(pv.id, '🔊 Volume', 'bottom');
+                    this.setTippy(gl.id, 'Geolocation', 'bottom');
+                    this.setTippy(ban.id, 'Ban', 'bottom');
+                    this.setTippy(ko.id, 'Eject', 'bottom');
                 }
                 console.log('[addProducer] Video-element-count', this.videoMediaContainer.childElementCount);
                 break;
