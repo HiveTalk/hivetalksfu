@@ -345,7 +345,6 @@ function getMeetCount(roomList) {
    
             }}
         });
-
     return meetings;
 }
 
@@ -450,30 +449,36 @@ function startServer() {
         let roomsHtml = '0';
         try  {
             let meetings = getMeetCount(roomList);
-            //console.log("meetings", meetings)
-            //console.log("meetings length", meetings.length)
+            // Filter out undefined elements
+            meetings = Array.isArray(meetings) ? meetings.filter(room => room !== undefined) : [];
+           // console.log("meetings after filter:", meetings);
 
-            if (meetings?.length) {
-                // Create HTML for room data matching the client-side structure
-                // console.log("meetings available")
-                roomsHtml = meetings.map(room => `                    
-                    <a href="/join/${room.roomId}" target="_blank">
-                        <div class="feature text-center button-like">
-                            <h4 class="room-id">Room ID: ${room.roomId}</h4>
-                            <b class="peers">Bees: ${room.peerCount}</b>
-                        </div>
-                    </a>
-                `).join('');
-                // console.log("roomsHtml", roomsHtml)
-                // Replace room data placeholder
+            if (meetings.length) {
+                roomsHtml = meetings
+                    .map(room => {
+                        if (!room || !room.roomId) return '';
+                        
+                        return `
+                            <a href="/join/${room.roomId}" target="_blank">
+                                <div class="feature text-center button-like">
+                                    <h4 class="room-id">Room ID: ${room.roomId}</h4>
+                                    <b class="peers">Bees: ${room.peerCount || 0}</b>
+                                </div>
+                            </a>
+                        `;
+                    })
+                    .filter(html => html !== '')
+                    .join('');
+            
+                // roomsHtml will contain only the HTML for the valid room '58248RedPhoto'
                 activeHtml = activeHtml.replace('{{activeMeetings}}', roomsHtml);
-            }
-            else { 
-                activeHtml = activeHtml.replace('{{activeMeetings}}', '');                
+            } else {
+                activeHtml = activeHtml.replace('{{activeMeetings}}', '');
             }
             res.send(activeHtml);
         } catch (err) {
             console.log("error in active meetings", err)
+            activeHtml = activeHtml.replace('{{activeMeetings}}', '');
             res.send(activeHtml);       
         }
     });
@@ -1013,6 +1018,7 @@ function startServer() {
         // Get meetings
         try {
             const meetings = api.getMeetings(roomList);
+            console.log('meetinfo --> ', meetings);
             meetings.forEach((room) => {
                 // Replace the "peers" array with its length
                 room.peers = room.peers.length;

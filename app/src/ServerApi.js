@@ -27,37 +27,69 @@ module.exports = class ServerApi {
     }
 
     getMeetings(roomList) {
-        // Check if roomList is empty
-        if (roomList.size === 0) {
-            return [];  // Return an empty array if there are no rooms
+        // Check if roomList exists
+        if (!roomList || roomList.size === 0) {
+            return [];
         }
-        const meetings = Array.from(roomList.entries()).map(([id, room]) => {
-            // hide room if locked
-            if (!room._isLocked) {
-                const peers = Array.from(room.peers.values()).map(
-                    ({
-                        peer_info: {
-                            peer_name,
-                            peer_presenter,
-                            peer_npub,
-                            peer_pubkey,
-                            peer_lnaddress,
-                        },
-                    }) => ({
-                        name: peer_name,
-                        presenter: peer_presenter,
-                        npub: peer_npub,
-                        pubkey: peer_pubkey,
-                        lnaddress: peer_lnaddress,
-                    }),
-                );
-                return {
-                    roomId: id,
-                    peers: peers,
-                };
-            } 
-        });
-        return meetings;
+    
+        try {
+            const meetings = Array.from(roomList.entries())
+                .map(([id, room]) => {
+                    // Skip if room is locked or invalid
+                    if (!room || room._isLocked) {
+                        return null;
+                    }
+    
+                    try {
+                        // Ensure room.peers exists and is valid
+                        const peers = Array.from(room.peers?.values() || [])
+                            .map(peer => {
+                                try {
+                                    const {
+                                        peer_info: {
+                                            peer_name = '',
+                                            peer_presenter = false,
+                                            peer_npub = '',
+                                            peer_pubkey = '',
+                                            peer_lnaddress = '',
+                                        } = {},
+                                    } = peer || {};
+    
+                                    return {
+                                        name: peer_name,
+                                        presenter: peer_presenter,
+                                        npub: peer_npub,
+                                        pubkey: peer_pubkey,
+                                        lnaddress: peer_lnaddress,
+                                    };
+                                } catch (peerError) {
+                                    console.error('Error processing peer:', peerError);
+                                    return null;
+                                }
+                            })
+                            .filter(peer => peer !== null); // Remove any failed peer entries
+    
+                        return {
+                            roomId: id,
+                            peers: peers,
+                        };
+                    } catch (roomError) {
+                        console.error('Error processing room:', roomError);
+                        return null;
+                    }
+                })
+                .filter(meeting => {
+                    // Remove null entries and ensure meeting has required properties
+                    return meeting !== null && 
+                           meeting.roomId !== undefined && 
+                           Array.isArray(meeting.peers);
+                });
+    
+            return meetings;
+        } catch (error) {
+            console.error('Error in getMeetings:', error);
+            return [];
+        }
     }
 
     getMeetingURL(name) {
