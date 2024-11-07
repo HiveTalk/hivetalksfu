@@ -123,7 +123,7 @@ async function authNIP98() {
 
   try {
       const baseUrl = getBaseUrl();
-      fetchWithNostrAuth(`${baseUrl}/auth`, {
+      fetchWithNostrAuth(`${baseUrl}/api/auth`, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
