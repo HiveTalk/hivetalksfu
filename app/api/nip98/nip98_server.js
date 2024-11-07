@@ -1,6 +1,5 @@
 const express = require('express')
 const cors = require('cors')
-const crypto = require('crypto');
 const { verifyEvent } = require('nostr-tools');
 
 class NostrAuthMiddleware {
@@ -141,14 +140,20 @@ class NostrAuthMiddleware {
 const app = express();
 const nostrAuth = new NostrAuthMiddleware();
 app.use(express.json({ limit: '50mb' })); // Increase the limit if necessary
-app.use(cors({ origin: '*',}))
 
-// Serve the index.html file at the root URL
-app.get('/', (req, res) => {
-    res.sendFile('index.html');
-});
-
-app.post('/auth',
+app.use(
+    cors({
+      origin: '*',
+    })
+  )
+  
+  app.get('/api', (req, res) => {
+    res.setHeader('Content-Type', 'text/html')
+    res.setHeader('Cache-Control', 's-max-age=1, stale-while-revalidate')
+    res.send('hello world')
+  })
+  
+app.post('/api/auth',
     nostrAuth.middleware(),
     (req, res) => {
         try {
@@ -169,6 +174,5 @@ app.post('/auth',
         }
     }
 );
-
 
 module.exports = app;
