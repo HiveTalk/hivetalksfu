@@ -4,6 +4,8 @@ const { signEvent } = NostrTools;
 
 var loggedIn = false;
 let pubkey = "";
+let username = "";
+let avatarURL = "https://cdn-icons-png.flaticon.com/512/149/149071.png";
 
 function loadUser() {
   if (window.nostr) {
@@ -19,6 +21,7 @@ function loadUser() {
       });
   }
 }
+
 
 class NostrAuthClient {
   /**
@@ -49,13 +52,13 @@ class NostrAuthClient {
       content: '',
       pubkey: this.publicKey
     };
+    console.log('event: ', event)
 
     // Calculate event ID
     event.id = await this.calculateId(event);
 
     // Sign the event
-    event.sig = await signEvent(event.id, this.publicKey);
-
+    event.sig = await window.nostr.signEvent(event);
     return event;
   }
 
@@ -80,7 +83,6 @@ class NostrAuthClient {
   }
 }
 
-
 // Make an authenticated request
 async function fetchWithNostrAuth(url, options = {}) {
   const method = options.method || 'GET';
@@ -103,20 +105,59 @@ async function fetchWithNostrAuth(url, options = {}) {
   });
 }
 
-// Usage example:
-const MIROTALK_URL = 'http://localhost:3010/api/v1/nip98';
+// Helper function to get base domain/host with port if needed
+function getBaseUrl() {
+  // Get the full host (includes port if it exists)
+  const host = window.location.host;
+  // Get the protocol (http: or https:)
+  const protocol = window.location.protocol;
+  // Combine them
+  return `${protocol}//${host}`;
+}
+
+async function authNIP98() {
+
+  const roomName = "TestRoom";
+  const preferredRelays = ['wss://hivetalk.nostr1.com']
+  const isModerator = true;
+
+  try {
+      const baseUrl = getBaseUrl();
+      fetchWithNostrAuth(`${baseUrl}/auth`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            room: roomName,
+            username: username,
+            avatarURL: avatarURL,
+            relays: preferredRelays,
+            isPresenter: isModerator,
+          }),
+      }).then(response => { 
+        console.log('response', response.status)
+        if (response.status === 302) {
+            console.log("response status is 302") // Get the redirect URL from the response
+            const data = response.json();
+            window.location.href = data.redirectUrl;
+          } else if (response.ok) {
+            console.log("response.ok", response.ok)
+            return response.json();
+          } else {
+            console.error('Login failed');
+          }
+      }).then(data => {
+        console.log('auth success: ', data);
+        document.getElementById('protected').innerHTML = data['message'];
+      })
+
+    } catch (error) {
+      console.error('Error:', error);
+      document.getElementById('protected').innerHTML = error;
+    }
+}
+
 
 loadUser();
-
-// returns a jwt token which is appended to the url for the room authentication
-// the returned url + jwt then becomes a redirect for the user to enter the room
-fetchWithNostrAuth(MIROTALK_URL, {
-  method: 'POST',
-  body: JSON.stringify({ foo: 'bar' })
-})
-.then(response => {
-    console.log('Raw response:', response);
-    return response.json()
-})
-.then(data => console.log('JSON data:', data));
-
+authNIP98();
