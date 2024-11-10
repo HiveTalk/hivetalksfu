@@ -158,6 +158,8 @@ const hostCfg = {
     users_api_secret_key: config.host.users_api_secret_key,
     users: config.host.users,
     authenticated: !config.host.protected,
+    nostr_api_endpoint: config.host.nostr_api_endpoint,
+    nostr_api_secret_key: config.host.nostr_api_secret_key,
 };
 
 const restApi = {
@@ -584,7 +586,8 @@ function startServer() {
             // http://localhost:3010/join?room=test&roomPassword=0&name=mirotalksfu&audio=1&video=1&screen=0&hide=0&notify=1
             // http://localhost:3010/join?room=test&roomPassword=0&name=mirotalksfu&audio=1&video=1&screen=0&hide=0&notify=0&token=token
 
-            const { room, roomPassword, name, audio, video, screen, hide, notify, token, isPresenter } = checkXSS(
+            // https://localhost:3010/join?room=yourname&nip98=nip98token  // 60 second expiration
+            const { room, roomPassword, name, audio, video, screen, hide, notify, token, nip98, isPresenter } = checkXSS(
                 req.query,
             );
 
@@ -598,17 +601,27 @@ function startServer() {
             let peerPassword = '';
             let isPeerValid = false;
             let isPeerPresenter = false;
+            
+            // TODO: Finish nip98 auth here  - dashboard login 60 sec expiration
+            // if (nip98) {                 
+            //     validateNip98Token(nip98).then((result) => {
+            //         if (result) {
+            //             log.debug('Direct Join NIP98 Success');
+            //         }
+            //     }).catch((error) => {
+            //         log.error('Direct Join NIP98 error', { error: error.message });
+            //     })
+            // }
 
+            // TODO: disallow reserved rooms if not owner  
             if (token) {
                 try {
                     const validToken = await isValidToken(token);
-
                     if (!validToken) {
                         return res.status(401).json({ message: 'Invalid Token' });
                     }
 
                     const { username, password, presenter } = checkXSS(decodeToken(token));
-
                     peerUsername = username;
                     peerPassword = password;
                     isPeerValid = await isAuthPeer(username, password);
@@ -633,7 +646,6 @@ function startServer() {
                     return res.status(401).json({ message: 'Direct Room Join Unauthorized' });
                 }
             }
-
             const OIDCUserAuthenticated = OIDC.enabled && req.oidc.isAuthenticated();
 
             if (
@@ -668,6 +680,7 @@ function startServer() {
             return res.redirect('/');
         }
 
+        // TODO: disallow reserved rooms if not owner or on acl list
         const allowRoomAccess = isAllowedRoomAccess('/join/:roomId', req, hostCfg, authHost, roomList, roomId);
 
         if (allowRoomAccess) {
@@ -744,6 +757,19 @@ function startServer() {
             hostCfg.authenticated = false;
             res.sendFile(views.login);
         }
+    });
+
+    // handle nostr protected login rooms
+    // check for nostr authentication to start room
+        // if open to the public let anyone auth into the room
+        // if not open to the public then check the database for allowed users
+        // nostr_api_endpoint : https://supabase-url/api/v1/nostrAuth 
+        // nostr_api_secret_key: 'insert your secret key here'
+
+    app.post(['/nauth'], (req, res) => {
+        // nip98 nostr auth api endpoint 
+        // check if request is valid.
+        res.sendFile(views.newRoom);
     });
 
     // ####################################################
@@ -1390,6 +1416,8 @@ function startServer() {
         });
 
         socket.on('join', async (dataObject, cb) => {
+            // TODO: Check if is Room is Reserved on on database
+
             if (!roomList.has(socket.room_id)) {
                 return cb({
                     error: 'Room does not exist',
