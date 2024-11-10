@@ -87,8 +87,8 @@ const yaml = require('js-yaml');
 const swaggerUi = require('swagger-ui-express');
 const swaggerDocument = yaml.load(fs.readFileSync(path.join(__dirname, '/../api/swagger.yaml'), 'utf8'));
 const Sentry = require('@sentry/node');
-const Discord = require('./Discord.js');
-const Mattermost = require('./Mattermost.js');
+// const Discord = require('./Discord.js');
+// const Mattermost = require('./Mattermost.js');
 const restrictAccessByIP = require('./middleware/IpWhitelist.js');
 const packageJson = require('../../package.json');
 
@@ -418,7 +418,7 @@ function startServer() {
     */
 
     // Mattermost
-    const mattermost = new Mattermost(app);
+    // const mattermost = new Mattermost(app);
 
     // POST start from here...
     app.post('*', function (next) {

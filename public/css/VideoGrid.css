@@ -110,11 +110,11 @@
     z-index: 1;
     position: absolute;
     left: 0;
-    top: 15px;
+    top: 0;
     display: flex;
     align-items: center;
     padding: 5px;
-    margin: 5px;
+    margin: 1px;
     width: 50px; /* Set your image width */
     height: 50px; /* Set your image height */
     border-radius: 5px; /* Remove button border */
@@ -184,7 +184,7 @@
     text-align: center;
     background: var(--body-bg);
     cursor: default;
-    overflow: hidden;
+    /* overflow: hidden; */
 }
 
 .videoMenuBarClose {
@@ -278,20 +278,24 @@
 }
 
 .expand-video-content {
-    z-index: 1;
+    z-index: 200 ;
     display: none;
     position: fixed;
     right: 10px;
     width: calc(100% - 20px);
+    max-height: 100%;
     max-width: 500px;
     padding: 20px;
     border-radius: 5px;
     background: var(--body-bg);
     box-shadow: var(--box-shadow);
+    max-height: calc(100vh - 80px);  /* viewport height minus menubar and some padding */
+    top: 60px;  /* position below the menubar */
+
 }
 
 .expand-video:hover .expand-video-content {
-    z-index: 1;
+    z-index: 1000;
     display: grid !important;
     grid-gap: 5px 5px;
     grid-template-columns: 50%;
@@ -457,7 +461,9 @@ input[type='range'] {
         font-size: 1rem;
     }
     .expand-video-content {
+        z-index: 1000;
         min-width: 100%;
+        max-height: auto;
         left: 0px;
     }
     .expand-video-content .peer-name {

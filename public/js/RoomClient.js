@@ -2080,17 +2080,6 @@ class RoomClient {
                 this.videoMediaContainer.appendChild(d);
 
                 let pv;
-
-                // Create and append peer name header
-                const peerNameHeader = document.createElement('div');
-                peerNameHeader.className = 'peer-name-header';
-                
-                const peerNameContainer = document.createElement('div');
-                peerNameContainer.className = 'peer-name-container';
-                
-                const peerNameSpan = document.createElement('span');
-                peerNameSpan.className = 'peer-name';
-                peerNameSpan.textContent = peer_name; 
     
                 // Create and append volume control to peerNameSpan
                 pv = document.createElement('input');
@@ -2110,19 +2099,26 @@ class RoomClient {
                         event.stopPropagation();
                         this.handleNostrClick(peer_info.peer_npub);
                     });
-                    peerNameContainer.appendChild(nostrIcon);
+                    vb.appendChild(nostrIcon);
                 }
+
+                // Create and append peer name header
+                const peerNameHeader = document.createElement('div');
+                peerNameHeader.className = 'peer-name-header';
+                
+                const peerNameContainer = document.createElement('div');
+                peerNameContainer.className = 'peer-name-container';
+                
+                const peerNameSpan = document.createElement('span');
+                peerNameSpan.className = 'peer-name';
+                peerNameSpan.textContent = peer_name;                 
+
     
-              /*  peerNameHeader.appendChild(peerNameContainer);
+                peerNameHeader.appendChild(peerNameContainer);
                 vb.appendChild(peerNameHeader);
 
-                if (this.isMobileDevice) {
-                    peerNameHeader.style.backgroundImage = `url('${peer_info.peer_url || image.avatar}')`;
-                }
-                this.addCloseButton(peerNameHeader, vb);
-
                 
-                // Update the event listener
+              /*  // Update the event listener
                 d.addEventListener('click', (event) => {
                     if (!event.target.closest('.' + html.zapIcon.split(' ')[0])) {
                         const menuBarElement = vb; // Reference to the videoMenuBar element
@@ -2163,22 +2159,6 @@ class RoomClient {
                 if (isScreen) pn.click();
 
                 handleAspectRatio();
-
-                if (!this.isMobileDevice) {
-                    this.setTippy(pn.id, 'Toggle Pin', 'bottom');
-                    this.setTippy(mv.id, 'Toggle mirror', 'bottom');
-                    this.setTippy(pip.id, 'Toggle picture in picture', 'bottom');
-                    this.setTippy(ts.id, 'Snapshot', 'bottom');
-                    this.setTippy(sf.id, 'Send file', 'bottom');
-                    this.setTippy(sm.id, 'Send message', 'bottom');
-                    this.setTippy(sv.id, 'Send video', 'bottom');
-                    this.setTippy(cm.id, 'Hide', 'bottom');
-                    this.setTippy(au.id, 'Mute', 'bottom');  // Note: This one says 'Mute' vs 'status'
-                    this.setTippy(pv.id, '🔊 Volume', 'bottom');
-                    this.setTippy(gl.id, 'Geolocation', 'bottom');
-                    this.setTippy(ban.id, 'Ban', 'bottom');
-                    this.setTippy(ko.id, 'Eject', 'bottom');
-                }
 
                 console.log('[addProducer] Video-element-count', this.videoMediaContainer.childElementCount);
                 break;
@@ -2515,6 +2495,10 @@ class RoomClient {
         const remotePeerAudioVolume = peer_info.peer_audio_volume;
         const remotePrivacyOn = peer_info.peer_video_privacy;
         const remotePeerPresenter = peer_info.peer_presenter; 
+        const remoteLNAddress = peer_info.peer_lnaddress;
+        const peer_npub = peer_info.peer_npub;
+        const peer_url = peer_info.peer_url;
+
 
         switch (type) {
             case mediaType.video:
@@ -2559,24 +2543,8 @@ class RoomClient {
                 pv.value = 100;                
                 peerNameContainer.appendChild(peerNameSpan);
                 peerNameContainer.appendChild(pv);  */
-    
-                if (peer_npub) {
-                    const nostrIcon = document.createElement('span');
-                    nostrIcon.className = html.nostrIcon + ' nostr-icon-inline';
-                    nostrIcon.addEventListener('click', (event) => {
-                        event.stopPropagation();
-                        this.handleNostrClick(peer_npub);
-                    });
-                    peerNameContainer.appendChild(nostrIcon);
-                }
-    
-              /*  peerNameHeader.appendChild(peerNameContainer);
-                vb.appendChild(peerNameHeader);
-    
-                if (this.isMobileDevice) {
-                    peerNameHeader.style.backgroundImage = `url('${peer_url || image.avatar}')`;
-                }
-                this.addCloseButton(peerNameHeader, vb);
+        
+                /*  this.addCloseButton(peerNameHeader, vb);
     
                 pip = createButton(id + '__pictureInPicture', html.pip);
                 fs = createButton(id + '__fullScreen', html.fullScreen);
@@ -2596,6 +2564,16 @@ class RoomClient {
                 vb = document.createElement('div');
                 vb.id = id + '__vb';
                 vb.className = 'videoMenuBar hidden';
+
+                if (p) {
+                    const nostrIcon = document.createElement('span');
+                    nostrIcon.className = html.nostrIcon + ' nostr-icon-inline';
+                    nostrIcon.addEventListener('click', (event) => {
+                        event.stopPropagation();
+                        this.handleNostrClick(peer_npub);
+                    });
+                    vb.appendChild(nostrIcon);
+                }
 
                 eDiv = document.createElement('div');
                 eDiv.className = 'expand-video';
@@ -2702,6 +2680,9 @@ class RoomClient {
 
                 vb.appendChild(peerNameHeader);
                 eVc.appendChild(peerNameHeader);
+                if (this.isMobileDevice) {
+                    peerNameHeader.style.backgroundImage = `url('${peer_url || image.avatar}')`;
+                }
 
                 BUTTONS.consumerVideo.sendMessageButton && eVc.appendChild(sm);
                 BUTTONS.consumerVideo.sendFileButton && eVc.appendChild(sf);
@@ -2955,15 +2936,6 @@ class RoomClient {
             peerNameHeader.style.backgroundImage = `url('${peer_info.peer_url || image.avatar}')`;
         } */
         
-        if (peer_npub) {
-            const nostrIcon = document.createElement('span');
-            nostrIcon.className = html.nostrIcon + ' nostr-icon-inline';
-            nostrIcon.addEventListener('click', (event) => {
-                event.stopPropagation();
-                this.handleNostrClick(peer_npub);
-            });
-            peerNameContainer.appendChild(nostrIcon);
-        }
     
       /*  peerNameHeader.appendChild(peerNameContainer);
         vb.appendChild(peerNameHeader);
@@ -3019,6 +2991,17 @@ class RoomClient {
         vb.className = 'videoMenuBar hidden';
 
         au = this.createButton(peer_id + '__audio', peer_audio ? html.audioOn : html.audioOff);
+
+        if (peer_npub) {
+            console.log('peer_npub', peer_npub);
+            const nostrIcon = document.createElement('span');
+            nostrIcon.className = html.nostrIcon + ' nostr-icon-inline';
+            nostrIcon.addEventListener('click', (event) => {
+                event.stopPropagation();
+                this.handleNostrClick(peer_npub);
+            });
+            vb.appendChild(nostrIcon);
+        }
 
         pv = document.createElement('input');
         pv.id = peer_id + '___pVolume';
@@ -3161,7 +3144,8 @@ class RoomClient {
             }
         });
 
-        this.addCloseButton(peerNameHeader, vb);
+        // This was close button for the menu bar which may be needed after merge.
+        // this.addCloseButton(peerNameHeader, vb);
 
     
         console.log('[setVideoOff] Video-element-count', this.videoMediaContainer.childElementCount);
@@ -4149,7 +4133,7 @@ class RoomClient {
         }
     }
 
-    handlePN(elemId, pnId, camId, isScreen = false, isAvatar = false) {
+    handlePN(elemId, pnId, camId, remoteIsScreen = false, isAvatar = false) {
         let videoPlayer = this.getId(elemId);
         let btnPn = this.getId(pnId);
         let cam = this.getId(camId);
@@ -4176,7 +4160,7 @@ class RoomClient {
                         if (this.isScreenAllowed) return;
                         return this.msgPopup('toast', 'Another video seems pinned, unpin it before to pin this one');
                     }
-                    if (!isScreen && !isBroadcastingEnabled) videoPlayer.style.objectFit = 'var(--videoObjFit)';
+                    if (!remoteIsScreen && !isBroadcastingEnabled) videoPlayer.style.objectFit = 'var(--videoObjFit)';
                     this.videoPinMediaContainer.removeChild(cam);
                     cam.className = 'Camera';
                     this.videoMediaContainer.appendChild(cam);
