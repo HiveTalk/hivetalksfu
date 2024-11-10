@@ -1241,6 +1241,7 @@ class RoomClient {
     }
 
     getReconnectDirectJoinURL() {
+        // TODO: Add Direct join URL with peer info, decode peer token for nostr specific login
         const { peer_audio, peer_video, peer_screen, peer_token } = this.peer_info;
         const baseUrl = `${window.location.origin}/join`;
         const queryParams = {
