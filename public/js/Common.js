@@ -170,7 +170,7 @@ const lastRoom = document.getElementById('lastRoom');
 const lastRoomName = window.localStorage.lastRoom ? window.localStorage.lastRoom : '';
 if (lastRoomContainer && lastRoom && lastRoomName) {
     lastRoomContainer.style.display = 'inline-flex';
-    lastRoom.setAttribute('href', '/join/' + lastRoomName);
+    lastRoom.setAttribute('href', '/join/?room=' + lastRoomName);
     lastRoom.innerText = lastRoomName;
 }
 
@@ -244,7 +244,8 @@ function joinRoom() {
         return;
     }
 
-    window.location.href = '/join/' + roomName;
+    //window.location.href = '/join/' + roomName;
+    window.location.href = '/join/?room=' + roomName;
     window.localStorage.lastRoom = roomName;
 }
 

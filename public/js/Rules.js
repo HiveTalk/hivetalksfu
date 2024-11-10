@@ -48,13 +48,16 @@ let BUTTONS = {
     },
     producerVideo: {
         videoPictureInPicture: true,
+        videoMirrorButton: true,
         fullScreenButton: true,
         snapShotButton: true,
         muteAudioButton: true,
         videoPrivacyButton: true,
+        audioVolumeInput: true,
     },
     consumerVideo: {
         videoPictureInPicture: true,
+        videoMirrorButton: true,
         fullScreenButton: true,
         snapShotButton: true,
         focusVideoButton: true,
@@ -63,7 +66,7 @@ let BUTTONS = {
         sendVideoButton: true,
         muteVideoButton: true,
         muteAudioButton: true,
-        audioVolumeInput: true, // Disabled for mobile
+        audioVolumeInput: true,
         geolocationButton: true, // Presenter
         banButton: true, // presenter
         ejectButton: true, // presenter
@@ -73,7 +76,7 @@ let BUTTONS = {
         sendFileButton: true,
         sendVideoButton: true,
         muteAudioButton: true,
-        audioVolumeInput: true, // Disabled for mobile
+        audioVolumeInput: true,
         geolocationButton: true, // Presenter
         banButton: true, // presenter
         ejectButton: true, // presenter
@@ -175,6 +178,7 @@ function handleRules(isPresenter) {
         switchEveryoneCantShareScreen.checked = localStorageSettings.moderator_screen_cant_share;
         switchEveryoneCantChatPrivately.checked = localStorageSettings.moderator_chat_cant_privately;
         switchEveryoneCantChatChatGPT.checked = localStorageSettings.moderator_chat_cant_chatgpt;
+        switchEveryoneCantMediaSharing.checked = localStorageSettings.moderator_media_cant_sharing;
         switchDisconnectAllOnLeave.checked = localStorageSettings.moderator_disconnect_all_on_leave;
 
         // Update moderator settings...
@@ -187,6 +191,7 @@ function handleRules(isPresenter) {
             screen_cant_share: switchEveryoneCantShareScreen.checked,
             chat_cant_privately: switchEveryoneCantChatPrivately.checked,
             chat_cant_chatgpt: switchEveryoneCantChatChatGPT.checked,
+            media_cant_sharing: switchEveryoneCantMediaSharing.checked,
         };
         console.log('Rules moderator data ---->', moderatorData);
         rc.updateRoomModeratorALL(moderatorData);
