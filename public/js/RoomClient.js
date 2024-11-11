@@ -2900,7 +2900,7 @@ class RoomClient {
         console.log('setVideoOff', peer_info);
         let d, vb, i, h, au, sf, sm, sv, gl, ban, ko, p, pm, pb, pv;
     
-        const { peer_id, peer_name, peer_audio, peer_presenter, peer_npub, peer_lnaddress } = peer_info;
+        const { peer_id, peer_name, peer_audio, peer_presenter, peer_npub, peer_lnaddress, peer_url } = peer_info;
     
         // Error handling: Check if peer_id is valid
         if (!peer_id) {
@@ -3019,9 +3019,12 @@ class RoomClient {
             ko = this.createButton('remotePeer___' + peer_id + '___kickOut', html.kickOut);
         }
 
+        // Create and append avatar image
         i = document.createElement('img');
-        i.className = 'videoAvatarImage center'; // pulsate
+        i.className = 'videoAvatarImage center';
         i.id = peer_id + '__img';
+        d.appendChild(i);
+            
 
         p = document.createElement('p');
         p.id = peer_id + '__name';
@@ -3052,12 +3055,6 @@ class RoomClient {
         BUTTONS.videoOff.audioVolumeInput && vb.appendChild(pv);
 
         vb.appendChild(au);
-    
-        // Create and append avatar image
-        i = document.createElement('img');
-        i.className = 'videoAvatarImage center';
-        i.id = peer_id + '__img';
-        d.appendChild(i);
     
         // Add lightning address button if available
         if (peer_lnaddress) {
@@ -3525,7 +3522,7 @@ class RoomClient {
         }
     }
 
-    setVideoAvatarImgName(elemId, peer_name, peer_url) {
+    setVideoAvatarImgName(elemId, peer_name, peer_url, remotePeer = false) {
         let elem = this.getId(elemId);
         if (cfg.useAvatarSvg) {
             console.log('setVideoAvatarImgName: ', peer_name, 'url: ', peer_url);
