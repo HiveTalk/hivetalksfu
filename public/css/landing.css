@@ -2171,3 +2171,24 @@ main {
     color: #fff; /* Ensure text color inherits from parent */
     border-color: white;
 }
+
+/* #roomName {
+    text-align: left;
+} */
+
+/*--------------------------------------------------------------
+# Login and Join ROOM
+--------------------------------------------------------------*/
+
+#joinRoomForm {
+    display: none;
+}
+
+/*--------------------------------------------------------------
+# Who are you
+--------------------------------------------------------------*/
+
+.disabled {
+    pointer-events: none;
+    opacity: 0.5;
+}

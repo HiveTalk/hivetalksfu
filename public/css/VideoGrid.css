@@ -47,6 +47,11 @@
     border: 3px solid rgb(113, 157, 239);
 } */
 
+.Camera .fa-hand-paper {
+    margin: 10px !important;
+    font-size: 1.5rem !important;
+}
+
 #videoMediaContainer i {
     position: absolute;
     display: none;
@@ -105,11 +110,11 @@
     z-index: 1;
     position: absolute;
     left: 0;
-    top: 15px;
+    top: 0;
     display: flex;
     align-items: center;
     padding: 5px;
-    margin: 5px;
+    margin: 1px;
     width: 50px; /* Set your image width */
     height: 50px; /* Set your image height */
     border-radius: 5px; /* Remove button border */
@@ -146,18 +151,12 @@
     font-size: 10px;
     display: flex;
     align-items: center;
-    padding: 5px;
-    margin: 5px;
+    padding: 10px;
+    margin: 10px;
     width: auto;
     height: 25px;
     border-radius: 5px;
-    background: rgba(0, 0, 0, 0.9);
-}
-
-.peer-name {
-     background-color: rgba(0, 0, 0, 0.9);
-     color: white;
-     font-size: 18px;
+    background: var(--body-bg);
 }
 
 .fscreen {
@@ -173,8 +172,44 @@
 }
 
 .videoMenuBar {
-    z-index: 10;
+    z-index: 2;
     position: fixed;
+    display: inline;
+    top: 0;
+    left: 0;
+    padding: 15px;
+    width: 100%;
+    font-size: small;
+    font-weight: bold;
+    text-align: center;
+    background: var(--body-bg);
+    cursor: default;
+    /* overflow: hidden; */
+}
+
+.videoMenuBarClose {
+    position: absolute;
+    display: flex;
+    top: 30px;
+    right: 30px;
+    padding: 10px;
+    border-radius: 50%;
+    color: white;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    user-select: none;
+    background: var(--body-bg);
+}
+
+.videoMenuBarClose:hover {
+    background: var(--btns-bg-color);
+}
+
+.videoAvatarMenuBar,
+.videoMenuBarShare {
+    z-index: 2;
+    position: absolute;
     display: inline;
     top: 0;
     left: 0;
@@ -215,8 +250,10 @@
 }
 
 .videoMenuBar input,
-.videoMenuBar button {
-    display: inline !important;
+.videoMenuBar button,
+.videoAvatarMenuBar button,
+.videoMenuBarShare button {
+    font-size: 1.2rem;
     float: right;
     color: #fff;
     background: transparent;
@@ -224,251 +261,109 @@
     border: none;
 }
 
-.videoMenuBar button:hover {
+.videoMenuBar button:hover,
+.videoAvatarMenuBar button:hover,
+.videoMenuBarShare button:hover {
     color: grey;
     transition: all 0.3s ease-in-out;
 }
 
-.videoMenuBarClose {
-    display: none;
+.expand-video .fa-bars {
+    color: #66beff !important;
 }
 
-
-@media (max-width: 768px) {
-    .videoMenuBar {
-        position: fixed;
-        padding: 15px;
-        padding-left: 65px;
-        bottom: 0;
-        background: rgba(0, 0, 0, 1);
-        transform: translateY(100%);
-        transition: transform 0.3s ease-out, opacity 0.3s ease-out;
-        display: grid !important;
-        grid-gap: 5px 5px;
-        grid-template-columns: 50%;
-        grid-template-areas:
-            "header header"
-            "controls controls";
-        align-content: start;
-        justify-items: start;
-        overflow-y: auto;
-        z-index: 1000;
-    }
-
-    .videoMenuBarClose {
-        display: flex;
-        position: absolute;
-        top: 20px;
-        right: 20px;
-        width: 30px;
-        height: 30px;
-        background: rgba(0, 0, 0, 0.5);
-        border-radius: 50%;
-        color: white;
-        font-size: 24px;
-        align-items: center;
-        justify-content: center;
-        cursor: pointer;
-        z-index: 10;
-        user-select: none;
-        transition: background-color 0.3s ease;
-    }
-    
-    .videoMenuBar .nostr-image-button {
-        top: 10px;
-        left: 65px !important;
-        width: 50px;
-        height: 50px;
-    }
-
-    .peer-name-container {
-        display: row;
-        width: 100%;
-        height: 100%;
-        padding: 10px;
-        margin: 10px;
-      }
-
-    .videoMenuBar .peer-name-header {
-        grid-area: header;
-        width: 100%;
-        padding: 40px;
-        height: 120px;
-        background-color: rgba(255, 255, 255, 0.2);
-        background-size: cover;
-        background-position: center;
-        background-repeat: no-repeat;
-        border-radius: 10px;
-        margin-bottom: 10px;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-    }
-
-    .videoMenuBar .peer-name {
-        font-size: 18px;
-        font-weight: bold;
-        color: #fff;
-        text-shadow: 0 0 10px rgba(0, 0, 0, 0.5);
-        background-color: rgba(36, 36, 36, 0.8);
-        border-radius: 10px;
-        padding: 6px;
-        width: 100%;
-    }
-
-    .videoMenuBar input,
-    .videoMenuBar button {
-        display: inline !important;
-        font-size: 16px;
-        color: #fff;
-        background: rgba(255, 255, 255, 0.2);
-        width: 100%;
-        height: 45px;
-        display: flex;
-        justify-content: center;
-        align-items: center;
-        border-radius: 10px;
-    }
-
-    .videoMenuBar .fas,
-    .videoMenuBar .fab {
-        font-size: 20px;
-        margin-right: 8px;
-        transition: color 0.3s;
-    }
-
-    .videoMenuBar input[type="range"] {
-        display: inline !important;
-        width: 100%;
-        margin: 16px 0;
-        background: rgba(255, 255, 255, 0.1);
-        height: 6px;
-    }
-
-    .videoMenuBar button:active {
-        background: rgba(255, 255, 255, 0.3);
-    }
+.expand-video .dropdown-button {
+    cursor: pointer;
+    position: relative;
 }
-
-@media (max-width: 1024px) and (orientation: landscape) {
-    .videoMenuBar {
-        position: fixed;
-        padding: 15px;
-        padding-left: 65px;
-        bottom: 0;
-        background: rgba(0, 0, 0, 1);
-        transform: translateY(100%);
-        transition: transform 0.3s ease-out, opacity 0.3s ease-out;
-        display: grid !important;
-        grid-gap: 10px 5px;
-        grid-template-columns: 50%;
-        grid-template-areas:
-            "header header"
-            "controls controls";
-        align-content: start;
-        justify-items: start;
-        overflow-y: auto;
-        z-index: 1000;
-    }
-
-    .videoMenuBarClose {
-        display: flex;
-        position: absolute;
-        top: 20px;
-        right: 20px;
-        width: 30px;
-        height: 30px;
-        background: rgba(0, 0, 0, 0.5);
-        border-radius: 50%;
-        color: white;
-        font-size: 24px;
-        align-items: center;
-        justify-content: center;
-        cursor: pointer;
-        z-index: 10;
-        user-select: none;
-        transition: background-color 0.3s ease;
-    }    
-    
-    .videoMenuBar .nostr-image-button {
-        top: 10px;
-        left: 65px !important;
-        width: 50px;
-        height: 50px;
-    }
-
-    .videoMenuBar .peer-name-header {
-        grid-area: header;
-        width: 100%;
-        padding: 40px;
-        background-color: rgba(255, 255, 255, 0.2);
-        background-size: cover;
-        background-position: center;
-        background-repeat: no-repeat;
-        border-radius: 10px;
-        margin-bottom: 10px;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-    }
-
-    .videoMenuBar .peer-name {
-        font-size: 18px;
-        font-weight: bold;
-        color: #fff;
-        text-shadow: 0 0 10px rgba(0, 0, 0, 0.5);
-        background-color: rgba(36, 36, 36, 0.8);
-        border-radius: 10px;
-        padding: 6px;
-        width: 100%;
-    }
-
-    .videoMenuBar input,
-    .videoMenuBar button {
-        display: inline !important;
-        font-size: 16px;
-        color: #fff;
-        background: rgba(255, 255, 255, 0.2);
-        width: 100%;
-        height: 45px;
-        display: flex;
-        justify-content: center;
-        align-items: center;
-        border-radius: 10px;
-    }
-
-    .videoMenuBar .fas,
-    .videoMenuBar .fab {
-        font-size: 20px;
-        margin-right: 8px;
-        transition: color 0.3s;
-    }
-
-    .videoMenuBar input[type="range"] {
-        display: inline !important;
-        width: 100%;
-        margin: 20px 0;
-        background: rgba(98, 0, 255, 0.1);
-        border-radius: 5px;
-        height: 7px;
-    }
-
-    .videoMenuBar button:active {
-        background: rgba(255, 255, 255, 0.3);
-    }
-
-}
-
 
 .expand-video-content {
-    position: relative;
+    z-index: 200 ;
     display: none;
-    float: right;
-    width: auto;
+    position: fixed;
+    right: 10px;
+    width: calc(100% - 20px);
+    max-height: 100%;
+    max-width: 500px;
+    padding: 20px;
+    border-radius: 5px;
+    background: var(--body-bg);
+    box-shadow: var(--box-shadow);
+    max-height: calc(100vh - 80px);  /* viewport height minus menubar and some padding */
+    top: 60px;  /* position below the menubar */
+
 }
 
 .expand-video:hover .expand-video-content {
-    display: inline-flex;
+    z-index: 1000;
+    display: grid !important;
+    grid-gap: 5px 5px;
+    grid-template-columns: 50%;
+    grid-template-areas:
+        'header header'
+        'controls controls';
+    align-content: start;
+    justify-items: start;
+    overflow-y: auto;
+}
+
+.peer-name-container {
+    display: row;
+    width: 100%;
+    height: 100%;
+    padding: 10px;
+    margin: 10px;
+}
+
+.expand-video-content .peer-name-header {
+    grid-area: header;
+    width: 100%;
+    padding: 40px;
+    height: 120px;
+    background: var(--btns-bg-color);
+    background-size: cover;
+    background-position: center;
+    background-repeat: no-repeat;
+    border-radius: 10px;
+    margin-bottom: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.expand-video-content .peer-name {
+    font-size: 18px;
+    font-weight: bold;
+    color: #fff;
+    background: var(--body-bg);
+    border-radius: 10px;
+    padding: 6px;
+    width: 100%;
+}
+
+.expand-video-content input[type='range'] {
+    display: inline !important;
+    width: 100%;
+    margin: 16px 0;
+    background: rgba(255, 255, 255, 0.1);
+    height: 6px;
+}
+
+.expand-video-content button {
+    display: flex !important;
+    font-size: 16px;
+    color: #fff;
+    background: var(--btns-bg-color);
+    width: 100%;
+    height: 45px;
+    justify-content: center;
+    align-items: center;
+    border-radius: 10px;
+}
+
+.expand-video-content button:hover {
+    color: white;
+    background: var(--body-bg);
 }
 
 #videoMediaContainer video {
@@ -505,6 +400,7 @@ video {
     object-fit: var(--videoObjFit);
     border-radius: 10px;
     cursor: pointer;
+    transition: transform 0.3s ease-in-out;
 }
 
 #canvasAIElement {
@@ -555,13 +451,22 @@ input[type='range'] {
     }
 }
 
-@media screen and (max-width: 600px) {
-    .username {
-        font-size: 12px;
-    }
-}
 @media screen and (max-width: 500px) {
     .username {
         font-size: 10px;
+    }
+    .videoMenuBar input,
+    .videoMenuBar button,
+    .videoMenuBarShare button {
+        font-size: 1rem;
+    }
+    .expand-video-content {
+        z-index: 1000;
+        min-width: 100%;
+        max-height: auto;
+        left: 0px;
+    }
+    .expand-video-content .peer-name {
+        font-size: 12px;
     }
 }
