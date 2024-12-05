@@ -90,6 +90,8 @@ const Sentry = require('@sentry/node');
 const restrictAccessByIP = require('./middleware/IpWhitelist.js');
 const packageJson = require('../../package.json');
 
+const { invokeCheckRoomOwner } = require('./checkRoomOwner');
+
 // Incoming Stream to RTPM
 const { v4: uuidv4 } = require('uuid');
 const crypto = require('crypto-js');
@@ -679,6 +681,9 @@ function startServer() {
             log.warn('/join/:roomId invalid', roomId);
             return res.redirect('/');
         }
+
+        // check does the room exist yet? if not
+        // check for user allowed to open room. 
 
         // TODO: disallow reserved rooms if not owner or on acl list
         const allowRoomAccess = isAllowedRoomAccess('/join/:roomId', req, hostCfg, authHost, roomList, roomId);
@@ -1444,9 +1449,10 @@ function startServer() {
 
             const room = roomList.get(socket.room_id);
 
-            const { peer_name, peer_id, peer_uuid, peer_token, os_name, os_version, browser_name, browser_version } =
+            const { peer_name, peer_pubkey, peer_id, peer_uuid, peer_token, os_name, os_version, browser_name, browser_version } =
                 data.peer_info;
 
+            console.log('>>>>> [Join] <<<< - socket.on Peer Info', {peer_name: peer_name, peer_pubkey: peer_pubkey, peer_id: peer_id});
             let is_presenter = true;
 
             // User Auth required or detect token, we check if peer valid
