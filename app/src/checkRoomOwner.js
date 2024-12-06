@@ -9,7 +9,7 @@ const supabase = createClient(
   process.env.SUPABASE_ANON_KEY || ''
 )
 
-export async function invokeCheckRoomOwner(roomName) {
+async function invokeCheckRoomOwner(roomName) {
   try {
     const { data } = await supabase.functions.invoke('check-room-owner', {
       body: { p_room_name: roomName }
