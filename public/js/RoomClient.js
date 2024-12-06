@@ -480,16 +480,41 @@ class RoomClient {
         // CREATE ROOM AND JOIN
         // ####################################################
 
-        this.createRoom(this.room_id).then(async () => {
-            const data = {
-                room_id: this.room_id,
-                peer_info: this.peer_info,
-            };
-            await this.join(data);
-            this.initSockets();
-            this._isConnected = true;
-            successCallback();
+        console.log('>>>>> peer_info.peer_name', this.peer_info.peer_name);
+        console.log('>>>>> peer_info.peer_pubkey', this.peer_info.peer_pubkey);
+
+        console.log('Room ID ', this.room_id);
+        // >#>#>#>#> check here 
+        
+        Swal.fire({
+            allowOutsideClick: false,
+            allowEscapeKey: false,
+            showDenyButton: true,
+            showConfirmButton: false,
+            background: swalBackground,
+            title: 'Oops, '+ room_id + ' Room is closed',
+            text: 'Sorry, this is a Reserved Room and can only be opened by the Room Owner!',
+            denyButtonText: `Leave room`,
+            showClass: { popup: 'animate__animated animate__fadeInDown' },
+            hideClass: { popup: 'animate__animated animate__fadeOutUp' },
+        }).then((result) => {
+            if (!result.isConfirmed) {
+                this.event(_EVENTS.exitRoom);
+            } 
         });
+
+        // this.createRoom(this.room_id).then(async () => {
+        //     const data = {
+        //         room_id: this.room_id,
+        //         peer_info: this.peer_info,
+        //     };
+        //     await this.join(data);
+        //     this.initSockets();
+        //     this._isConnected = true;
+        //     successCallback();
+        // });
+
+
     }
 
     // ####################################################
@@ -497,6 +522,7 @@ class RoomClient {
     // ####################################################
 
     async createRoom(room_id) {
+        console.log('######### CREATE ROOM #########');        
         await this.socket
             .request('createRoom', {
                 room_id,
