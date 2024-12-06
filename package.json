@@ -66,6 +66,7 @@
         "cors": "2.8.5",
         "crypto-js": "4.2.0",
         "dompurify": "^3.1.6",
+        "dotenv": "^16.4.7",
         "ejs": "^3.1.10",
         "express": "^4.21.1",
         "express-handlebars": "^7.1.3",
