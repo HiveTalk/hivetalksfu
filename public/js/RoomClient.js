@@ -448,14 +448,17 @@ class RoomClient {
         this.producerLabel = new Map();
         this.eventListeners = new Map();
 
+        this.openState = false;
+
         this.debug = false;
         this.debug ? window.localStorage.setItem('debug', 'mediasoup*') : window.localStorage.removeItem('debug');
+
+        this.successCallback = successCallback; // Store callback
 
         // VideoMenuBar Behavior
         if (this.isMobileDevice) {
             this.addLowLatencySwipeListener();
         }
-    
 
         console.log('06 ----> Load MediaSoup Client v', mediasoupClient.version);
         console.log('06.1 ----> PEER_ID', this.peer_id);
@@ -482,39 +485,133 @@ class RoomClient {
 
         console.log('>>>>> peer_info.peer_name', this.peer_info.peer_name);
         console.log('>>>>> peer_info.peer_pubkey', this.peer_info.peer_pubkey);
-
         console.log('Room ID ', this.room_id);
-        // >#>#>#>#> check here 
-        
-        Swal.fire({
-            allowOutsideClick: false,
-            allowEscapeKey: false,
-            showDenyButton: true,
-            showConfirmButton: false,
-            background: swalBackground,
-            title: 'Oops, '+ room_id + ' Room is closed',
-            text: 'Sorry, this is a Reserved Room and can only be opened by the Room Owner!',
-            denyButtonText: `Leave room`,
-            showClass: { popup: 'animate__animated animate__fadeInDown' },
-            hideClass: { popup: 'animate__animated animate__fadeOutUp' },
-        }).then((result) => {
-            if (!result.isConfirmed) {
-                this.event(_EVENTS.exitRoom);
-            } 
+        console.log('precheck this.openState:', this.openState)
+
+        this.checkRoomHasPeers();
+    }
+    
+    async checkRoomHasPeers() { 
+        const response = await fetch('/api/check-room-peers', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ room_id: this.room_id }),
         });
 
-        // this.createRoom(this.room_id).then(async () => {
-        //     const data = {
-        //         room_id: this.room_id,
-        //         peer_info: this.peer_info,
-        //     };
-        //     await this.join(data);
-        //     this.initSockets();
-        //     this._isConnected = true;
-        //     successCallback();
-        // });
+        const roomData = await response.json();
+        if (roomData.peerCount > 0) {
+            // Room already has peers, allow joining directly
+            this.openState = true;
+            this.createRoom(this.room_id).then(async () => {
+                const data = {
+                    room_id: this.room_id,
+                    peer_info: this.peer_info,
+                };
+                await this.join(data);
+                this.initSockets();
+                this._isConnected = true;
+                this.successCallback();
+            });
+        }  else { 
+            this.checkRoomOwnership();
+        }
+    }
+ 
+    async checkRoomOwnership() {
+        try {
+            const response = await fetch('/api/check-room-owner', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ room_id: this.room_id }),
+            });
+            
+            if (!response.ok) {
+                throw new Error('Failed to check room ownership');
+            }
+            
+            const data = await response.json();
+            console.log('checkRoomOwnership', data);
+            // console.log('json response state = ', data[0].success)
 
+            if (data[0].success) {
+                // Convert peer_pubkey to npub format for comparison
+                const peer_npub =  this.peer_info.peer_npub                                
+                // console.log('peer_pubkey', this.peer_info.peer_pubkey, 
+                //     'vs nostr_pubkey: ', data[0].nostr_pubkey);
+                // console.log('compare against room npub', peer_npub, 
+                //     'vs room_npub: ', data[0].room_npub);
 
+                // Check if peer is the room owner, allow open
+                if (this.peer_info?.peer_pubkey && data[0]?.nostr_pubkey && 
+                    this.peer_info.peer_pubkey === data[0].nostr_pubkey) {                        
+                    this.openState = true;
+                }               
+                if (peer_npub === data[0].room_npub) {
+                    // Allow bot to open room
+                    this.openState = true;
+                }
+            } else if (data[0].success === false) { 
+                // allow room creation, not reserved
+                console.log("Not a reserved room proceed with open")
+                this.openState =  true;
+            }
+
+            // console.log("inside checkRoomOwnership openState: ", this.openState)
+            if (this.openState) {
+                this.createRoom(this.room_id).then(async () => {
+                    const data = {
+                        room_id: this.room_id,
+                        peer_info: this.peer_info,
+                    };
+                    await this.join(data);
+                    this.initSockets();
+                    this._isConnected = true;
+                    this.successCallback();
+                });
+            } else { 
+                console.log("open state is false")
+                Swal.fire({
+                        allowOutsideClick: false,
+                        allowEscapeKey: false,
+                        showDenyButton: true,
+                        showConfirmButton: false,
+                        background: swalBackground,
+                        title: 'Oops, '+ this.room_id + ' Room is closed',
+                        text: 'Sorry, this is a Reserved Room and can only be opened by the Room Owner!',
+                        denyButtonText: `Leave room`,
+                        showClass: { popup: 'animate__animated animate__fadeInDown' },
+                        hideClass: { popup: 'animate__animated animate__fadeOutUp' },
+                    }).then((result) => {
+                        if (!result.isConfirmed) {
+                            this.event(_EVENTS.exitRoom);
+                        } 
+                    });
+            }
+
+        } catch (error) {
+            console.error('Error checking room ownership:', error);
+            // Handle error case can't connect to DB - show error message and exit
+            Swal.fire({
+                allowOutsideClick: false,
+                allowEscapeKey: false,
+                showDenyButton: true,
+                showConfirmButton: false,
+                background: swalBackground,
+                title: 'Error',
+                text: 'Unable to verify room ownership. Please try again later.',
+                denyButtonText: `Leave room`,
+                showClass: { popup: 'animate__animated animate__fadeInDown' },
+                hideClass: { popup: 'animate__animated animate__fadeOutUp' },
+            }).then((result) => {
+                if (!result.isConfirmed) {
+                    this.event(_EVENTS.exitRoom);
+                } 
+            });
+        }
     }
 
     // ####################################################
@@ -522,7 +619,7 @@ class RoomClient {
     // ####################################################
 
     async createRoom(room_id) {
-        console.log('######### CREATE ROOM #########');        
+        // console.log('######### CREATE NEW ROOM #########');        
         await this.socket
             .request('createRoom', {
                 room_id,

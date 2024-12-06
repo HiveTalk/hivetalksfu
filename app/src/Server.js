@@ -89,7 +89,6 @@ const swaggerDocument = yaml.load(fs.readFileSync(path.join(__dirname, '/../api/
 const Sentry = require('@sentry/node');
 const restrictAccessByIP = require('./middleware/IpWhitelist.js');
 const packageJson = require('../../package.json');
-
 const { invokeCheckRoomOwner } = require('./checkRoomOwner');
 
 // Incoming Stream to RTPM
@@ -377,7 +376,7 @@ function startServer() {
 
     // Middleware to handle both .html and .handlebars templates
     app.use((req, res, next) => {
-        // Extend res.render to try both .html and .handlebars
+        // Extend res.render to try both .handlebars first
         const originalRender = res.render;
         res.render = function(view, locals, callback) {
             // Try .handlebars first
@@ -1185,6 +1184,27 @@ function startServer() {
             body: req.body,
             token: token,
         });
+    });
+
+    // API endpoint for room ownership check
+    app.post('/api/check-room-owner', async (req, res) => {
+        try {
+            const { room_id } = req.body;
+            const data = await invokeCheckRoomOwner(room_id);
+            res.json(data);
+        } catch (error) {
+            console.error('Error checking room ownership:', error);
+            res.status(500).json({ error: 'Failed to check room ownership' });
+        }
+    });
+
+    app.post('/api/check-room-peers', async (req, res) => {
+        const { room_id } = req.body;
+        const room = roomList.get(room_id);    
+        const peerCount = room ? room.peers.size : 0;
+        console.log('check-room-peers --> ', peerCount);
+
+        res.json({ peerCount });
     });
 
     // ####################################################
