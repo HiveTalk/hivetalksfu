@@ -40,7 +40,7 @@ const socket = io({ transports: ['websocket'] });
 
 let survey = {
     enabled: true,
-    url: 'https://t.me/+2Ll1IFwXwCJlMGFl', // telegram link
+    url: 'https://discord.com/channels/1315483857650319441/1315483858275405878', // discord link
 };
 
 let redirect = {
@@ -724,7 +724,7 @@ function nostrLogin() {
         background: swalBackground,
         title: '<img src="../images/hivelogo50x200.svg"/>',
         html: 'Welcome! <div>Questions? see the <a href="/faq" target="_blank">FAQ</a> or '+ 
-        '<a href="https://t.me/+2Ll1IFwXwCJlMGFl">Chat.</a></div></br>',
+        '<a href="https://discord.com/channels/1315483857650319441/1315483858275405878">Discord Chat.</a></div></br>',
         showDenyButton: true,
         denyButtonText: `Just set a Name`,
         denyButtonColor: 'green',
@@ -5513,7 +5513,7 @@ function showAbout() {
                 <input type="number" id="amount" class="swal2-input" placeholder="Enter amount" value="21">
 
         <br /> <br />
-           Need help? Ask an admin in <a href="https://t.me/+2Ll1IFwXwCJlMGFl" target="_blank"  style="color: #3085d6;"> Telegram</a>.<br/>
+           Need help? Ask an admin in <a href="https://discord.com/channels/1315483857650319441/1315483858275405878" target="_blank"  style="color: #3085d6;">Discord</a>.<br/>
            Find out more about this project on <a href="https://github.com/hivetalk" target="_blank"  style="color: #3085d6;"> Github</a>
             <br/><br/>
 
