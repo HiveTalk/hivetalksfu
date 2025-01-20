@@ -1,178 +1,181 @@
-const express = require('express')
-const cors = require('cors')
-const { verifyEvent } = require('nostr-tools');
+// THIS IS SAMPLE CODE ONLY, DOES NOT WORK IN PRODUCTION
 
-class NostrAuthMiddleware {
-  constructor(options = {}) {
-      this.timeWindow = options.timeWindow || 60; // seconds
-  }
 
-  // Middleware function for Express
-  middleware() {
-      return async (req, res, next) => {
-          try {
-              const isValid = await this.validateRequest(req);
-              console.log("isValid : ", isValid)
-              if (!isValid) {
-                  return res.status(401).json({
-                      error: 'Invalid Nostr authentication'
-                  });
-              }
-              next();
-          } catch (error) {
-              console.error('Nostr auth error:', error);
-              res.status(401).json({
-                  error: 'Authentication failed'
-              });
-          }
-      };
-  }
+// const express = require('express')
+// const cors = require('cors')
+// const { verifyEvent } = require('nostr-tools');
 
-  async validateRequest(req) {
-      // Extract the Nostr event from Authorization header
-      const authHeader = req.headers.authorization;
-      console.log("validate request auth header: ", authHeader)
+// class NostrAuthMiddleware {
+//   constructor(options = {}) {
+//       this.timeWindow = options.timeWindow || 60; // seconds
+//   }
 
-      if (!authHeader?.startsWith('Nostr ')) {
-          return false;
-      }
+//   // Middleware function for Express
+//   middleware() {
+//       return async (req, res, next) => {
+//           try {
+//               const isValid = await this.validateRequest(req);
+//               console.log("isValid : ", isValid)
+//               if (!isValid) {
+//                   return res.status(401).json({
+//                       error: 'Invalid Nostr authentication'
+//                   });
+//               }
+//               next();
+//           } catch (error) {
+//               console.error('Nostr auth error:', error);
+//               res.status(401).json({
+//                   error: 'Authentication failed'
+//               });
+//           }
+//       };
+//   }
 
-      try {
-          // Decode the base64 event
-          const eventStr = Buffer.from(authHeader.slice(6), 'base64').toString();
-          const event = JSON.parse(eventStr);
+//   async validateRequest(req) {
+//       // Extract the Nostr event from Authorization header
+//       const authHeader = req.headers.authorization;
+//       console.log("validate request auth header: ", authHeader)
 
-          console.log("eventStr: ", eventStr)
-          console.log('event decoded: ', event)
+//       if (!authHeader?.startsWith('Nostr ')) {
+//           return false;
+//       }
 
-          // Validate the event
-          return await this.validateEvent(event.sig, req);
-      } catch (error) {
-          console.error('Error parsing auth event:', error);
-          return false;
-      }
-  }
+//       try {
+//           // Decode the base64 event
+//           const eventStr = Buffer.from(authHeader.slice(6), 'base64').toString();
+//           const event = JSON.parse(eventStr);
 
-  async validateEvent(event, req) {
-      // 1. Check kind
-      if (event.kind !== 27235) {
-          return false;
-      }
-      console.log("check kind")
+//           console.log("eventStr: ", eventStr)
+//           console.log('event decoded: ', event)
 
-      // 2. Check timestamp
-      const now = Math.floor(Date.now() / 1000);
-      if (Math.abs(now - event.created_at) > this.timeWindow) {
-          return false;
-      }
-      console.log("check timestamp")
+//           // Validate the event
+//           return await this.validateEvent(event.sig, req);
+//       } catch (error) {
+//           console.error('Error parsing auth event:', error);
+//           return false;
+//       }
+//   }
 
-      // 3. Check URL
-      const urlTag = event.tags.find(tag => tag[0] === 'u');
+//   async validateEvent(event, req) {
+//       // 1. Check kind
+//       if (event.kind !== 27235) {
+//           return false;
+//       }
+//       console.log("check kind")
 
-      console.log('urltag: ', urlTag[1])
-      console.log('full url: ', this.getFullUrl(req))
+//       // 2. Check timestamp
+//       const now = Math.floor(Date.now() / 1000);
+//       if (Math.abs(now - event.created_at) > this.timeWindow) {
+//           return false;
+//       }
+//       console.log("check timestamp")
 
-      if (!urlTag || urlTag[1] !== this.getFullUrl(req)) {
-          return false;
-      }
-      console.log("check URL")
+//       // 3. Check URL
+//       const urlTag = event.tags.find(tag => tag[0] === 'u');
 
-      // 4. Check method
-      const methodTag = event.tags.find(tag => tag[0] === 'method');
-      if (!methodTag || methodTag[1] !== req.method) {
-          return false;
-      }
-      console.log("check method")
+//       console.log('urltag: ', urlTag[1])
+//       console.log('full url: ', this.getFullUrl(req))
 
-      // 5. Check payload hash if present
-      if (req.body && Object.keys(req.body).length > 0) {
-          const payloadTag = event.tags.find(tag => tag[0] === 'payload');
-          if (payloadTag) {
-              const bodyHash = await this.sha256(JSON.stringify(req.body));
-              if (bodyHash !== payloadTag[1]) {
-                  return false;
-              }
-          }
-      }
-      console.log("check payload hash if present")
+//       if (!urlTag || urlTag[1] !== this.getFullUrl(req)) {
+//           return false;
+//       }
+//       console.log("check URL")
 
-      // 6. Verify event signature
-      return await this.verifySignature(event);
-  }
+//       // 4. Check method
+//       const methodTag = event.tags.find(tag => tag[0] === 'method');
+//       if (!methodTag || methodTag[1] !== req.method) {
+//           return false;
+//       }
+//       console.log("check method")
 
-  // Utility functions
-  getFullUrl(req) {
-     // return `${req.protocol}://${req.get('host')}${req.originalUrl}`;
-      return `https://${req.get('host')}${req.originalUrl}`;
-  }
+//       // 5. Check payload hash if present
+//       if (req.body && Object.keys(req.body).length > 0) {
+//           const payloadTag = event.tags.find(tag => tag[0] === 'payload');
+//           if (payloadTag) {
+//               const bodyHash = await this.sha256(JSON.stringify(req.body));
+//               if (bodyHash !== payloadTag[1]) {
+//                   return false;
+//               }
+//           }
+//       }
+//       console.log("check payload hash if present")
 
-  async sha256(message) {
-      return crypto
-          .createHash('sha256')
-          .update(message)
-          .digest('hex');
-  }
+//       // 6. Verify event signature
+//       return await this.verifySignature(event);
+//   }
 
-  async calculateEventId(event) {
-      // Serialize the event data according to NIP-01
-      const serialized = JSON.stringify([
-          0, // Reserved for future use
-          event.pubkey,
-          event.created_at,
-          event.kind,
-          event.tags,
-          event.content
-      ]);
+//   // Utility functions
+//   getFullUrl(req) {
+//      // return `${req.protocol}://${req.get('host')}${req.originalUrl}`;
+//       return `https://${req.get('host')}${req.originalUrl}`;
+//   }
 
-      // Calculate SHA256 hash
-      return await this.sha256(serialized);
-  }
+//   async sha256(message) {
+//       return crypto
+//           .createHash('sha256')
+//           .update(message)
+//           .digest('hex');
+//   }
 
-  async verifySignature(event) { 
-      let isGood = verifyEvent(event)
-      console.log("Verify Event", isGood)
-      return isGood
-  }
+//   async calculateEventId(event) {
+//       // Serialize the event data according to NIP-01
+//       const serialized = JSON.stringify([
+//           0, // Reserved for future use
+//           event.pubkey,
+//           event.created_at,
+//           event.kind,
+//           event.tags,
+//           event.content
+//       ]);
 
-}
+//       // Calculate SHA256 hash
+//       return await this.sha256(serialized);
+//   }
 
-const app = express();
-const nostrAuth = new NostrAuthMiddleware();
-app.use(express.json({ limit: '50mb' })); // Increase the limit if necessary
+//   async verifySignature(event) { 
+//       let isGood = verifyEvent(event)
+//       console.log("Verify Event", isGood)
+//       return isGood
+//   }
 
-app.use(
-    cors({
-      origin: '*',
-    })
-  )
+// }
+
+// const app = express();
+// const nostrAuth = new NostrAuthMiddleware();
+// app.use(express.json({ limit: '50mb' })); // Increase the limit if necessary
+
+// app.use(
+//     cors({
+//       origin: '*',
+//     })
+//   )
   
-  app.get('/api', (req, res) => {
-    res.setHeader('Content-Type', 'text/html')
-    res.setHeader('Cache-Control', 's-max-age=1, stale-while-revalidate')
-    res.send('hello world')
-  })
+//   app.get('/api', (req, res) => {
+//     res.setHeader('Content-Type', 'text/html')
+//     res.setHeader('Cache-Control', 's-max-age=1, stale-while-revalidate')
+//     res.send('hello world')
+//   })
   
-app.post('/api/auth',
-    nostrAuth.middleware(),
-    (req, res) => {
-        try {
-            // Accessing the JSON body sent by the client
-            const { room, username, avatarURL, relays, isPresenter } = req.body;
-            console.log('Room:', room);
-            console.log('Username:', username);
-            console.log('Avatar URL:', avatarURL);
-            console.log('Relays:', relays);
-            console.log('isPresenter', isPresenter);
+// app.post('/api/auth',
+//     nostrAuth.middleware(),
+//     (req, res) => {
+//         try {
+//             // Accessing the JSON body sent by the client
+//             const { room, username, avatarURL, relays, isPresenter } = req.body;
+//             console.log('Room:', room);
+//             console.log('Username:', username);
+//             console.log('Avatar URL:', avatarURL);
+//             console.log('Relays:', relays);
+//             console.log('isPresenter', isPresenter);
 
-            // TODO: Redirect to hivetalk room give above info, correctly
-            res.status(200).json({ message: 'Authentication successful'});
+//             // TODO: Redirect to hivetalk room give above info, correctly
+//             res.status(200).json({ message: 'Authentication successful'});
 
-        } catch (error) {
-            console.log("authentication failed")
-            res.status(401).json({ error: 'Authentication failed' });
-        }
-    }
-);
+//         } catch (error) {
+//             console.log("authentication failed")
+//             res.status(401).json({ error: 'Authentication failed' });
+//         }
+//     }
+// );
 
-module.exports = app;
+// module.exports = app;
