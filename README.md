@@ -59,6 +59,8 @@ Free WebRTC - SFU - Simple, Secure, Scalable Real-Time Video Conferences with su
 -   Right-click options on video elements for additional controls.
 -   Supports [REST API](app/api/README.md) (Application Programming Interface).
 -   Integration with [Slack](https://api.slack.com/apps/) for enhanced communication.
+-   Integration with [Discord](https://discord.com) for enhanced communication.
+-   Integration with [Mattermost](https://mattermost.com/) for enhanced communication.
 -   Utilizes [Sentry](https://sentry.io/) for error reporting.
 -   And much more...
 
@@ -205,6 +207,10 @@ $ PORT=3011 npm start
 -   Install [docker engine](https://docs.docker.com/engine/install/) and [docker compose](https://docs.docker.com/compose/install/)
 
 ```bash
+# Clone this repo
+$ git clone https://github.com/miroslavpejic85/mirotalksfu.git
+# Go to to dir mirotalksfu
+$ cd mirotalksfu
 # Copy app/src/config.template.js in app/src/config.js IMPORTANT (edit it according to your needs)
 $ cp app/src/config.template.js app/src/config.js
 # Copy docker-compose.template.yml in docker-compose.yml and edit it if needed

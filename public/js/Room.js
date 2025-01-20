@@ -11,7 +11,7 @@ if (location.href.substr(0, 5) !== 'https') location.href = 'https' + location.h
  * @license For commercial or closed source, contact us at license.mirotalk@gmail.com or purchase directly via CodeCanyon
  * @license CodeCanyon: https://codecanyon.net/item/mirotalk-sfu-webrtc-realtime-video-conferences/40769970
  * @author  Miroslav Pejic - miroslav.pejic.85@gmail.com
- * @version 1.5.67
+ * @version 1.6.31
  *
  */
 
@@ -50,6 +50,7 @@ let redirect = {
 
 let recCodecs = null;
 let recPrioritizeH264 = false;
+let isToggleExtraBtnClicked = false;
 
 const _PEER = {
     presenter: '<i class="fa-solid fa-user-shield"></i>',
@@ -236,6 +237,7 @@ let isEnumerateVideoDevices = false;
 let isAudioAllowed = false;
 let isVideoAllowed = false;
 let isVideoPrivacyActive = false;
+let isInitVideoMirror = true;
 let isRecording = false;
 let isAudioVideoAllowed = false;
 let isParticipantsListOpen = false;
@@ -269,7 +271,10 @@ let initStream = null;
 
 let scriptProcessor = null;
 
-const RoomURL = window.location.origin + '/join/' + room_id; // window.location.origin + '/join/?room=' + roomId + '&token=' + myToken
+// window.location.origin + '/join/' + roomId
+// window.location.origin + '/join/?room=' + roomId + '&token=' + myToken
+
+let RoomURL = window.location.origin + '/join/' + room_id;
 
 let transcription;
 
@@ -974,29 +979,32 @@ function refreshMainButtonsToolTipPlacement() {
 
         // Control buttons
         setTippy('shareButton', 'Share room', placement);
+        setTippy('hideMeButton', 'Toggle hide self view', placement);
         setTippy('startRecButton', 'Start recording', placement);
         setTippy('stopRecButton', 'Stop recording', placement);
+        setTippy('fullScreenButton', 'Toggle full screen', placement);
         setTippy('emojiRoomButton', 'Toggle emoji reaction', placement);
-        setTippy('chatButton', 'Toggle the chat', placement);
         setTippy('pollButton', 'Toggle the poll', placement);
         setTippy('editorButton', 'Toggle the editor', placement);
         setTippy('transcriptionButton', 'Toggle transcription', placement);
         setTippy('whiteboardButton', 'Toggle the whiteboard', placement);
         setTippy('snapshotRoomButton', 'Snapshot screen, window, or tab', placement);
         setTippy('settingsButton', 'Toggle the settings', placement);
+        setTippy('restartICEButton', 'Restart ICE', placement);
         setTippy('aboutButton', 'About this project', placement);
 
         // Bottom buttons
+        setTippy('toggleExtraButton', 'Toggle extra buttons', bPlacement);
         setTippy('startAudioButton', 'Start the audio', bPlacement);
         setTippy('stopAudioButton', 'Stop the audio', bPlacement);
         setTippy('startVideoButton', 'Start the video', bPlacement);
         setTippy('stopVideoButton', 'Stop the video', bPlacement);
         setTippy('swapCameraButton', 'Swap the camera', bPlacement);
-        setTippy('hideMeButton', 'Toggle hide self view', bPlacement);
         setTippy('startScreenButton', 'Start screen share', bPlacement);
         setTippy('stopScreenButton', 'Stop screen share', bPlacement);
         setTippy('raiseHandButton', 'Raise your hand', bPlacement);
         setTippy('lowerHandButton', 'Lower your hand', bPlacement);
+        setTippy('chatButton', 'Toggle the chat', bPlacement);
         setTippy('exitButton', 'Leave room', bPlacement);
     }
 }
@@ -1061,6 +1069,7 @@ async function initRoom() {
     } else {
         setButtonsInit();
         handleSelectsInit();
+        handleUsernameEmojiPicker();
         await whoAreYou();
         await setSelectsInit();
     }
@@ -1248,6 +1257,14 @@ function setupInitButtons() {
     };
     initStopScreenButton.onclick = async () => {
         await toggleScreenSharing();
+    };
+    initVideoMirrorButton.onclick = () => {
+        initVideo.classList.toggle('mirror');
+        isInitVideoMirror = initVideo.classList.contains('mirror');
+    };
+    initUsernameEmojiButton.onclick = () => {
+        getId('usernameInput').value = '';
+        toggleUsernameEmoji();
     };
 }
 
@@ -1449,6 +1466,7 @@ function getPeerInfo() {
         peer_token: peer_token,
         peer_presenter: isPresenter,
         peer_audio: isAudioAllowed,
+        peer_audio_volume: 100,
         peer_video: isVideoAllowed,
         peer_screen: isScreenAllowed,
         peer_recording: isRecording,
@@ -1511,7 +1529,6 @@ function getInfo() {
 async function whoAreYou() {
     console.log('04 ----> Who are you?');
 
-    hide(loadingDiv);
     document.body.style.background = 'var(--body-bg)';
 
     try {
@@ -1520,7 +1537,11 @@ async function whoAreYou() {
         });
         const serverButtons = response.data.message;
         if (serverButtons) {
-            BUTTONS = serverButtons;
+            // Merge serverButtons into BUTTONS, keeping the existing keys in BUTTONS if they are not present in serverButtons
+            BUTTONS = {
+                ...BUTTONS, // Spread current BUTTONS first to keep existing keys
+                ...serverButtons, // Overwrite or add new keys from serverButtons
+            };
             console.log('04 ----> AXIOS ROOM BUTTONS SETTINGS', {
                 serverButtons: serverButtons,
                 clientButtons: BUTTONS,
@@ -1535,6 +1556,7 @@ async function whoAreYou() {
     }
 
     if (peer_name) {
+        hide(loadingDiv);
         checkMedia();
         getPeerInfo();
         joinRoom(peer_name, room_id);
@@ -1569,6 +1591,36 @@ async function whoAreYou() {
         hide(initStartScreenButton);
     }
 
+    // Fetch the OIDC profile and manage peer_name
+    let force_peer_name = false;
+
+    try {
+        const { data: profile } = await axios.get('/profile', { timeout: 5000 });
+
+        if (profile) {
+            console.log('AXIOS GET OIDC Profile retrieved successfully', profile);
+
+            // Define peer_name based on the profile properties and preferences
+            const peerNamePreference = profile.peer_name || {};
+            default_name =
+                (peerNamePreference.email && profile.email) ||
+                (peerNamePreference.name && profile.name) ||
+                default_name;
+
+            // Set localStorage and force_peer_name if applicable
+            if (default_name && peerNamePreference.force) {
+                window.localStorage.peer_name = default_name;
+                force_peer_name = true;
+            } else {
+                console.warn('AXIOS GET Profile retrieved but missing required peer name fields');
+            }
+        } else {
+            console.warn('AXIOS GET Profile data is empty or undefined');
+        }
+    } catch (error) {
+        console.error('AXIOS OIDC Error fetching profile', error.message || error);
+    }
+
     initUser.classList.toggle('hidden');
 
     Swal.fire({
@@ -1578,13 +1630,16 @@ async function whoAreYou() {
         title: BRAND.app.name,
         input: 'text',
         inputPlaceholder: 'Enter your email or name',
-        inputAttributes: { maxlength: 32 },
+        inputAttributes: { maxlength: 32, id: 'usernameInput' },
         inputValue: default_name,
         html: initUser, // Inject HTML
         confirmButtonText: `Lets Go!`,
         customClass: { popup: 'init-modal-size' },
         showClass: { popup: 'animate__animated animate__fadeInDown' },
         hideClass: { popup: 'animate__animated animate__fadeOutUp' },
+        willOpen: () => {
+            hide(loadingDiv);
+        },
         inputValidator: (name) => {
             if (!name) return 'Please enter your email or name';
             if (name.length > 30) return 'Name must be max 30 char';
@@ -1598,6 +1653,9 @@ async function whoAreYou() {
             peer_name = name;
         },
     }).then(async () => {
+        if (!usernameEmoji.classList.contains('hidden')) {
+            usernameEmoji.classList.add('hidden');
+        }
         if (initStream && !joinRoomWithScreen) {
             await stopTracks(initStream);
             elemDisplay('initVideo', false);
@@ -1606,6 +1664,11 @@ async function whoAreYou() {
         getPeerInfo();
         joinRoom(peer_name, room_id);
     });
+
+    if (force_peer_name) {
+        getId('usernameInput').disabled = true;
+        hide(initUsernameEmojiButton);
+    }
 
     if (!isVideoAllowed) {
         elemDisplay('initVideo', false);
@@ -2087,7 +2150,15 @@ function roomIsReady() {
             myProfileAvatar.setAttribute('src', rc.genAvatarSvg(peer_name, 64));
         }
     });
+    show(toggleExtraButton); //*
 
+  /*  if (rc.isValidEmail(peer_name)) {
+        myProfileAvatar.style.borderRadius = `50px`;
+        myProfileAvatar.setAttribute('src', rc.genGravatar(peer_name));
+    } else {
+        myProfileAvatar.setAttribute('src', rc.genAvatarSvg(peer_name, 64));
+    }
+    show(toggleExtraButton); //* */
     BUTTONS.main.exitButton && show(exitButton);
     BUTTONS.main.shareButton && show(shareButton);
     BUTTONS.main.hideMeButton && show(hideMeButton);
@@ -2154,6 +2225,7 @@ function roomIsReady() {
         if (navigator.getDisplayMedia || navigator.mediaDevices.getDisplayMedia) {
             if (BUTTONS.main.startScreenButton) {
                 show(startScreenButton);
+                show(ScreenQualityDiv);
                 show(ScreenFpsDiv);
             }
             BUTTONS.main.snapshotRoomButton && show(snapshotRoomButton);
@@ -2190,7 +2262,6 @@ function roomIsReady() {
     if (!DetectRTC.isMobileDevice) show(pinUnpinGridDiv);
     if (!isSpeechSynthesisSupported) hide(speechMsgDiv);
     // If we want the sidebar collapsed and it's not already collapsed
-    toggleSidebar();
     handleButtons();
     handleSelects();
     handleInputs();
@@ -2206,6 +2277,7 @@ function roomIsReady() {
     if (room_password) {
         lockRoomButton.click();
     }
+    //show(restartICEButton); // TEST
 }
 
 function elemDisplay(element, display, mode = 'block') {
@@ -2325,6 +2397,7 @@ function handleButtons() {
         }
         isHideMeActive = !isHideMeActive;
         rc.handleHideMe();
+        hideClassElements('videoMenuBar');
     };
     settingsButton.onclick = () => {
         rc.toggleMySettings();
@@ -2560,7 +2633,7 @@ function handleButtons() {
         transcription.stop();
     };
     fullScreenButton.onclick = () => {
-        rc.toggleFullScreen();
+        rc.toggleRoomFullScreen();
     };
     recordingImage.onclick = () => {
         isRecording ? stopRecButton.click() : startRecButton.click();
@@ -2583,9 +2656,25 @@ function handleButtons() {
     };
     raiseHandButton.onclick = () => {
         rc.updatePeerInfo(peer_name, socket.id, 'hand', true);
+        hideClassElements('videoMenuBar');
     };
     lowerHandButton.onclick = () => {
         rc.updatePeerInfo(peer_name, socket.id, 'hand', false);
+    };
+    toggleExtraButton.onclick = () => {
+        toggleExtraButtons();
+        if (!DetectRTC.isMobileDevice) {
+            isToggleExtraBtnClicked = true;
+            setTimeout(() => {
+                isToggleExtraBtnClicked = false;
+            }, 2000);
+        }
+    };
+    toggleExtraButton.onmouseover = () => {
+        if (isToggleExtraBtnClicked || DetectRTC.isMobileDevice) return;
+        if (control.style.display === 'none') {
+            toggleExtraButtons();
+        }
     };
     startAudioButton.onclick = async () => {
         const moderator = rc.getModerator();
@@ -2672,6 +2761,9 @@ function handleButtons() {
         rc.shareVideo('all');
     };
     videoCloseBtn.onclick = () => {
+        if (rc._moderator.media_cant_sharing) {
+            return userLog('warning', 'The moderator does not allow you close this media', 'top-end', 6000);
+        }
         rc.closeVideo(true);
     };
     sendAbortBtn.onclick = () => {
@@ -2764,9 +2856,9 @@ function handleButtons() {
     aboutButton.onclick = () => {
         showAbout();
     };
-    // restartICE.onclick = async () => {
-    //     await rc.restartIce();
-    // };
+    restartICEButton.onclick = async () => {
+        await rc.restartIce();
+    };
 }
 
 // ####################################################
@@ -2780,6 +2872,8 @@ function setButtonsInit() {
         setTippy('initAudioVideoButton', 'Toggle the audio & video', 'top');
         setTippy('initStartScreenButton', 'Toggle screen sharing', 'top');
         setTippy('initStopScreenButton', 'Toggle screen sharing', 'top');
+        setTippy('initVideoMirrorButton', 'Toggle video mirror', 'top');
+        setTippy('initUsernameEmojiButton', 'Toggle username emoji', 'top');
     }
     if (!isAudioAllowed) hide(initAudioButton);
     if (!isVideoAllowed) hide(initVideoButton);
@@ -3046,11 +3140,13 @@ function handleCameraMirror(video) {
         // Desktop devices...
         if (!video.classList.contains('mirror')) {
             video.classList.toggle('mirror');
+            isInitVideoMirror = true;
         }
     } else {
         // Mobile, Tablet, IPad devices...
         if (video.classList.contains('mirror')) {
             video.classList.remove('mirror');
+            isInitVideoMirror = false;
         }
     }
 }
@@ -3064,6 +3160,9 @@ function handleSelects() {
     };
     videoQuality.onchange = () => {
         rc.closeThenProduce(RoomClient.mediaType.video, videoSelect.value);
+    };
+    screenQuality.onchange = () => {
+        rc.closeThenProduce(RoomClient.mediaType.screen);
     };
     videoFps.onchange = () => {
         rc.closeThenProduce(RoomClient.mediaType.video, videoSelect.value);
@@ -3147,11 +3246,6 @@ function handleSelects() {
         lS.setSettings(localStorageSettings);
         e.target.blur();
     };
-    switchVideoMirror.onchange = (e) => {
-        rc.toggleVideoMirror();
-        rc.roomMessage('toggleVideoMirror', e.currentTarget.checked);
-        e.target.blur();
-    };
     switchSounds.onchange = (e) => {
         isSoundEnabled = e.currentTarget.checked;
         rc.roomMessage('sounds', isSoundEnabled);
@@ -3170,9 +3264,11 @@ function handleSelects() {
         isButtonsBarOver = e.currentTarget.checked;
         localStorageSettings.keep_buttons_visible = isButtonsBarOver;
         lS.setSettings(localStorageSettings);
+        checkButtonsBar();
+        const status = isButtonsBarOver ? 'enabled' : 'disabled';
+        userLog('info', `Buttons always visible ${status}`, 'top-end');
         e.target.blur();
     };
-
     // audio options
     switchAutoGainControl.onchange = (e) => {
         localStorageSettings.mic_auto_gain_control = e.currentTarget.checked;
@@ -3383,6 +3479,14 @@ function handleSelects() {
         lS.setSettings(localStorageSettings);
         e.target.blur();
     };
+    switchEveryoneCantMediaSharing.onchange = (e) => {
+        const mediaCantSharing = e.currentTarget.checked;
+        rc.updateRoomModerator({ type: 'media_cant_sharing', status: mediaCantSharing });
+        rc.roomMessage('media_cant_sharing', mediaCantSharing);
+        localStorageSettings.moderator_media_cant_sharing = mediaCantSharing;
+        lS.setSettings(localStorageSettings);
+        e.target.blur();
+    };
     switchDisconnectAllOnLeave.onchange = (e) => {
         const disconnectAll = e.currentTarget.checked;
         rc.roomMessage('disconnect_all_on_leave', disconnectAll);
@@ -3474,6 +3578,24 @@ function handleInputs() {
 // ####################################################
 // EMOJI PIKER
 // ####################################################
+
+function toggleUsernameEmoji() {
+    getId('usernameEmoji').classList.toggle('hidden');
+}
+
+function handleUsernameEmojiPicker() {
+    const pickerOptions = {
+        theme: 'dark',
+        onEmojiSelect: addEmojiToUsername,
+    };
+    const emojiUsernamePicker = new EmojiMart.Picker(pickerOptions);
+    getId('usernameEmoji').appendChild(emojiUsernamePicker);
+
+    function addEmojiToUsername(data) {
+        getId('usernameInput').value += data.native;
+        toggleUsernameEmoji();
+    }
+}
 
 function handleChatEmojiPicker() {
     const pickerOptions = {
@@ -3727,7 +3849,7 @@ function handleRoomClientEvents() {
         show(stopVideoButton);
         setColor(startVideoButton, 'red');
         setVideoButtonsDisabled(false);
-        switchVideoMirror.disabled = false;
+        hideClassElements('videoMenuBar');
         // if (isParticipantsListOpen) getRoomParticipants();
     });
     rc.on(RoomClient.EVENTS.pauseVideo, () => {
@@ -3736,6 +3858,7 @@ function handleRoomClientEvents() {
         show(startVideoButton);
         setColor(startVideoButton, 'red');
         setVideoButtonsDisabled(false);
+        hideClassElements('videoMenuBar');
     });
     rc.on(RoomClient.EVENTS.resumeVideo, () => {
         console.log('Room event: Client resume video');
@@ -3743,6 +3866,7 @@ function handleRoomClientEvents() {
         show(stopVideoButton);
         setVideoButtonsDisabled(false);
         isVideoPrivacyActive = false;
+        hideClassElements('videoMenuBar');
     });
     rc.on(RoomClient.EVENTS.stopVideo, () => {
         console.log('Room event: Client stop video');
@@ -3750,29 +3874,33 @@ function handleRoomClientEvents() {
         show(startVideoButton);
         setVideoButtonsDisabled(false);
         isVideoPrivacyActive = false;
-        switchVideoMirror.disabled = true;
+        hideClassElements('videoMenuBar');
         // if (isParticipantsListOpen) getRoomParticipants();
     });
     rc.on(RoomClient.EVENTS.startScreen, () => {
         console.log('Room event: Client start screen');
         hide(startScreenButton);
         show(stopScreenButton);
+        hideClassElements('videoMenuBar');
         // if (isParticipantsListOpen) getRoomParticipants();
     });
     rc.on(RoomClient.EVENTS.pauseScreen, () => {
         console.log('Room event: Client pause screen');
         hide(startScreenButton);
         show(stopScreenButton);
+        hideClassElements('videoMenuBar');
     });
     rc.on(RoomClient.EVENTS.resumeScreen, () => {
         console.log('Room event: Client resume screen');
         hide(stopScreenButton);
         show(startScreenButton);
+        hideClassElements('videoMenuBar');
     });
     rc.on(RoomClient.EVENTS.stopScreen, () => {
         console.log('Room event: Client stop screen');
         hide(stopScreenButton);
         show(startScreenButton);
+        hideClassElements('videoMenuBar');
         // if (isParticipantsListOpen) getRoomParticipants();
     });
     rc.on(RoomClient.EVENTS.roomLock, () => {
@@ -3976,123 +4104,74 @@ function showButtons() {
         isButtonsVisible ||
         (rc.isMobileDevice && rc.isChatOpen) ||
         (rc.isMobileDevice && rc.isMySettingsOpen)
-    )        
-    toggleClassElements('videoMenuBar', 'inline');
-    control.style.display = 'flex';
+    )
+        return;
+    toggleExtraButton.innerHTML = icons.down;
     bottomButtons.style.display = 'flex';
     isButtonsVisible = true;
 }
 
 function checkButtonsBar() {
     if (localStorageSettings.keep_buttons_visible) {
-        toggleButtonsBar('show');
+        // Always show buttons if keep_buttons_visible is true
+        control.style.display = 'flex';
+        toggleExtraButton.innerHTML = icons.up;
+        bottomButtons.style.display = 'flex';
         isButtonsVisible = true;
     } else {
-        if (!isButtonsBarOver && isButtonsVisible) {  // Only hide if visible and not being hovered
-            toggleButtonsBar('hide');
+        // Only hide if not hovering and keep_buttons_visible is false
+        if (!isButtonsBarOver) {
+            control.style.display = 'none';
+            toggleExtraButton.innerHTML = icons.up;
             bottomButtons.style.display = 'none';
             isButtonsVisible = false;
         }
     }
-    
+
+    // Maintain your existing timeout check
     setTimeout(() => {
         checkButtonsBar();
     }, 10000);
 }
 
-function toggleButtonsBar(action = 'toggle') {
-    if (action === 'show') {
-        control.style.display = 'flex';
-        isButtonsBarOver = false;
-    } else if (action === 'hide' && !localStorageSettings.keep_buttons_visible) {
-        // Only hide if keep_buttons_visible is false
-        control.style.display = 'none';
-        isButtonsBarOver = false;
-    } else if (action === 'toggle' && !localStorageSettings.keep_buttons_visible) {
-        // Only toggle if keep_buttons_visible is false
-        control.style.display = control.style.display === 'flex' ? 'none' : 'flex';
-    }
+function toggleExtraButtons() {
+    const isControlHidden = control.style.display === 'none' || control.style.display === '';
+    const displayValue = isControlHidden ? 'flex' : 'none';
+    const iconHtml = isControlHidden ? icons.up : icons.down;
+
+    elemDisplay('control', isControlHidden, displayValue);
+    toggleExtraButton.innerHTML = iconHtml;
+    hideClassElements('videoMenuBar');
 }
 
-const collapseButton = document.getElementById('collapseButtonBar');
-const sidebar = document.getElementById('control');
-const buttons = sidebar.querySelectorAll('button:not(#collapseButtonBar)');
-
-collapseButton.style.color = '#66beff';
-function toggleSidebar() {
-    isSidebarCollapsed = !isSidebarCollapsed;
-    
-    if (isSidebarCollapsed) {
-        collapseButton.innerHTML = '<i class="fas fa-chevron-up"></i>';
-        collapseSidebar();
-    } else {
-        collapseButton.innerHTML = '<i class="fas fa-chevron-down"></i>';
-        expandSidebar();
-    }
-}
-
-function collapseSidebar() {
-    const sidebarRect = sidebar.getBoundingClientRect();
-    
-    // Calculate the bottom position for the collapse
-    const bottomY = sidebarRect.height;
-
-    buttons.forEach((button) => {
-        button.style.transition = 'all 0.5s ease-in-out';
-        button.style.transform = `translateY(${bottomY}px) scale(0.1)`;
-        button.style.opacity = '0';
-    });
-
-    setTimeout(() => {
-        buttons.forEach(button => button.style.display = 'none');
-        sidebar.style.width = '50px';
-        sidebar.style.height = '50px';
-        sidebar.style.position = 'absolute';
-        sidebar.style.bottom = '20px'; // Add some padding from bottom
-    }, 500);
-}
-
-function expandSidebar() {
-
-    setTimeout(() => {
-        // Reset sidebar position and size
-        sidebar.style.width = '';
-        sidebar.style.height = '';
-        sidebar.style.position = '';
-        sidebar.style.bottom = '';
-        
-        buttons.forEach((button) => {
-            button.style.display = '';
-            button.style.opacity = '0';
-            button.style.transform = 'translateY(100%)';
-            
-            // Trigger reflow
-            button.offsetHeight;
-
-            button.style.transition = 'all 0.5s ease-in-out';
-            button.style.transform = 'translateY(0) scale(1)';
-            button.style.opacity = '1';
-        });
-
-        // Show collapse button after animation
-        setTimeout(() => {
-            collapseButton.style.opacity = '1';
-        }, 500);
-    }, 200);
-}
-
-collapseButton.onclick = toggleSidebar;
-
-// Minimal initial setup
-sidebar.style.overflow = 'hidden';
-sidebar.style.transition = 'all 0.5s ease-in-out';
-collapseButton.style.zIndex = '1';
-
-function toggleClassElements(className, displayState) {
-    let elements = rc.getEcN(className);
+function hideClassElements(className) {
+    const elements = rc.getEcN(className);
     for (let i = 0; i < elements.length; i++) {
-        elements[i].style.display = displayState;
+        hide(elements[i]);
     }
+    setCamerasBorderNone();
+}
+
+function setCamerasBorderNone() {
+    const cameras = rc.getEcN('Camera');
+    for (let i = 0; i < cameras.length; i++) {
+        cameras[i].style.border = 'none';
+    }
+}
+
+// https://animate.style
+
+function animateCSS(element, animation, prefix = 'animate__') {
+    return new Promise((resolve, reject) => {
+        const animationName = `${prefix}${animation}`;
+        element.classList.add(`${prefix}animated`, animationName);
+        function handleAnimationEnd(event) {
+            event.stopPropagation();
+            element.classList.remove(`${prefix}animated`, animationName);
+            resolve('Animation ended');
+        }
+        element.addEventListener('animationend', handleAnimationEnd, { once: true });
+    });
 }
 
 function setAudioButtonsDisabled(disabled) {
@@ -4814,12 +4893,14 @@ function getParticipantsList(peers) {
 
     // CHAT-GPT
     if (chatGPT) {
+        const chatgpt_active = rc.chatPeerName === 'ChatGPT' ? ' active' : '';
+
         li = `
         <li 
             id="ChatGPT" 
             data-to-id="ChatGPT"
             data-to-name="ChatGPT"
-            class="clearfix" 
+            class="clearfix${chatgpt_active}" 
             onclick="rc.showPeerAboutAndMessages(this.id, 'ChatGPT', event)"
         >
             <img 
@@ -4833,12 +4914,14 @@ function getParticipantsList(peers) {
         </li>`;
     }
 
+    const public_chat_active = rc.chatPeerName === 'all' ? ' active' : '';
+
     // ALL
     li += `
     <li id="all"
         data-to-id="all"
         data-to-name="all"
-        class="clearfix active" 
+        class="clearfix${public_chat_active}" 
         onclick="rc.showPeerAboutAndMessages(this.id, 'all', event)"
     >
         <img 
@@ -4924,6 +5007,8 @@ function getParticipantsList(peers) {
         const avatarImg = peer_info.peer_url || getParticipantAvatar(peer_name);
         // || rc.genAvatarSvg(peer_name, 32);
 
+        const peer_chat_active = rc.chatPeerId === peer_id ? ' active' : '';
+
         // NOT ME
         if (socket.id !== peer_id) {
             // PRESENTER HAS MORE OPTIONS
@@ -4933,7 +5018,7 @@ function getParticipantsList(peers) {
                     id='${peer_id}'
                     data-to-id="${peer_id}" 
                     data-to-name="${peer_name}"
-                    class="clearfix" 
+                    class="clearfix${peer_chat_active}" 
                     onclick="rc.showPeerAboutAndMessages(this.id, '${peer_name}', event)"
                 >`;
 
@@ -5019,7 +5104,7 @@ function getParticipantsList(peers) {
                     id='${peer_id}' 
                     data-to-id="${peer_id}"
                     data-to-name="${peer_name}"
-                    class="clearfix" 
+                    class="clearfix${peer_chat_active}" 
                     onclick="rc.showPeerAboutAndMessages(this.id, '${peer_name}', event)"
                 >`;
 
@@ -5351,6 +5436,7 @@ function adaptAspectRatio(participantsCount) {
     // desktop aspect ratio
     switch (participantsCount) {
         case 1:
+        //case 2:
         case 3:
         case 4:
         case 7:
