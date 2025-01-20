@@ -381,12 +381,12 @@ module.exports = {
         brand: {
             app: {
                 name: 'MiroTalk SFU',
-                title: 'MiroTalk SFU<br />Free browser based Real-time video calls.<br />Simple, Secure, Fast.',
+                title: 'HiveTalk SFU<br />Browser based Real-time video calls.<br />Simple, Secure, Fast.',
                 description:
                     'Start your next video call with a single click. No download, plug-in, or login is required. Just get straight to talking, messaging, and sharing your screen.',
             },
             site: {
-                title: 'MiroTalk SFU, Free Video Calls, Messaging and Screen Sharing',
+                title: 'HiveTalk SFU, Free Video Calls, Messaging and Screen Sharing',
                 icon: '../images/logo.svg',
                 appleTouchIcon: '../images/logo.svg',
             },
