@@ -91,6 +91,7 @@ const Sentry = require('@sentry/node');
 // const Mattermost = require('./Mattermost.js');
 const restrictAccessByIP = require('./middleware/IpWhitelist.js');
 const packageJson = require('../../package.json');
+const { invokeCheckRoomOwner } = require('./checkRoomOwner');
 
 // Incoming Stream to RTPM
 const { v4: uuidv4 } = require('uuid');
@@ -163,6 +164,8 @@ const hostCfg = {
     api_room_exists: config.host.api_room_exists,
     users: config.host.users,
     authenticated: !config.host.protected,
+    nostr_api_endpoint: config.host.nostr_api_endpoint,
+    nostr_api_secret_key: config.host.nostr_api_secret_key,
 };
 
 const restApi = {
@@ -386,7 +389,7 @@ function startServer() {
 
     // Middleware to handle both .html and .handlebars templates
     app.use((req, res, next) => {
-        // Extend res.render to try both .html and .handlebars
+        // Extend res.render to try both .handlebars first
         const originalRender = res.render;
         res.render = function(view, locals, callback) {
             // Try .handlebars first
@@ -626,7 +629,8 @@ function startServer() {
             // http://localhost:3010/join?room=test&roomPassword=0&name=mirotalksfu&audio=1&video=1&screen=0&hide=0&notify=1
             // http://localhost:3010/join?room=test&roomPassword=0&name=mirotalksfu&audio=1&video=1&screen=0&hide=0&notify=0&token=token
 
-            const { room, roomPassword, name, audio, video, screen, hide, notify, token, isPresenter } = checkXSS(
+            // https://localhost:3010/join?room=yourname&nip98=nip98token  // 60 second expiration
+            const { room, roomPassword, name, audio, video, screen, hide, notify, token, nip98, isPresenter } = checkXSS(
                 req.query,
             );
 
@@ -640,17 +644,27 @@ function startServer() {
             let peerPassword = '';
             let isPeerValid = false;
             let isPeerPresenter = false;
+            
+            // TODO: Finish nip98 auth here  - dashboard login 60 sec expiration
+            // if (nip98) {                 
+            //     validateNip98Token(nip98).then((result) => {
+            //         if (result) {
+            //             log.debug('Direct Join NIP98 Success');
+            //         }
+            //     }).catch((error) => {
+            //         log.error('Direct Join NIP98 error', { error: error.message });
+            //     })
+            // }
 
+            // TODO: disallow reserved rooms if not owner  
             if (token) {
                 try {
                     const validToken = await isValidToken(token);
-
                     if (!validToken) {
                         return res.status(401).json({ message: 'Invalid Token' });
                     }
 
                     const { username, password, presenter } = checkXSS(decodeToken(token));
-
                     peerUsername = username;
                     peerPassword = password;
                     isPeerValid = await isAuthPeer(username, password);
@@ -682,7 +696,6 @@ function startServer() {
                     //return res.status(401).json({ message: 'Direct Room Join Unauthorized' });
                 }
             }
-
             const OIDCUserAuthenticated = OIDC.enabled && req.oidc.isAuthenticated();
 
             if (
@@ -722,7 +735,11 @@ function startServer() {
             return res.redirect('/');
         }
 
-        const allowRoomAccess = isAllowedRoomAccess('/join/:roomId', req, hostCfg, roomList, roomId);
+        // check does the room exist yet? if not
+        // check for user allowed to open room. 
+
+        // TODO: disallow reserved rooms if not owner or on acl list
+        const allowRoomAccess = isAllowedRoomAccess('/join/:roomId', req, hostCfg, authHost, roomList, roomId);
 
         if (allowRoomAccess) {
             // 1. Protect room access with database check
@@ -811,8 +828,34 @@ function startServer() {
             hostCfg.authenticated = true;
         } else {
             hostCfg.authenticated = false;
-            res.redirect('/login');
+            res.sendFile(views.login);
         }
+    });
+
+    // handle nostr protected login rooms
+    // check for nostr authentication to start room
+        // if open to the public let anyone auth into the room
+        // if not open to the public then check the database for allowed users
+        // nostr_api_endpoint : https://supabase-url/api/v1/nostrAuth 
+        // nostr_api_secret_key: 'insert your secret key here'
+
+    app.post(['/nauth'], (req, res) => {
+        // nip98 nostr auth api endpoint 
+        // check if request is valid.
+        res.sendFile(views.newRoom);
+    });
+
+    // handle nostr protected login rooms
+    // check for nostr authentication to start room
+        // if open to the public let anyone auth into the room
+        // if not open to the public then check the database for allowed users
+        // nostr_api_endpoint : https://supabase-url/api/v1/nostrAuth 
+        // nostr_api_secret_key: 'insert your secret key here'
+
+    app.post(['/nauth'], (req, res) => {
+        // nip98 nostr auth api endpoint 
+        // check if request is valid.
+        res.sendFile(views.newRoom);
     });
 
     // ####################################################
@@ -1228,6 +1271,27 @@ function startServer() {
         });
     });
 
+    // API endpoint for room ownership check
+    app.post('/api/check-room-owner', async (req, res) => {
+        try {
+            const { room_id } = req.body;
+            const data = await invokeCheckRoomOwner(room_id);
+            res.json(data);
+        } catch (error) {
+            console.error('Error checking room ownership:', error);
+            res.status(500).json({ error: 'Failed to check room ownership' });
+        }
+    });
+
+    app.post('/api/check-room-peers', async (req, res) => {
+        const { room_id } = req.body;
+        const room = roomList.get(room_id);    
+        const peerCount = room ? room.peers.size : 0;
+        console.log('check-room-peers --> ', peerCount);
+
+        res.json({ peerCount });
+    });
+
     // ####################################################
     // SLACK API
     // ####################################################
@@ -1486,7 +1550,9 @@ function startServer() {
         });
 
         socket.on('join', async (dataObject, cb) => {
-            if (!roomExists(socket)) {
+            // TODO: Check if is Room is Reserved on on database
+
+            if (!roomList.has(socket.room_id)) {
                 return cb({
                     error: 'Room does not exist',
                 });
@@ -1512,9 +1578,10 @@ function startServer() {
 
             const room = getRoom(socket);
 
-            const { peer_name, peer_id, peer_uuid, peer_token, os_name, os_version, browser_name, browser_version } =
+            const { peer_name, peer_pubkey, peer_id, peer_uuid, peer_token, os_name, os_version, browser_name, browser_version } =
                 data.peer_info;
 
+            console.log('>>>>> [Join] <<<< - socket.on Peer Info', {peer_name: peer_name, peer_pubkey: peer_pubkey, peer_id: peer_id});
             let is_presenter = true;
 
             // User Auth required or detect token, we check if peer valid
@@ -3286,9 +3353,9 @@ function startServer() {
         return roomPeersArray;
     }
 
-    function isAllowedRoomAccess(logMessage, req, hostCfg, roomList, roomId) {
+    function isAllowedRoomAccess(logMessage, req, hostCfg, authHost, roomList, roomId) {
         const OIDCUserAuthenticated = OIDC.enabled && req.oidc.isAuthenticated();
-        const hostUserAuthenticated = hostCfg.protected && hostCfg.authenticated;
+        const hostUserAuthenticated = hostCfg.protected && authHost.authenticated;
         const roomExist = roomList.has(roomId);
         const roomCount = roomList.size;
 
