@@ -92,6 +92,7 @@ const Sentry = require('@sentry/node');
 const restrictAccessByIP = require('./middleware/IpWhitelist.js');
 const packageJson = require('../../package.json');
 const { invokeCheckRoomOwner } = require('./checkRoomOwner');
+const { createClient } = require('@supabase/supabase-js');
 
 // Incoming Stream to RTPM
 const { v4: uuidv4 } = require('uuid');
@@ -572,7 +573,7 @@ function startServer() {
                 res.redirect('/active');
             } else {
                 hostCfg.authenticated = false;
-                res.redirect('/login');
+                res.sendFile(views.login);
             }
         } else {
             res.redirect('/active');
@@ -688,7 +689,7 @@ function startServer() {
                         : res.sendFile(views.newRoom);
                 }
             } else {
-                const allowRoomAccess = isAllowedRoomAccess('/join/params', req, hostCfg, roomList, room);
+                const allowRoomAccess = isAllowedRoomAccess('/join/params', req, hostCfg, authHost, roomList, room);
                 const roomAllowedForUser = await isRoomAllowedForUser('Direct Join without token', name, room);
                 if (!allowRoomAccess && !roomAllowedForUser) {
                     log.warn('Direct Room Join Unauthorized', room);
@@ -722,7 +723,6 @@ function startServer() {
 
     // join room by id
     app.get('/join/:roomId', async (req, res) => {
-        //
         const { roomId } = req.params;
 
         if (!roomId) {
@@ -735,10 +735,15 @@ function startServer() {
             return res.redirect('/');
         }
 
-        // check does the room exist yet? if not
-        // check for user allowed to open room. 
+        // Get room info from Supabase
+        const roomInfo = await getRoomInfo(roomId);
+        
+        // Read the room.html file
+        const roomHtml = fs.readFileSync(views.room, 'utf8');
+        
+        // Inject custom OG tags if room info exists
+        const htmlWithOG = roomInfo ? injectOGTags(roomHtml, roomInfo) : roomHtml;
 
-        // TODO: disallow reserved rooms if not owner or on acl list
         const allowRoomAccess = isAllowedRoomAccess('/join/:roomId', req, hostCfg, authHost, roomList, roomId);
 
         if (allowRoomAccess) {
@@ -746,7 +751,7 @@ function startServer() {
             if (!OIDC.enabled && hostCfg.protected && hostCfg.users_from_db) {
                 const roomExists = await roomExistsForUser(roomId);
                 log.debug('/join/:roomId exists from API endpoint', roomExists);
-                return roomExists ? res.sendFile(views.room) : res.redirect('/login');
+                return roomExists ? res.send(htmlWithOG) : res.redirect('/login');
             }
             // 2. Protect room access with configuration check
             if (!OIDC.enabled && hostCfg.protected && !hostCfg.users_from_db) {
@@ -754,9 +759,9 @@ function startServer() {
                     (user) => user.allowed_rooms && user.allowed_rooms.includes(roomId),
                 );
                 log.debug('/join/:roomId exists from config allowed rooms', roomExists);
-                return roomExists ? res.sendFile(views.room) : res.redirect('/whoAreYou/' + roomId);
+                return roomExists ? res.send(htmlWithOG) : res.redirect('/whoAreYou/' + roomId);
             }
-            res.sendFile(views.room);
+            res.send(htmlWithOG);
         } else {
             // Who are you?
             !OIDC.enabled && hostCfg.protected ? res.redirect('/whoAreYou/' + roomId) : res.redirect('/');
@@ -2236,7 +2241,7 @@ function startServer() {
             if (data.action === 'ban') room.addBannedPeer(data.to_peer_uuid);
 
             data.broadcast
-                ? room.broadCast(data.peer_id, 'peerAction', data)
+                ? room.broadCast(socket.id, 'peerAction', data)
                 : room.sendTo(data.peer_id, 'peerAction', data);
         });
 
@@ -2385,7 +2390,8 @@ function startServer() {
         socket.on('wbCanvasToJson', (dataObject) => {
             if (!roomExists(socket)) return;
 
-            const data = checkXSS(dataObject);
+            //const data = checkXSS(dataObject);
+            const data = dataObject;
 
             const room = getRoom(socket);
 
@@ -2670,7 +2676,6 @@ function startServer() {
 
             if (!config.videoAI.enabled || !config.videoAI.apiKey)
                 return cb({ error: 'Video AI seems disabled, try later!' });
-
             try {
                 const response = await axios.post(
                     `${config.videoAI.basePath}/v1/streaming.task`,
@@ -3354,6 +3359,7 @@ function startServer() {
     }
 
     function isAllowedRoomAccess(logMessage, req, hostCfg, authHost, roomList, roomId) {
+        console.log('roomList type:', typeof roomList, roomList instanceof Map, roomList);
         const OIDCUserAuthenticated = OIDC.enabled && req.oidc.isAuthenticated();
         const hostUserAuthenticated = hostCfg.protected && authHost.authenticated;
         const roomExist = roomList.has(roomId);
@@ -3558,4 +3564,61 @@ function startServer() {
             }
         }
     }
+}
+
+// Initialize Supabase client
+let supabase;
+try {
+    if (config.supabase?.url && config.supabase?.key) {
+        supabase = createClient(config.supabase.url, config.supabase.key);
+    } else {
+        log.warn('Supabase configuration missing - room customization will be disabled');
+    }
+} catch (err) {
+    log.error('Failed to initialize Supabase client:', err);
+}
+
+// Function to get room info from Supabase
+async function getRoomInfo(roomId) {
+    if (!supabase) {
+        return null;
+    }
+    
+    try {
+        const { data, error } = await supabase
+            .from('room_info')
+            .select('room_name, room_picture_url, room_description')
+            .eq('room_name', roomId)
+            .single();
+            
+        if (error) throw error;
+        return data;
+    } catch (err) {
+        log.error('Error fetching room info:', err);
+        return null;
+    }
+}
+
+// Function to inject OG tags into HTML
+function injectOGTags(html, ogData) {
+    const defaultOG = {
+        title: 'Click the link to make a call.',
+        description: 'HiveTalk SFU calling provides real-time video calls, messaging and screen sharing.',
+        image: 'https://hivetalk.org/images/hivetalk.png'
+    };
+
+    const ogTitle = ogData?.room_name ? `Join ${ogData.room_name} on HiveTalk` : defaultOG.title;
+    const ogDescription = ogData?.room_description || defaultOG.description;
+    const ogImage = ogData?.room_picture_url || defaultOG.image;
+
+    return html.replace(
+        /<meta id="ogTitle"[^>]*>/,
+        `<meta id="ogTitle" property="og:title" content="${ogTitle}">`
+    ).replace(
+        /<meta id="ogDescription"[^>]*>/,
+        `<meta id="ogDescription" property="og:description" content="${ogDescription}">`
+    ).replace(
+        /<meta id="ogImage"[^>]*>/,
+        `<meta id="ogImage" property="og:image" content="${ogImage}">`
+    );
 }
