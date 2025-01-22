@@ -3585,13 +3585,21 @@ async function getRoomInfo(roomId) {
     }
     
     try {
+        log.debug('Fetching room info for roomId:', roomId);
         const { data, error } = await supabase
             .from('room_info')
-            .select('room_name, room_picture_url, room_description')
-            .eq('room_name', roomId)
+            .select('*')
+            .eq('room_id', roomId)
             .single();
             
-        if (error) throw error;
+        if (error) {
+            log.error('Supabase error:', error);
+            return null;
+        }
+
+        log.debug('HIVE room data: ', data, error)
+
+        log.debug('Room info fetched:', data);
         return data;
     } catch (err) {
         log.error('Error fetching room info:', err);
@@ -3599,45 +3607,63 @@ async function getRoomInfo(roomId) {
     }
 }
 
-// Function to inject OG tags into HTML
-function injectOGTags(html, ogData, roomId) {
+// Function to inject OG tags
+function injectOGTags(html, roomInfo, roomId) {
     const defaultOG = {
-        title: 'Click the link to make a call.',
+        title: 'Hivetalk Room Now Open',
         description: 'HiveTalk SFU calling provides real-time video calls, messaging and screen sharing.',
         image: 'https://hivetalk.org/images/hivetalk.png',
-        url: `https://hivetalk.org/join/${roomId}`,
+        url: `https://hivetalk.org/join/${roomId}`
     };
 
-    const ogTitle = ogData?.room_name ? `Join ${ogData.room_name} on HiveTalk` : defaultOG.title;
-    const ogDescription = ogData?.room_description || defaultOG.description;
-    const ogImage = ogData?.room_picture_url || defaultOG.image;
-    const ogUrl = ogData?.room_url || defaultOG.url;
-    
-    // Escape all content to prevent XSS
+    log.debug("roomInfo: ", roomInfo)
+
+    const ogTitle = roomInfo?.name ? `Join ${roomInfo.name} on HiveTalk` : defaultOG.title;
+    const ogDescription = roomInfo?.description || defaultOG.description;
+    const ogImage = roomInfo?.image_url || defaultOG.image;
+    const ogUrl = `https://hivetalk.org/join/${roomId}`;
+
+    log.debug('Injecting OG Tags:', {
+        ogTitle,
+        ogDescription,
+        ogImage,
+        ogUrl
+    });
+
+    // Escape content for safety
+    const escapeHtml = (unsafe) => {
+        return unsafe
+            .replace(/&/g, "&amp;")
+            .replace(/</g, "&lt;")
+            .replace(/>/g, "&gt;")
+            .replace(/"/g, "&quot;")
+            .replace(/'/g, "&#039;");
+    };
+
     const safeTitle = escapeHtml(ogTitle);
     const safeDescription = escapeHtml(ogDescription);
     const safeImage = escapeHtml(ogImage);
     const safeUrl = escapeHtml(ogUrl);
 
-    // Update both title tag and OG tags
+    // Create OG tags
+    const ogTags = `
+        <meta property="og:title" content="${safeTitle}" />
+        <meta property="og:description" content="${safeDescription}" />
+        <meta property="og:image" content="${safeImage}" />
+        <meta property="og:url" content="${safeUrl}" />
+        <meta property="og:type" content="website" />
+        <meta property="og:site_name" content="HiveTalk" />
+    `;
+
+    // Replace the existing OG tags section and title
     html = html.replace(
-        /<title[^>]*>(.*?)<\/title>/,
-        `<title>${safeTitle}</title>`
+        /<!-- https:\/\/ogp\.me -->[\s\S]*?<meta property="og:site_name"[^>]*>/,
+        `<!-- https://ogp.me -->${ogTags}`
     );
 
-    // Update all OG tags
     html = html.replace(
-        /<meta id="ogTitle"[^>]*>/,
-        `<meta id="ogTitle" property="og:title" content="${safeTitle}">`
-    ).replace(
-        /<meta id="ogDescription"[^>]*>/,
-        `<meta id="ogDescription" property="og:description" content="${safeDescription}">`
-    ).replace(
-        /<meta id="ogImage"[^>]*>/,
-        `<meta id="ogImage" property="og:image" content="${safeImage}">`
-    ).replace(
-        /<meta id="ogUrl"[^>]*>/,
-        `<meta id="ogUrl" property="og:url" content="${safeUrl}">`
+        /<title[^>]*>.*?<\/title>/i,
+        `<title>${safeTitle}</title>`
     );
 
     return html;
