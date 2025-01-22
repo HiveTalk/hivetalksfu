@@ -742,7 +742,7 @@ function startServer() {
         const roomHtml = fs.readFileSync(views.room, 'utf8');
         
         // Inject custom OG tags if room info exists
-        const htmlWithOG = roomInfo ? injectOGTags(roomHtml, roomInfo) : roomHtml;
+        const htmlWithOG = roomInfo ? injectOGTags(roomHtml, roomInfo, roomId) : injectOGTags(roomHtml, null, roomId);
 
         const allowRoomAccess = isAllowedRoomAccess('/join/:roomId', req, hostCfg, authHost, roomList, roomId);
 
@@ -3600,25 +3600,55 @@ async function getRoomInfo(roomId) {
 }
 
 // Function to inject OG tags into HTML
-function injectOGTags(html, ogData) {
+function injectOGTags(html, ogData, roomId) {
     const defaultOG = {
         title: 'Click the link to make a call.',
         description: 'HiveTalk SFU calling provides real-time video calls, messaging and screen sharing.',
-        image: 'https://hivetalk.org/images/hivetalk.png'
+        image: 'https://hivetalk.org/images/hivetalk.png',
+        url: `https://hivetalk.org/join/${roomId}`,
     };
 
     const ogTitle = ogData?.room_name ? `Join ${ogData.room_name} on HiveTalk` : defaultOG.title;
     const ogDescription = ogData?.room_description || defaultOG.description;
     const ogImage = ogData?.room_picture_url || defaultOG.image;
+    const ogUrl = ogData?.room_url || defaultOG.url;
+    
+    // Escape all content to prevent XSS
+    const safeTitle = escapeHtml(ogTitle);
+    const safeDescription = escapeHtml(ogDescription);
+    const safeImage = escapeHtml(ogImage);
+    const safeUrl = escapeHtml(ogUrl);
 
-    return html.replace(
+    // Update both title tag and OG tags
+    html = html.replace(
+        /<title[^>]*>(.*?)<\/title>/,
+        `<title>${safeTitle}</title>`
+    );
+
+    // Update all OG tags
+    html = html.replace(
         /<meta id="ogTitle"[^>]*>/,
-        `<meta id="ogTitle" property="og:title" content="${ogTitle}">`
+        `<meta id="ogTitle" property="og:title" content="${safeTitle}">`
     ).replace(
         /<meta id="ogDescription"[^>]*>/,
-        `<meta id="ogDescription" property="og:description" content="${ogDescription}">`
+        `<meta id="ogDescription" property="og:description" content="${safeDescription}">`
     ).replace(
         /<meta id="ogImage"[^>]*>/,
-        `<meta id="ogImage" property="og:image" content="${ogImage}">`
+        `<meta id="ogImage" property="og:image" content="${safeImage}">`
+    ).replace(
+        /<meta id="ogUrl"[^>]*>/,
+        `<meta id="ogUrl" property="og:url" content="${safeUrl}">`
     );
+
+    return html;
+}
+
+// Function to escape HTML special characters
+function escapeHtml(unsafe) {
+    return unsafe
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;")
+        .replace(/'/g, "&#039;");
 }
