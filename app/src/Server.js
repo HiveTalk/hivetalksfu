@@ -688,7 +688,7 @@ function startServer() {
                         : res.sendFile(views.newRoom);
                 }
             } else {
-                const allowRoomAccess = isAllowedRoomAccess('/join/params', req, hostCfg, roomList, room);
+                const allowRoomAccess = isAllowedRoomAccess('/join/params', req, hostCfg, authHost, roomList, room);
                 const roomAllowedForUser = await isRoomAllowedForUser('Direct Join without token', name, room);
                 if (!allowRoomAccess && !roomAllowedForUser) {
                     log.warn('Direct Room Join Unauthorized', room);
@@ -2236,7 +2236,7 @@ function startServer() {
             if (data.action === 'ban') room.addBannedPeer(data.to_peer_uuid);
 
             data.broadcast
-                ? room.broadCast(data.peer_id, 'peerAction', data)
+                ? room.broadCast(socket.id, 'peerAction', data)
                 : room.sendTo(data.peer_id, 'peerAction', data);
         });
 
@@ -2670,7 +2670,6 @@ function startServer() {
 
             if (!config.videoAI.enabled || !config.videoAI.apiKey)
                 return cb({ error: 'Video AI seems disabled, try later!' });
-
             try {
                 const response = await axios.post(
                     `${config.videoAI.basePath}/v1/streaming.task`,
@@ -3354,6 +3353,7 @@ function startServer() {
     }
 
     function isAllowedRoomAccess(logMessage, req, hostCfg, authHost, roomList, roomId) {
+        console.log('roomList type:', typeof roomList, roomList instanceof Map, roomList);
         const OIDCUserAuthenticated = OIDC.enabled && req.oidc.isAuthenticated();
         const hostUserAuthenticated = hostCfg.protected && authHost.authenticated;
         const roomExist = roomList.has(roomId);
