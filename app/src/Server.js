@@ -92,7 +92,11 @@ const Sentry = require('@sentry/node');
 const restrictAccessByIP = require('./middleware/IpWhitelist.js');
 const packageJson = require('../../package.json');
 const { invokeCheckRoomOwner } = require('./checkRoomOwner');
-const { createClient } = require('@supabase/supabase-js');
+const { initSupabase } = require('./lib/supabase');
+const { getRoomInfo, injectOGTags } = require('./lib/roomUtils');
+
+// Initialize Supabase client
+initSupabase();
 
 // Incoming Stream to RTPM
 const { v4: uuidv4 } = require('uuid');
@@ -737,12 +741,12 @@ function startServer() {
 
         // Get room info from Supabase
         const roomInfo = await getRoomInfo(roomId);
-        
+                
         // Read the room.html file
         const roomHtml = fs.readFileSync(views.room, 'utf8');
-        
+                
         // Inject custom OG tags if room info exists
-        const htmlWithOG = roomInfo ? injectOGTags(roomHtml, roomInfo) : roomHtml;
+        const htmlWithOG = roomInfo ? injectOGTags(roomHtml, roomInfo, roomId) : injectOGTags(roomHtml, null, roomId);
 
         const allowRoomAccess = isAllowedRoomAccess('/join/:roomId', req, hostCfg, authHost, roomList, roomId);
 
@@ -1826,7 +1830,9 @@ function startServer() {
             const peer = getPeer(socket);
 
             if (!peer) {
-                return callback({ error: 'Peer not found' });
+                return callback({
+                    error: `Peer with ID: ${socket.id} for transport with id "${transport_id}" not found`,
+                });
             }
 
             const { peer_name } = peer || 'undefined';
@@ -1992,14 +1998,14 @@ function startServer() {
 
             if (!peer) {
                 return callback({
-                    error: `peer with ID: "${socket.id}" for producer with id "${producer_id}" not found`,
+                    error: `Peer with ID: "${socket.id}" for producer with id "${producer_id}" not found`,
                 });
             }
 
             const producer = peer.getProducer(producer_id);
 
             if (!producer) {
-                return callback({ error: `producer with id "${producer_id}" not found` });
+                return callback({ error: `Producer with id "${producer_id}" not found` });
             }
 
             try {
@@ -2022,14 +2028,14 @@ function startServer() {
 
             if (!peer) {
                 return callback({
-                    error: `peer with ID: "${socket.id}" for consumer with id "${consumer_id}" not found`,
+                    error: `Peer with ID: "${socket.id}" for consumer with id "${consumer_id}" not found`,
                 });
             }
 
             const consumer = peer.getConsumer(consumer_id);
 
             if (!consumer) {
-                return callback({ error: `consumer with id "${consumer_id}" not found` });
+                return callback({ error: `Consumer with id "${consumer_id}" not found` });
             }
 
             try {
@@ -2111,8 +2117,12 @@ function startServer() {
 
             const data = checkXSS(dataObject);
 
-            const isPresenter = await isPeerPresenter(socket.room_id, socket.id, data.peer_name, data.peer_uuid);
-
+            const isPresenter = await isPeerPresenter(
+                socket.room_id,
+                socket.id,
+                data.peer_name,
+                data.peer_uuid,
+            );
             const room = getRoom(socket);
 
             log.debug('Room action:', data);
@@ -2734,33 +2744,6 @@ function startServer() {
             }
         });
 
-        socket.on('talkToOpenAI', async ({ text, context }, cb) => {
-            if (!roomExists(socket)) return;
-
-            if (!config.videoAI.enabled || !config.videoAI.apiKey)
-                return cb({ error: 'Video AI seems disabled, try later!' });
-            try {
-                const systemLimit = config.videoAI.systemLimit;
-                const arr = {
-                    messages: [...context, { role: 'system', content: systemLimit }, { role: 'user', content: text }],
-                    model: 'gpt-3.5-turbo',
-                };
-                const chatCompletion = await chatGPT.chat.completions.create(arr);
-                const chatText = chatCompletion.choices[0].message.content;
-                context.push({ role: 'system', content: chatText });
-                context.push({ role: 'assistant', content: chatText });
-
-                const data = { response: chatText, context: context };
-
-                log.debug('talkToOpenAI', data);
-
-                cb(data);
-            } catch (error) {
-                log.error('talkToOpenAI', error.response.data);
-                cb({ error: error.response?.status === 500 ? 'Internal server error' : error.response.data.message });
-            }
-        });
-
         // https://docs.heygen.com/reference/close-session
         socket.on('streamingStop', async ({ session_id }, cb) => {
             if (!roomExists(socket)) return;
@@ -2788,6 +2771,34 @@ function startServer() {
                 cb(data);
             } catch (error) {
                 log.error('streamingStop', error.response.data);
+                cb({ error: error.response?.status === 500 ? 'Internal server error' : error.response.data.message });
+            }
+        });
+
+        // https://docs.heygen.com/reference/talk-to-openai
+        socket.on('talkToOpenAI', async ({ text, context }, cb) => {
+            if (!roomExists(socket)) return;
+
+            if (!config.videoAI.enabled || !config.videoAI.apiKey)
+                return cb({ error: 'Video AI seems disabled, try later!' });
+            try {
+                const systemLimit = config.videoAI.systemLimit;
+                const arr = {
+                    messages: [...context, { role: 'system', content: systemLimit }, { role: 'user', content: text }],
+                    model: 'gpt-3.5-turbo',
+                };
+                const chatCompletion = await chatGPT.chat.completions.create(arr);
+                const chatText = chatCompletion.choices[0].message.content;
+                context.push({ role: 'system', content: chatText });
+                context.push({ role: 'assistant', content: chatText });
+
+                const data = { response: chatText, context: context };
+
+                log.debug('talkToOpenAI', data);
+
+                cb(data);
+            } catch (error) {
+                log.error('talkToOpenAI', error.response.data);
                 cb({ error: error.response?.status === 500 ? 'Internal server error' : error.response.data.message });
             }
         });
@@ -3566,59 +3577,104 @@ function startServer() {
     }
 }
 
-// Initialize Supabase client
-let supabase;
-try {
-    if (config.supabase?.url && config.supabase?.key) {
-        supabase = createClient(config.supabase.url, config.supabase.key);
-    } else {
-        log.warn('Supabase configuration missing - room customization will be disabled');
-    }
-} catch (err) {
-    log.error('Failed to initialize Supabase client:', err);
-}
-
-// Function to get room info from Supabase
-async function getRoomInfo(roomId) {
-    if (!supabase) {
-        return null;
-    }
+// // Function to get room info from Supabase
+// async function getRoomInfo(roomId) {
+//     if (!supabase) {
+//         log.debug ("no supabase client present")
+//         return null;
+//     }
     
-    try {
-        const { data, error } = await supabase
-            .from('room_info')
-            .select('room_name, room_picture_url, room_description')
-            .eq('room_name', roomId)
-            .single();
+//     try {
+//         log.debug('Fetching room info for roomId:', roomId);
+//         const { data, error } = await supabase
+//             .from('room_info')
+//             .select('*')
+//             .eq('room_id', roomId)
+//             .single();
             
-        if (error) throw error;
-        return data;
-    } catch (err) {
-        log.error('Error fetching room info:', err);
-        return null;
-    }
-}
+//         if (error) {
+//             log.error('Supabase error:', error);
+//             return null;
+//         }
 
-// Function to inject OG tags into HTML
-function injectOGTags(html, ogData) {
-    const defaultOG = {
-        title: 'Click the link to make a call.',
-        description: 'HiveTalk SFU calling provides real-time video calls, messaging and screen sharing.',
-        image: 'https://hivetalk.org/images/hivetalk.png'
-    };
+//         log.debug('HIVE room data: ', data, error)
 
-    const ogTitle = ogData?.room_name ? `Join ${ogData.room_name} on HiveTalk` : defaultOG.title;
-    const ogDescription = ogData?.room_description || defaultOG.description;
-    const ogImage = ogData?.room_picture_url || defaultOG.image;
+//         log.debug('Room info fetched:', data);
+//         return data;
+//     } catch (err) {
+//         log.error('Error fetching room info:', err);
+//         return null;
+//     }
+// }
 
-    return html.replace(
-        /<meta id="ogTitle"[^>]*>/,
-        `<meta id="ogTitle" property="og:title" content="${ogTitle}">`
-    ).replace(
-        /<meta id="ogDescription"[^>]*>/,
-        `<meta id="ogDescription" property="og:description" content="${ogDescription}">`
-    ).replace(
-        /<meta id="ogImage"[^>]*>/,
-        `<meta id="ogImage" property="og:image" content="${ogImage}">`
-    );
-}
+// // Function to inject OG tags
+// function injectOGTags(html, roomInfo, roomId) {
+//     const defaultOG = {
+//         title: `${roomId} on Hivetalk Now Open`,
+//         description: 'HiveTalk SFU calling provides real-time video calls, messaging and screen sharing.',
+//         image: 'https://hivetalk.org/images/hivetalk.png',
+//         url: `https://hivetalk.org/join/${roomId}`
+//     };
+
+//     log.debug("roomInfo: ", roomInfo)
+
+//     const ogTitle = roomInfo?.name ? `Join ${roomInfo.name} on HiveTalk` : defaultOG.title;
+//     const ogDescription = roomInfo?.description || defaultOG.description;
+//     const ogImage = roomInfo?.image_url || defaultOG.image;
+//     const ogUrl = `https://hivetalk.org/join/${roomId}`;
+
+//     log.debug('Injecting OG Tags:', {
+//         ogTitle,
+//         ogDescription,
+//         ogImage,
+//         ogUrl
+//     });
+
+//     // Escape content for safety
+//     const escapeHtml = (unsafe) => {
+//         return unsafe
+//             .replace(/&/g, "&amp;")
+//             .replace(/</g, "&lt;")
+//             .replace(/>/g, "&gt;")
+//             .replace(/"/g, "&quot;")
+//             .replace(/'/g, "&#039;");
+//     };
+
+//     const safeTitle = escapeHtml(ogTitle);
+//     const safeDescription = escapeHtml(ogDescription);
+//     const safeImage = escapeHtml(ogImage);
+//     const safeUrl = escapeHtml(ogUrl);
+
+//     // Create OG tags
+//     const ogTags = `
+//         <meta property="og:title" content="${safeTitle}" />
+//         <meta property="og:description" content="${safeDescription}" />
+//         <meta property="og:image" content="${safeImage}" />
+//         <meta property="og:url" content="${safeUrl}" />
+//         <meta property="og:type" content="website" />
+//         <meta property="og:site_name" content="HiveTalk" />
+//     `;
+
+//     // Replace the existing OG tags section and title
+//     html = html.replace(
+//         /<!-- https:\/\/ogp\.me -->[\s\S]*?<meta property="og:site_name"[^>]*>/,
+//         `<!-- https://ogp.me -->${ogTags}`
+//     );
+
+//     html = html.replace(
+//         /<title[^>]*>.*?<\/title>/i,
+//         `<title>${safeTitle}</title>`
+//     );
+
+//     return html;
+// }
+
+// // Function to escape HTML special characters
+// function escapeHtml(unsafe) {
+//     return unsafe
+//         .replace(/&/g, "&amp;")
+//         .replace(/</g, "&lt;")
+//         .replace(/>/g, "&gt;")
+//         .replace(/"/g, "&quot;")
+//         .replace(/'/g, "&#039;");
+// }
