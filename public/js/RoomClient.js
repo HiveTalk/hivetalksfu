@@ -529,8 +529,21 @@ class RoomClient {
                 this.successCallback();
             });
         }  else { 
-            this.checkRoomOwnership();
+            this.createRoom(this.room_id).then(async () => {
+                const data = {
+                    room_id: this.room_id,
+                    peer_info: this.peer_info,
+                };
+                await this.join(data);
+                this.initSockets();
+                this._isConnected = true;
+                this.successCallback();
+            });
         }
+        // temporarily comment out since difficult to update
+        // else { 
+        //     this.checkRoomOwnership();
+        // }
     }
  
     async checkRoomOwnership() {
