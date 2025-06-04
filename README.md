@@ -1,6 +1,8 @@
-<h1 align="center">HiveTalk </h1>
+<h1 align="center">Vanilla HiveTalk </h1>
 
-## HiveTalk is a Fork of MiroTalk SFU, with **Nostr** and **Bitcoin Lightning** Enhancements.
+## Vanilla HiveTalk is a Fork of MiroTalk SFU, with **Nostr** and **Bitcoin Lightning** Enhancements.
+
+https://vanilla.hivetalk.org was previously known as https://hivetalk.org
 
 ---
 
