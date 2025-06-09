@@ -32,27 +32,27 @@ const footer = document.getElementById('footer');
 // app/src/config.js - ui.brand
 let BRAND = {
     app: {
-        name: 'HiveTalk SFU',
-        title: 'HiveTalk SFU<br />Browser based Real-time video calls.<br />Simple, Secure, Fast.',
+        name: 'HiveTalk Vanilla',
+        title: 'HiveTalk Vanilla<br />Browser based Real-time video calls.<br />Simple, Secure, Fast.',
         description:
             'Start your next video call with a single click. No download, plug-in, or login is required. Just get straight to talking, messaging, and sharing your screen.',
     },
     site: {
-        title: 'HiveTalk SFU, Free Video Calls, Messaging and Screen Sharing',
+        title: 'HiveTalk Vanilla, Free Video Calls, Messaging and Screen Sharing',
         icon: '../images/logo.svg',
         appleTouchIcon: '../images/logo.svg',
     },
     meta: {
         description:
-            'HiveTalk SFU powered by WebRTC and mediasoup, Real-time Simple Secure Fast video calls, messaging and screen sharing capabilities in the browser.',
+            'HiveTalk Vanilla powered by WebRTC and mediasoup, Real-time Simple Secure Fast video calls, messaging and screen sharing capabilities in the browser.',
         keywords:
             'webrtc, Hive, mediasoup, mediasoup-client, self hosted, voip, sip, real-time communications, chat, messaging, meet, webrtc stun, webrtc turn, webrtc p2p, webrtc sfu, video meeting, video chat, video conference, multi video chat, multi video conference, peer to peer, p2p, sfu, rtc, alternative to, zoom, microsoft teams, google meet, jitsi, meeting',
     },
     og: {
         type: 'app-webrtc',
-        siteName: 'HiveTalk SFU',
+        siteName: 'HiveTalk Vanilla',
         title: 'Click the link to make a call.',
-        description: 'HiveTalk SFU calling provides real-time video calls, messaging and screen sharing.',
+        description: 'HiveTalk Vanilla calling provides real-time video calls, messaging and screen sharing.',
         image: 'https://hivetalk.org/images/hivetalk.png',
         url: 'https://hivetalk.org',
     },

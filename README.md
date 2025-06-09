@@ -144,7 +144,7 @@ To embed a meeting within `your service or app` using an iframe, you can use the
 
 <br/>
 
--   Before running HiveTalk SFU, ensure you have `Node.js` and all [requirements](https://mediasoup.org/documentation/v3/mediasoup/installation/#requirements) installed. This project has been tested with Node version [18.X](https://nodejs.org/en/download).
+-   Before running HiveTalk Vanilla, ensure you have `Node.js` and all [requirements](https://mediasoup.org/documentation/v3/mediasoup/installation/#requirements) installed. This project has been tested with Node version [18.X](https://nodejs.org/en/download).
 
 -   Requirements install example for `Ubuntu 24.04 LTS`
 
@@ -191,7 +191,7 @@ $ PORT=3011 npm start
 
 > \[!NOTE]
 >
-> To run `HiveTalk SFU` on a `Windows operating system`, you can follow the instructions provided in [this documentation](https://github.com/hivetalk/hivetalksfu/issues/99#issuecomment-1586073853).
+> To run `HiveTalk Vanilla` on a `Windows operating system`, you can follow the instructions provided in [this documentation](https://github.com/hivetalk/hivetalksfu/issues/99#issuecomment-1586073853).
 
 </details>
 
@@ -233,7 +233,7 @@ $ docker-compose down
 
 -   `Ngrok/HTTPS:` You can start a video conference directly from your local PC and make it accessible from any device outside your network by following [these instructions](docs/ngrok.md), or expose it directly on [HTTPS](app/ssl/README.md).
 
--   `Self-hosting:` For `self-hosting HiveTalk SFU` on your own dedicated server, please refer to [this comprehensive guide](docs/self-hosting.md). It will provide you with all the necessary instructions to get your HiveTalk SFU instance up and running smoothly.
+-   `Self-hosting:` For `self-hosting HiveTalk Vanilla` on your own dedicated server, please refer to [this comprehensive guide](docs/self-hosting.md). It will provide you with all the necessary instructions to get your HiveTalk Vanilla instance up and running smoothly.
 
 -   `Rest API:` The [API documentation](https://docs.mirotalk.com/mirotalk-sfu/api/) uses [swagger](https://swagger.io/) at https://localhost:3010/api/v1/docs or check it on live [here](https://hivetalk.org/api/v1/docs).
 
@@ -285,7 +285,7 @@ $ curl -X POST "https://sfu.mirotalk.com/api/v1/token" -H "authorization: mirota
 
 [![AGPLv3](public/images/AGPLv3.png)](LICENSE)
 
-HiveTalk SFU is free and open-source under the terms of AGPLv3 (GNU Affero General Public License v3.0). Please `respect the license conditions`, In particular `modifications need to be free as well and made available to the public`. Get a quick overview of the license at [Choose an open source license](https://choosealicense.com/licenses/agpl-3.0/).
+HiveTalk Vanilla is free and open-source under the terms of AGPLv3 (GNU Affero General Public License v3.0). Please `respect the license conditions`, In particular `modifications need to be free as well and made available to the public`. Get a quick overview of the license at [Choose an open source license](https://choosealicense.com/licenses/agpl-3.0/).
 
 </details>
 
