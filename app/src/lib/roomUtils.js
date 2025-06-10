@@ -35,7 +35,7 @@ async function getRoomInfo(roomId) {
 function injectOGTags(html, roomInfo, roomId) {
     const defaultOG = {
         title: `${roomId} on Hivetalk Now Open`,
-        description: 'HiveTalk SFU calling provides real-time video calls, messaging and screen sharing.',
+        description: 'HiveTalk Vanilla calling provides real-time video calls, messaging and screen sharing.',
         image: 'https://hivetalk.org/images/hivetalk.png',
         url: `https://hivetalk.org/join/${roomId}`
     };

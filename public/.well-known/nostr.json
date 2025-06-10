@@ -13,52 +13,16 @@
     },
     "relays": {
         "13ff84142a6526245124c180fb5342cea130d558fec7d488019d1dae7aaca18a": [
-            "wss://testnet.plebnet.dev/nostrrelay/1",
             "wss://relay.primal.net",
             "wss://nos.lol/",
             "wss://relay.damus.io/",
-            "wss://relay.nostr.band/",
-            "wss://nostr.wine/",
-            "wss://relay.nostriches.org/",
-            "wss://relay.momostr.pink/",
-            "wss://relay.mostr.pub/",
-            "wss://nostr.mutinywallet.com/"
+            "wss://relay.nostr.band/"
         ],
         "3878d95db7b854c3a0d3b2d6b7bf9bf28b36162be64326f5521ba71cf3b45a69": [
             "wss://relay.primal.net",
             "wss://relay.damus.io/",
             "wss://nos.lol",
             "wss://hivetalk.nostr1.com"
-        ],
-        "df0aed92dff00d4ffeda2f4cd88d967dc576b5549400b92afb98a419aa06e6f5": [
-            "wss://adre.su/",
-            "wss://mnl.v0l.io/",
-            "wss://nostr-1.nbo.angani.co/",
-            "wss://nostr.coinfundit.com/",
-            "wss://nostr.olwe.link/",
-            "wss://r.kojira.io/",
-            "wss://relay.minds.com/nostr/v1/ws",
-            "wss://relay.momostr.pink/",
-            "wss://relay.mostr.pub/",
-            "wss://relay.nostr.band/",
-            "wss://relay.nostriches.org/",
-            "wss://relay.orangepill.dev/",
-            "wss://relay.urbanzap.space/",
-            "wss://relay.primal.net",
-            "wss://relay.nostr.bg/",
-            "wss://nostr-pub.wellorder.net/",
-            "wss://nos.lol/",
-            "wss://btc.klendazu.com/",
-            "wss://relay.damus.io/",
-            "wss://nostrua.com/",
-            "wss://bitcoiner.social/",
-            "wss://nostr.mutinywallet.com/",
-            "wss://nostr.bitcoiner.social/",
-            "wss://nostr.fbxl.net/",
-            "wss://nostr.mom/",
-            "wss://nostr.swiss-enigma.ch/",
-            "wss://offchain.pub/",
-            "wss://relay.mostr.pub/"
         ]
     }
 }

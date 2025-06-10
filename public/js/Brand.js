@@ -32,27 +32,27 @@ const footer = document.getElementById('footer');
 // app/src/config.js - ui.brand
 let BRAND = {
     app: {
-        name: 'HiveTalk SFU',
-        title: 'HiveTalk SFU<br />Browser based Real-time video calls.<br />Simple, Secure, Fast.',
+        name: 'HiveTalk Vanilla',
+        title: 'HiveTalk Vanilla<br />Browser based Real-time video calls.<br />Simple, Secure, Fast.',
         description:
             'Start your next video call with a single click. No download, plug-in, or login is required. Just get straight to talking, messaging, and sharing your screen.',
     },
     site: {
-        title: 'HiveTalk SFU, Free Video Calls, Messaging and Screen Sharing',
+        title: 'HiveTalk Vanilla, Free Video Calls, Messaging and Screen Sharing',
         icon: '../images/logo.svg',
         appleTouchIcon: '../images/logo.svg',
     },
     meta: {
         description:
-            'HiveTalk SFU powered by WebRTC and mediasoup, Real-time Simple Secure Fast video calls, messaging and screen sharing capabilities in the browser.',
+            'HiveTalk Vanilla powered by WebRTC and mediasoup, Real-time Simple Secure Fast video calls, messaging and screen sharing capabilities in the browser.',
         keywords:
             'webrtc, Hive, mediasoup, mediasoup-client, self hosted, voip, sip, real-time communications, chat, messaging, meet, webrtc stun, webrtc turn, webrtc p2p, webrtc sfu, video meeting, video chat, video conference, multi video chat, multi video conference, peer to peer, p2p, sfu, rtc, alternative to, zoom, microsoft teams, google meet, jitsi, meeting',
     },
     og: {
         type: 'app-webrtc',
-        siteName: 'HiveTalk SFU',
+        siteName: 'HiveTalk Vanilla',
         title: 'Click the link to make a call.',
-        description: 'HiveTalk SFU calling provides real-time video calls, messaging and screen sharing.',
+        description: 'HiveTalk Vanilla calling provides real-time video calls, messaging and screen sharing.',
         image: 'https://hivetalk.org/images/hivetalk.png',
         url: 'https://hivetalk.org',
     },
@@ -83,9 +83,26 @@ async function initialize() {
 }
 
 async function getBrand() {
+    let needsFetch = true;
+    
     if (brandData) {
-        setBrand(JSON.parse(brandData));
-    } else {
+        // We have cached data, but let's check if we need to refresh
+        const cachedBrand = JSON.parse(brandData);
+        setBrand(cachedBrand); // Use cached data initially
+        
+        // Check if the cache is still fresh (less than 1 hour old)
+        const cacheTimestamp = cachedBrand.timestamp || 0;
+        const currentTime = new Date().getTime();
+        const cacheAge = currentTime - cacheTimestamp;
+        const maxCacheAge = 60 * 60 * 1000; // 1 hour in milliseconds
+        
+        if (cacheAge < maxCacheAge) {
+            needsFetch = false; // Cache is fresh enough
+        }
+    }
+    
+    // Fetch from server if needed (no cache or cache is stale)
+    if (needsFetch) {
         try {
             const response = await fetch('/brand', { timeout: 5000 });
             if (!response.ok) {
@@ -94,6 +111,9 @@ async function getBrand() {
             const data = await response.json();
             const serverBrand = data.message;
             if (serverBrand) {
+                // Add timestamp to track when this data was fetched
+                serverBrand.timestamp = new Date().getTime();
+                
                 setBrand(serverBrand);
                 console.log('FETCH BRAND SETTINGS', {
                     serverBrand: serverBrand,

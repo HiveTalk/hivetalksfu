@@ -1,8 +1,8 @@
 swagger: '2.0'
 
 info:
-    title: HiveTalk SFU API
-    description: API description for external applications that integrate with HiveTalk SFU.
+    title: HiveTalk Vanilla API
+    description: API description for external applications that integrate with HiveTalk Vanilla.
     version: 1.0.1
 
 basePath: /api/v1
