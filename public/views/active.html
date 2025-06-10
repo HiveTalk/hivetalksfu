@@ -234,9 +234,14 @@
                                     }
                                 </style>
                                 <div style="color: rgb(248, 13, 150)">
-                                    <b> <span class="blink-text">>>></span> Try the New 
-                                        <a href="https://honey.hivetalk.org/dashboard"
-                                        style="color: rgb(248, 13, 150); on-hover:text-decoration:underline">Hivetalk Honey</a>
+                                    <b> <span class="blink-text">>>></span> Try the new                                         
+                                        <button id="honeyButton" class="button button-donate pulse">
+                                            Hivetalk Honey</button>
+                                        <script>
+                                            document.getElementById('honeyButton').addEventListener('click', function() {
+                                                window.location.href = 'https://honey.hivetalk.org/dashboard';
+                                            });
+                                        </script>
                                     </b>
                                 </div>
                             </div>
