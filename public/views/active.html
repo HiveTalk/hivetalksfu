@@ -233,17 +233,31 @@
                                         animation: blink 2s infinite;
                                     }
                                 </style>
-                                <div style="color: rgb(248, 13, 150)">
-                                    <b> <span class="blink-text">>>></span> Try the new                                         
-                                        <button id="honeyButton" class="button button-donate pulse">
-                                            Hivetalk Honey</button>
-                                        <script>
-                                            document.getElementById('honeyButton').addEventListener('click', function() {
-                                                window.location.href = 'https://honey.hivetalk.org/dashboard';
-                                            });
-                                        </script>
-                                    </b>
-                                </div>
+                                <div class="flex flex-col items-center space-y-4">
+                                    <!-- Enhanced CTA Button -->
+                                    <button id="honeyButton" class="button-donate px-6 py-3 bg-pink-600 text-white font-bold text-lg rounded-2xl hover:bg-pink-500 wiggle-on-hover transition-all duration-300">
+                                      👉 Try the New <b>HIVETALK HONEY 🚀</b> 
+                                    </button>
+                                
+                                    <!-- Supporting tagline -->
+                                    <p class="text-xs text-grey opacity-80">
+                                      A faster, sleeker way to talk with friends.
+                                    </p>
+                                  </div>
+                                    <style>
+                                    @keyframes wiggle {
+                                        0%, 100% { transform: rotate(-2deg); }
+                                        50% { transform: rotate(2deg); }
+                                      }
+                                      .wiggle-on-hover:hover {
+                                        animation: wiggle 0.3s ease-in-out;
+                                      }
+                                    </style>
+                                <script>
+                                    document.getElementById('honeyButton').addEventListener('click', function() {
+                                        window.location.href = 'https://honey.hivetalk.org/dashboard';
+                                    });
+                                </script>
                             </div>
                         </div>
                     </div>
