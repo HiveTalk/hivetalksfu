@@ -223,8 +223,18 @@
                                     <span>Your recent room:</span>
                                     <a id="lastRoom"></a>
                                 </div>
+                                <style>
+                                    @keyframes blink {
+                                        0% { opacity: 1; }
+                                        50% { opacity: 0; }
+                                        100% { opacity: 1; }
+                                    }
+                                    .blink-text {
+                                        animation: blink 2s infinite;
+                                    }
+                                </style>
                                 <div style="color: rgb(248, 13, 150)">
-                                    <b> >>> Try the New 
+                                    <b> <span class="blink-text">>>></span> Try the New 
                                         <a href="https://honey.hivetalk.org/dashboard"
                                         style="color: rgb(248, 13, 150); on-hover:text-decoration:underline">Hivetalk Honey</a>
                                     </b>
