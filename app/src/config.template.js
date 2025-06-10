@@ -380,7 +380,7 @@ module.exports = {
         */
         brand: {
             app: {
-                name: 'MiroTalk SFU',
+                name: 'HiveTalk Vanilla',
                 title: 'HiveTalk Vanilla<br />Browser based Real-time video calls.<br />Simple, Secure, Fast.',
                 description:
                     'Start your next video call with a single click. No download, plug-in, or login is required. Just get straight to talking, messaging, and sharing your screen.',
