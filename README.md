@@ -4,6 +4,9 @@
 
 https://vanilla.hivetalk.org was previously known as https://hivetalk.org
 
+If you are looking for Hivetalk 2.0, which is called honey, go to https://honey.hivetalk.org/dashboard
+
+
 ---
 
 Free WebRTC - SFU - Simple, Secure, Scalable Real-Time Video Conferences with support for up to 4k resolution. It's compatible with all major browsers and platforms
