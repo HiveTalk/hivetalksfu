@@ -1927,42 +1927,42 @@ async function showAnnouncements(useNavigator = false) {
     function show() {
         sound('open');
 
-        Swal.fire({
-            background: swalBackground,
-            position: 'center',
-            //title: 'Latest Updates',
-            html: `
-            <div>
-                <iframe width="100%" height="315" src="https://www.youtube.com/embed/ZIDZKQhRlRk" 
-                title="YouTube video player" frameborder="0" 
-                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" 
-                allowfullscreen></iframe>
-            </div>
-            <div>            
-            <p align="left"><ul style="text-align: left;">
-            <li>
-            Try the new version! >> <a href="https://honey.hivetalk.org/dashboard">Honey.Hivetalk.org</a>
-            </li>
+        // Swal.fire({
+        //     background: swalBackground,
+        //     position: 'center',
+        //     //title: 'Latest Updates',
+        //     html: `
+        //     <div>
+        //         <iframe width="100%" height="315" src="https://www.youtube.com/embed/ZIDZKQhRlRk" 
+        //         title="YouTube video player" frameborder="0" 
+        //         allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" 
+        //         allowfullscreen></iframe>
+        //     </div>
+        //     <div>            
+        //     <p align="left"><ul style="text-align: left;">
+        //     <li>
+        //     Try the new version! >> <a href="https://honey.hivetalk.org/dashboard">Honey.Hivetalk.org</a>
+        //     </li>
             
-            </ul>
-            </p>
-            </div>`,
-            showDenyButton: false,
-            showCancelButton: true,
-            showConfirmButton:false,
-            cancelButtonColor: 'red',
-            confirmButtonText: `Copy URL`,
-            cancelButtonText: `Close`,
-            showClass: { popup: 'animate__animated animate__fadeInDown' },
-            hideClass: { popup: 'animate__animated animate__fadeOutUp' },
-        }).then((result) => {
-            if (result.isConfirmed) {
-                copyRoomURL();
-            }
-            if (isScreenAllowed) {
-                rc.shareScreen();
-            }
-        });
+        //     </ul>
+        //     </p>
+        //     </div>`,
+        //     showDenyButton: false,
+        //     showCancelButton: true,
+        //     showConfirmButton:false,
+        //     cancelButtonColor: 'red',
+        //     confirmButtonText: `Copy URL`,
+        //     cancelButtonText: `Close`,
+        //     showClass: { popup: 'animate__animated animate__fadeInDown' },
+        //     hideClass: { popup: 'animate__animated animate__fadeOutUp' },
+        // }).then((result) => {
+        //     if (result.isConfirmed) {
+        //         copyRoomURL();
+        //     }
+        //     if (isScreenAllowed) {
+        //         rc.shareScreen();
+        //     }
+        // });
     }
 }
 
