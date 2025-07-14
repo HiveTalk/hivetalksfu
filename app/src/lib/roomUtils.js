@@ -1,37 +1,36 @@
 const Logger = require('../Logger');
 const log = new Logger('RoomUtils');
-const { getSupabaseClient } = require('./supabase');
+// const { getSupabaseClient } = require('./supabase');
 
-// Function to get room info from Supabase
-async function getRoomInfo(roomId) {
-    const supabase = getSupabaseClient();
-    if (!supabase) {
-        log.debug("No supabase client present");
-        return null;
-    }
-    
-    try {
-        log.debug('Fetching room info for roomId:', roomId);
-        const { data, error } = await supabase
-            .from('room_info')
-            .select('*')
-            .eq('room_name', roomId)
-            .single();
-            
-        if (error) {
-            log.error('Supabase error:', error);
-            return null;
-        }
+// // Function to get room info from Supabase
+// async function getRoomInfo(roomId) {
+//     const supabase = getSupabaseClient();
+//     if (!supabase) {
+//         log.debug("No supabase client present");
+//         return null;
+//     }
+//     try {
+//         log.debug('Fetching room info for roomId:', roomId);
+//         const { data, error } = await supabase
+//             .from('room_info')
+//             .select('*')
+//             .eq('room_name', roomId)
+//             .single();
+//         if (error) {
+//             log.error('Supabase error:', error);
+//             return null;
+//         }
+//         log.debug('Room data:', { data, error });
+//         return data;
+//     } catch (err) {
+//         log.error('Error fetching room info:', err);
+//         return null;
+//     }
+// }
 
-        log.debug('Room data:', { data, error });
-        return data;
-    } catch (err) {
-        log.error('Error fetching room info:', err);
-        return null;
-    }
-}
 
-// Function to inject OG tags
+// // Function to inject OG tags
+
 function injectOGTags(html, roomInfo, roomId) {
     const defaultOG = {
         title: `${roomId} on Hivetalk Now Open`,
@@ -95,7 +94,7 @@ function escapeHtml(unsafe) {
 }
 
 module.exports = {
-    getRoomInfo,
+//    getRoomInfo,
     injectOGTags,
     escapeHtml,
 };
