@@ -6593,7 +6593,7 @@ class RoomClient {
         Swal.fire({
             allowOutsideClick: false,
             background: swalBackground,
-            imageAlt: 'mirotalksfu-file-sharing',
+            imageAlt: 'hivetalksfu-file-sharing',
             imageUrl: image.share,
             position: 'center',
             title: 'Share file',
@@ -6895,7 +6895,7 @@ class RoomClient {
                     title: 'Received file',
                     text: this.incomingFileInfo.fileName + ' size ' + this.bytesToSize(this.incomingFileInfo.fileSize),
                     imageUrl: e.target.result,
-                    imageAlt: 'mirotalksfu-file-img-download',
+                    imageAlt: 'hivetalksfu-file-img-download',
                     showDenyButton: true,
                     confirmButtonText: `Save`,
                     denyButtonText: `Cancel`,
