@@ -35,8 +35,8 @@ function injectOGTags(html, roomInfo, roomId) {
     const defaultOG = {
         title: `${roomId} on Hivetalk Now Open`,
         description: 'HiveTalk Vanilla calling provides real-time video calls, messaging and screen sharing.',
-        image: 'https://hivetalk.org/images/hivetalk.png',
-        url: `https://hivetalk.org/join/${roomId}`
+        image: 'https://vanilla.hivetalk.org/images/hivetalk.png',
+        url: `https://vanilla.hivetalk.org/join/${roomId}`
     };
 
     log.debug("Processing room info:", roomInfo);
@@ -45,7 +45,7 @@ function injectOGTags(html, roomInfo, roomId) {
     const ogTitle = roomInfo?.room_name || `Join ${defaultOG.title} room on HiveTalk`;
     const ogDescription = roomInfo?.room_description || defaultOG.description;
     const ogImage = roomInfo?.room_picture_url || defaultOG.image;
-    const ogUrl = `https://hivetalk.org/join/${roomId}`;
+    const ogUrl = `https://vanilla.hivetalk.org/join/${roomId}`;
 
     log.debug('Injecting OG Tags:', {
         ogTitle,

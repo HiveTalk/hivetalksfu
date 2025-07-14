@@ -3614,8 +3614,8 @@ function startServer() {
 //     const defaultOG = {
 //         title: `${roomId} on Hivetalk Now Open`,
 //         description: 'HiveTalk Vanilla calling provides real-time video calls, messaging and screen sharing.',
-//         image: 'https://hivetalk.org/images/hivetalk.png',
-//         url: `https://hivetalk.org/join/${roomId}`
+//         image: 'https://vanilla.hivetalk.org/images/hivetalk.png',
+//         url: `https://vanilla.hivetalk.org/join/${roomId}`
 //     };
 
 //     log.debug("roomInfo: ", roomInfo)
@@ -3623,7 +3623,7 @@ function startServer() {
 //     const ogTitle = roomInfo?.name ? `Join ${roomInfo.name} on HiveTalk` : defaultOG.title;
 //     const ogDescription = roomInfo?.description || defaultOG.description;
 //     const ogImage = roomInfo?.image_url || defaultOG.image;
-//     const ogUrl = `https://hivetalk.org/join/${roomId}`;
+//     const ogUrl = `https://vanilla.hivetalk.org/join/${roomId}`;
 
 //     log.debug('Injecting OG Tags:', {
 //         ogTitle,

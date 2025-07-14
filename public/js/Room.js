@@ -2133,7 +2133,7 @@ function joinRoom(peer_name, room_id) {
     }
 }
 
-let boltavatar = 'https://hivetalk.org/images/lnwhitep.png';
+let boltavatar = 'https://vanilla.hivetalk.org/images/lnwhitep.png';
 
 function roomIsReady() {
     console.log('06 ----> roomIsReady');

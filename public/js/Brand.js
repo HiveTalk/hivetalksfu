@@ -53,8 +53,8 @@ let BRAND = {
         siteName: 'HiveTalk Vanilla',
         title: 'Click the link to make a call.',
         description: 'HiveTalk Vanilla calling provides real-time video calls, messaging and screen sharing.',
-        image: 'https://hivetalk.org/images/hivetalk.png',
-        url: 'https://hivetalk.org',
+        image: 'https://vanilla.hivetalk.org/images/hivetalk.png',
+        url: 'https://vanilla.hivetalk.org',
     },
     html: {
         features: true,
