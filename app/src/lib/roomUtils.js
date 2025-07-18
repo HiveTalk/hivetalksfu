@@ -1,43 +1,42 @@
 const Logger = require('../Logger');
 const log = new Logger('RoomUtils');
-const { getSupabaseClient } = require('./supabase');
+// const { getSupabaseClient } = require('./supabase');
 
-// Function to get room info from Supabase
-async function getRoomInfo(roomId) {
-    const supabase = getSupabaseClient();
-    if (!supabase) {
-        log.debug("No supabase client present");
-        return null;
-    }
-    
-    try {
-        log.debug('Fetching room info for roomId:', roomId);
-        const { data, error } = await supabase
-            .from('room_info')
-            .select('*')
-            .eq('room_name', roomId)
-            .single();
-            
-        if (error) {
-            log.error('Supabase error:', error);
-            return null;
-        }
+// // Function to get room info from Supabase
+// async function getRoomInfo(roomId) {
+//     const supabase = getSupabaseClient();
+//     if (!supabase) {
+//         log.debug("No supabase client present");
+//         return null;
+//     }
+//     try {
+//         log.debug('Fetching room info for roomId:', roomId);
+//         const { data, error } = await supabase
+//             .from('room_info')
+//             .select('*')
+//             .eq('room_name', roomId)
+//             .single();
+//         if (error) {
+//             log.error('Supabase error:', error);
+//             return null;
+//         }
+//         log.debug('Room data:', { data, error });
+//         return data;
+//     } catch (err) {
+//         log.error('Error fetching room info:', err);
+//         return null;
+//     }
+// }
 
-        log.debug('Room data:', { data, error });
-        return data;
-    } catch (err) {
-        log.error('Error fetching room info:', err);
-        return null;
-    }
-}
 
-// Function to inject OG tags
+// // Function to inject OG tags
+
 function injectOGTags(html, roomInfo, roomId) {
     const defaultOG = {
         title: `${roomId} on Hivetalk Now Open`,
         description: 'HiveTalk Vanilla calling provides real-time video calls, messaging and screen sharing.',
-        image: 'https://hivetalk.org/images/hivetalk.png',
-        url: `https://hivetalk.org/join/${roomId}`
+        image: 'https://vanilla.hivetalk.org/images/hivetalk.png',
+        url: `https://vanilla.hivetalk.org/join/${roomId}`
     };
 
     log.debug("Processing room info:", roomInfo);
@@ -46,7 +45,7 @@ function injectOGTags(html, roomInfo, roomId) {
     const ogTitle = roomInfo?.room_name || `Join ${defaultOG.title} room on HiveTalk`;
     const ogDescription = roomInfo?.room_description || defaultOG.description;
     const ogImage = roomInfo?.room_picture_url || defaultOG.image;
-    const ogUrl = `https://hivetalk.org/join/${roomId}`;
+    const ogUrl = `https://vanilla.hivetalk.org/join/${roomId}`;
 
     log.debug('Injecting OG Tags:', {
         ogTitle,
@@ -95,7 +94,7 @@ function escapeHtml(unsafe) {
 }
 
 module.exports = {
-    getRoomInfo,
+//    getRoomInfo,
     injectOGTags,
     escapeHtml,
 };

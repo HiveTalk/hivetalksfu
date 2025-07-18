@@ -2,7 +2,7 @@
 
 // async function getMeetingInfo() {
 //     try {
-//         const HIVETALK_URL = 'https://hivetalk.org/api/v1/meetinfo';
+//         const HIVETALK_URL = 'https://vanilla.hivetalk.org/api/v1/meetinfo';
 
 //         const response = await fetch(HIVETALK_URL, {
 //             method: 'GET',
@@ -64,7 +64,7 @@
 
 // async function getScheduledInfo() {
 //     try {
-//         const HIVETALK_URL = 'https://hivetalk.org/api/v1/scheduled';
+//         const HIVETALK_URL = 'https://vanilla.hivetalk.org/api/v1/scheduled';
 
 //         const response = await fetch(HIVETALK_URL, {
 //             method: 'GET',

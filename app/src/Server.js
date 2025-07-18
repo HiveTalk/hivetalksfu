@@ -91,12 +91,13 @@ const Sentry = require('@sentry/node');
 // const Mattermost = require('./Mattermost.js');
 const restrictAccessByIP = require('./middleware/IpWhitelist.js');
 const packageJson = require('../../package.json');
-const { invokeCheckRoomOwner } = require('./checkRoomOwner');
-const { initSupabase } = require('./lib/supabase');
-const { getRoomInfo, injectOGTags } = require('./lib/roomUtils');
+//const { invokeCheckRoomOwner } = require('./checkRoomOwner');
+//const { initSupabase } = require('./lib/supabase');
+//const { getRoomInfo, injectOGTags } = require('./lib/roomUtils');
+const { injectOGTags } = require('./lib/roomUtils');
 
 // Initialize Supabase client
-initSupabase();
+//initSupabase();
 
 // Incoming Stream to RTPM
 const { v4: uuidv4 } = require('uuid');
@@ -740,13 +741,14 @@ function startServer() {
         }
 
         // Get room info from Supabase
-        const roomInfo = await getRoomInfo(roomId);
+        // const roomInfo = await getRoomInfo(roomId);
                 
         // Read the room.html file
         const roomHtml = fs.readFileSync(views.room, 'utf8');
                 
         // Inject custom OG tags if room info exists
-        const htmlWithOG = roomInfo ? injectOGTags(roomHtml, roomInfo, roomId) : injectOGTags(roomHtml, null, roomId);
+        // const htmlWithOG = roomInfo ? injectOGTags(roomHtml, roomInfo, roomId) : injectOGTags(roomHtml, null, roomId);
+        const htmlWithOG = injectOGTags(roomHtml, null, roomId);
 
         const allowRoomAccess = isAllowedRoomAccess('/join/:roomId', req, hostCfg, authHost, roomList, roomId);
 
@@ -1281,16 +1283,16 @@ function startServer() {
     });
 
     // API endpoint for room ownership check
-    app.post('/api/check-room-owner', async (req, res) => {
-        try {
-            const { room_id } = req.body;
-            const data = await invokeCheckRoomOwner(room_id);
-            res.json(data);
-        } catch (error) {
-            console.error('Error checking room ownership:', error);
-            res.status(500).json({ error: 'Failed to check room ownership' });
-        }
-    });
+    // app.post('/api/check-room-owner', async (req, res) => {
+    //     try {
+    //         const { room_id } = req.body;
+    //         const data = await invokeCheckRoomOwner(room_id);
+    //         res.json(data);
+    //     } catch (error) {
+    //         console.error('Error checking room ownership:', error);
+    //         res.status(500).json({ error: 'Failed to check room ownership' });
+    //     }
+    // });
 
     app.post('/api/check-room-peers', async (req, res) => {
         const { room_id } = req.body;
@@ -3612,8 +3614,8 @@ function startServer() {
 //     const defaultOG = {
 //         title: `${roomId} on Hivetalk Now Open`,
 //         description: 'HiveTalk Vanilla calling provides real-time video calls, messaging and screen sharing.',
-//         image: 'https://hivetalk.org/images/hivetalk.png',
-//         url: `https://hivetalk.org/join/${roomId}`
+//         image: 'https://vanilla.hivetalk.org/images/hivetalk.png',
+//         url: `https://vanilla.hivetalk.org/join/${roomId}`
 //     };
 
 //     log.debug("roomInfo: ", roomInfo)
@@ -3621,7 +3623,7 @@ function startServer() {
 //     const ogTitle = roomInfo?.name ? `Join ${roomInfo.name} on HiveTalk` : defaultOG.title;
 //     const ogDescription = roomInfo?.description || defaultOG.description;
 //     const ogImage = roomInfo?.image_url || defaultOG.image;
-//     const ogUrl = `https://hivetalk.org/join/${roomId}`;
+//     const ogUrl = `https://vanilla.hivetalk.org/join/${roomId}`;
 
 //     log.debug('Injecting OG Tags:', {
 //         ogTitle,

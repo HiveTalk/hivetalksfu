@@ -12,7 +12,7 @@ If you are looking for Hivetalk 2.0, which is called honey, go to https://honey.
 Free WebRTC - SFU - Simple, Secure, Scalable Real-Time Video Conferences with support for up to 4k resolution. It's compatible with all major browsers and platforms
 <img width="934" alt="Screenshot 2024-05-14 at 5 49 39 PM" src="https://github.com/user-attachments/assets/bb80fa00-c098-4d9b-bcfa-7cd555a2149d" />
 
-<a href="https://hivetalk.org/">Explore HiveTalk</a>
+<a href="https://vanilla.hivetalk.org/">Explore HiveTalk</a>
 
 <hr />
 
@@ -74,7 +74,7 @@ Free WebRTC - SFU - Simple, Secure, Scalable Real-Time Video Conferences with su
 <br/>
 
 -   You can `directly join a room` by using link like:
--   https://hivetalk.org/join?room=test&roomPassword=0&name=hivetalksfu&audio=0&video=0&screen=0&notify=0
+-   https://vanilla.hivetalk.org/join?room=test&roomPassword=0&name=hivetalksfu&audio=0&video=0&screen=0&notify=0
 
     | Params       | Type           | Description     |
     | ------------ | -------------- | --------------- |
@@ -135,7 +135,7 @@ To embed a meeting within `your service or app` using an iframe, you can use the
 ```html
 <iframe
     allow="camera; microphone; display-capture; fullscreen; clipboard-read; clipboard-write; autoplay"
-    src="https://hivetalk.org/newroom"
+    src="https://vanilla.hivetalk.org/newroom"
     style="height: 100vh; width: 100vw; border: 0px;"
 ></iframe>
 ```
@@ -238,7 +238,7 @@ $ docker-compose down
 
 -   `Self-hosting:` For `self-hosting HiveTalk Vanilla` on your own dedicated server, please refer to [this comprehensive guide](docs/self-hosting.md). It will provide you with all the necessary instructions to get your HiveTalk Vanilla instance up and running smoothly.
 
--   `Rest API:` The [API documentation](https://docs.mirotalk.com/mirotalk-sfu/api/) uses [swagger](https://swagger.io/) at https://localhost:3010/api/v1/docs or check it on live [here](https://hivetalk.org/api/v1/docs).
+-   `Rest API:` The [API documentation](https://docs.mirotalk.com/mirotalk-sfu/api/) uses [swagger](https://swagger.io/) at https://localhost:3010/api/v1/docs or check it on live [here](https://vanilla.hivetalk.org/api/v1/docs).
 
 ```bash
 # The response will give you the active meetings (default disabled).
