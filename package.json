@@ -62,7 +62,7 @@
         "axios": "^1.7.7",
         "body-parser": "^1.20.3",
         "colors": "1.4.0",
-        "compression": "1.7.5",
+        "compression": "^1.8.1",
         "cors": "2.8.5",
         "crypto-js": "4.2.0",
         "dompurify": "^3.1.7",
