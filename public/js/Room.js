@@ -1938,17 +1938,14 @@ async function showAnnouncements(useNavigator = false) {
                 </ul>
                 <ul>
                     <b> Take Note: </b><br/><br/>
-                    <li> <b style="color: #F3E5AB;"> Hivetalk Vanilla</b> 
-                    is best if you need unlimited time for your groups. <br/> </li>
+                    <li> 🌸 <b style="color: #F3E5AB;"> Hivetalk Vanilla</b> 
+                    is best for unlimited time with small groups. <br/><br/> </li>
                     
-                    <li> <b style="color: #FFBF00">Hivetalk Honey</b> 
-                    is best for hosting global events, permanent rooms, events. 
+                    <li> 🍯 <b style="color: #FFBF00"><a href="https://honey.hivetalk.org/"  style="color:#FFBF00" target="_blank">
+                    Hivetalk Honey</a></b> 
+                    is a new version, best for hosting global events, permanent rooms, events. 
                     Ephemeral rooms max 1 hr, Permanent rooms max 4 hours per session.
                     </li>            
-
-                    <li>
-                    Try the new version! >> <a href="https://honey.hivetalk.org/dashboard"  style="color:#FFBF00" target="_blank">Honey.Hivetalk.org</a>
-                    </li>
 
                 </ul>
                 </p>
