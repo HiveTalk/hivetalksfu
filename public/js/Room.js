@@ -1927,42 +1927,48 @@ async function showAnnouncements(useNavigator = false) {
     function show() {
         sound('open');
 
-        // Swal.fire({
-        //     background: swalBackground,
-        //     position: 'center',
-        //     //title: 'Latest Updates',
-        //     html: `
-        //     <div>
-        //         <iframe width="100%" height="315" src="https://www.youtube.com/embed/ZIDZKQhRlRk" 
-        //         title="YouTube video player" frameborder="0" 
-        //         allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" 
-        //         allowfullscreen></iframe>
-        //     </div>
-        //     <div>            
-        //     <p align="left"><ul style="text-align: left;">
-        //     <li>
-        //     Try the new version! >> <a href="https://honey.hivetalk.org/dashboard">Honey.Hivetalk.org</a>
-        //     </li>
-            
-        //     </ul>
-        //     </p>
-        //     </div>`,
-        //     showDenyButton: false,
-        //     showCancelButton: true,
-        //     showConfirmButton:false,
-        //     cancelButtonColor: 'red',
-        //     confirmButtonText: `Copy URL`,
-        //     cancelButtonText: `Close`,
-        //     showClass: { popup: 'animate__animated animate__fadeInDown' },
-        //     hideClass: { popup: 'animate__animated animate__fadeOutUp' },
-        // }).then((result) => {
-        //     if (result.isConfirmed) {
-        //         copyRoomURL();
-        //     }
-        //     if (isScreenAllowed) {
-        //         rc.shareScreen();
-        //     }
-        // });
+        Swal.fire({
+            background: swalBackground,
+            position: 'center',
+            title: 'Latest Updates',
+            html: `
+            <div>            
+                <p align="left"><ul style="text-align: left;">
+                <ul>
+                </ul>
+                <ul>
+                    <b> Take Note: </b><br/><br/>
+                    <li> <b style="color: #F3E5AB;"> Hivetalk Vanilla</b> 
+                    is best if you need unlimited time for your groups. <br/> </li>
+                    
+                    <li> <b style="color: #FFBF00">Hivetalk Honey</b> 
+                    is best for hosting global events, permanent rooms, events. 
+                    Ephemeral rooms max 1 hr, Permanent rooms max 4 hours per session.
+                    </li>            
+
+                    <li>
+                    Try the new version! >> <a href="https://honey.hivetalk.org/dashboard"  style="color:#FFBF00" target="_blank">Honey.Hivetalk.org</a>
+                    </li>
+
+                </ul>
+                </p>
+            </div>`,
+            showDenyButton: false,
+            showCancelButton: true,
+            showConfirmButton:false,
+            cancelButtonColor: 'red',
+            confirmButtonText: `Copy URL`,
+            cancelButtonText: `Close`,
+            showClass: { popup: 'animate__animated animate__fadeInDown' },
+            hideClass: { popup: 'animate__animated animate__fadeOutUp' },
+        }).then((result) => {
+            if (result.isConfirmed) {
+                copyRoomURL();
+            }
+            if (isScreenAllowed) {
+                rc.shareScreen();
+            }
+        });
     }
 }
 
