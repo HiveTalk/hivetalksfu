@@ -1,13 +1,11 @@
 {
     "names": {
+        "buttercup":"f288a224a61b7361aa9dc41a90aba8a2dff4544db0bc386728e638b21da1792c",
+        "yeghro": "f821179bd5d691c61b4356336388adadc3cc1304f49e771a87c38de7ed4fd022",
+        "bitkarrot": "3878d95db7b854c3a0d3b2d6b7bf9bf28b36162be64326f5521ba71cf3b45a69",
         "pattern": "f7512caa17d70aa7c79dc91afba80c5dcb39ab5ea07b1ab90e5e3c2b0fdc44bc",
         "cloudfodder": "7cc328a08ddb2afdf9f9be77beff4c83489ff979721827d628a542f32a247c0e",
-        "yeghro": "f821179bd5d691c61b4356336388adadc3cc1304f49e771a87c38de7ed4fd022",
         "tigs": "079d727bee3d805e24758861ea4d028b2e6a37805f8db45bf8045bf900099650",
-        "BUnknown": "3369d0a763089211f9c5ffb9916d4999c4b1b6ec1ae515fc7b63187feb020757",
-        "jadoreanime": "f02f29c640fa3601abe767046a89ec6784e063c98dd0ac1a3b90e8ae3e787e50",
-        "sersleepy": "958b754a1d3de5b5eca0fe31d2d555f451325f8498a83da1997b7fcd5c39e88c",
-        "bitkarrot": "3878d95db7b854c3a0d3b2d6b7bf9bf28b36162be64326f5521ba71cf3b45a69",
         "new1": "df0aed92dff00d4ffeda2f4cd88d967dc576b5549400b92afb98a419aa06e6f5",
         "soc": "13ff84142a6526245124c180fb5342cea130d558fec7d488019d1dae7aaca18a"
     },
@@ -21,7 +19,7 @@
         "3878d95db7b854c3a0d3b2d6b7bf9bf28b36162be64326f5521ba71cf3b45a69": [
             "wss://relay.primal.net",
             "wss://relay.damus.io/",
-            "wss://nos.lol",
+            "wss://nos.lol",        
             "wss://hivetalk.nostr1.com"
         ]
     }
