@@ -7,7 +7,8 @@
         "cloudfodder": "7cc328a08ddb2afdf9f9be77beff4c83489ff979721827d628a542f32a247c0e",
         "tigs": "079d727bee3d805e24758861ea4d028b2e6a37805f8db45bf8045bf900099650",
         "new1": "df0aed92dff00d4ffeda2f4cd88d967dc576b5549400b92afb98a419aa06e6f5",
-        "soc": "13ff84142a6526245124c180fb5342cea130d558fec7d488019d1dae7aaca18a"
+        "soc": "13ff84142a6526245124c180fb5342cea130d558fec7d488019d1dae7aaca18a",
+        "giraffe": "51e4b4648a549a62bd3e6670122b931cebc8723bc0ff7e8032fe087b00eb3dbd"
     },
     "relays": {
         "13ff84142a6526245124c180fb5342cea130d558fec7d488019d1dae7aaca18a": [
