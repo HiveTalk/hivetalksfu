@@ -309,7 +309,7 @@ document.addEventListener('DOMContentLoaded', function () {
             peer_pubkey = user.pubkey;
             window.localStorage.peer_pubkey = user.pubkey;
 
-            signSampleEvent(peer_pubkey); // send a sample event to the test relay
+            //signSampleEvent(peer_pubkey); // send a sample event to the test relay
 
             peer_npub = nip19.npubEncode(user.pubkey);
             window.localStorage.peer_npub = peer_npub;
