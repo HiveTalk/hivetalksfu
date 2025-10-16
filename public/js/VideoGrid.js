@@ -187,6 +187,7 @@ function resizeChatRoom() {
 function resizeTranscriptionRoom() {
     if (
         DetectRTC.isMobileDevice ||
+        !transcription ||
         !Boolean(transcription.speechTranscription) ||
         transcription.isHidden ||
         transcription.isPinned
