@@ -1,0 +1,406 @@
+<!doctype html>
+<html lang="en" class="no-js">
+    <head>
+        <!-- Title and Icon -->
+        <title id="title">HiveTalk SFU - Zap Goal Status</title>
+        <link id="icon" rel="shortcut icon" href="../images/logo.svg" />
+        <link id="appleTouchIcon" rel="apple-touch-icon" href="../images/logo.svg" />
+
+        <!-- Meta Information -->
+        <meta charset="utf-8" />
+        <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <meta
+            id="description"
+            name="description"
+            content="HiveTalk SFU powered by WebRTC and mediasoup, Real-time Simple Secure Fast video calls, messaging and screen sharing capabilities in the browser."
+        />
+
+        <!-- StyleSheet -->
+        <link rel="stylesheet" type="text/css" href="../css/landing.css" />
+
+        <!-- Tailwind CSS for Flowbite components -->
+        <script src="https://cdn.tailwindcss.com"></script>
+
+        <!-- SweetAlert2 for zap modal -->
+        <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+
+        <!-- Js scripts -->
+        <script defer src="../js/Brand.js"></script>
+        <script async src="../js/Umami.js"></script>
+        <script src="https://unpkg.com/animejs@3.0.1/lib/anime.min.js"></script>
+        <script src="https://unpkg.com/scrollreveal@4.0.0/dist/scrollreveal.min.js"></script>
+
+        <!-- xss -->
+        <script src="https://cdn.jsdelivr.net/npm/xss/dist/xss.min.js"></script>
+
+        <!-- Custom styles for zap goal display -->
+        <style>
+            /* Enhanced progress bar styling */
+            #progressBar {
+                min-width: 3rem;
+                position: relative;
+                overflow: visible;
+            }
+
+            /* Pulse animation for the zap button */
+            @keyframes gentle-pulse {
+                0%, 100% {
+                    opacity: 1;
+                    transform: scale(1);
+                }
+                50% {
+                    opacity: 0.9;
+                    transform: scale(1.02);
+                }
+            }
+
+            #zaplink:hover {
+                animation: none;
+            }
+
+            /* Dark mode enhancements */
+            .dark #progressBar {
+                box-shadow: 0 0 10px rgba(251, 191, 36, 0.3);
+            }
+
+            /* Responsive adjustments */
+            @media (max-width: 640px) {
+                .text-xl {
+                    font-size: 1.125rem;
+                }
+                .px-6 {
+                    padding-left: 1rem;
+                    padding-right: 1rem;
+                }
+            }
+
+            /* Center the zap goal card in the hero section */
+            .zap-goal-container {
+                max-width: 600px;
+                margin: 2rem auto;
+                padding: 2rem;
+                background: rgba(255, 255, 255, 0.05);
+                border-radius: 1rem;
+            }
+        </style>
+    </head>
+    <body class="is-boxed has-animations">
+        <div class="body-wrap">
+            <header class="site-header">
+                <div class="container">
+                    <div class="site-header-inner">
+                        <div class="brand header-brand">
+                            <h1 class="m-0">
+                                <a href="/">
+                                    <img
+                                        class="header-logo-image"
+                                        src="../images/logo.svg"
+                                        alt="hivetalk-webrtc-logo"
+                                    />
+                                </a>
+                            </h1>
+                        </div>
+                    </div>
+                </div>
+            </header>
+
+            <main>
+                <section class="hero">
+                    <div class="container">
+                        <div class="hero-inner">
+                            <div class="hero-copy">
+                                <h1 class="hero-title mt-0">Zap Goal Not Met</h1>
+                                <p class="hero-paragraph">
+                                    Apologies.  Without the Vanilla zap goal being met, the app unfortunately cannot continue to operate.
+                                </p>
+                                <p class="hero-paragraph">
+                                    You're welcome to try the new <strong>HiveTalk Honey</strong> until Vanilla zaps are met.
+                                </p>
+
+                                <!-- ZapRaiser Goal Card -->
+                                <div class="zap-goal-container">
+                                    <div class="w-full text-center mb-8">   
+                                        <div class="text-xl font-bold mb-4 flex flex-col items-center gap-3 text-gray-800 dark:text-white">
+                                            <button 
+                                                type="button"
+                                                class="inline-flex items-center justify-center px-4 py-2 text-sm font-medium text-center text-white bg-orange-500 rounded-lg hover:bg-orange-600 focus:ring-4 focus:outline-none focus:ring-orange-300 dark:focus:ring-orange-800 shadow transition-all duration-200 ease-in-out w-full max-w-32"
+                                                id="zaplink"
+                                            >
+                                                ⚡️ Zap
+                                            </button>
+                                            <span id="current-month" class="font-medium" style="font-size: 30px;">Loading...</span>
+                                        </div>
+                                        
+                                        <!-- Flowbite Progress Bar -->
+                                        <div class="w-full bg-cyan-400 rounded-full h-6 dark:bg-cyan-500 mb-3">
+                                            <div id="progressBar" class="bg-orange-500 h-6 rounded-full transition-all duration-500 ease-out flex items-center justify-center text-xs font-bold text-white animate-pulse" style="width: 0%">
+                                                <span class="text-xs font-bold">0%</span>
+                                            </div>
+                                        </div>
+                                        
+                                        <div class="text-sm opacity-90 text-center space-y-1 text-gray-600 dark:text-gray-300">
+                                            <div class="flex justify-between items-center">
+                                                <span class="bg-white/10 px-2 py-1 rounded text-xs">
+                                                    <span id="current-amount" class="font-semibold">0 </span>
+                                                </span>
+                                                <span class="bg-white/10 px-2 py-1 rounded text-xs">
+                                                    <span id="goal-amount" class="font-semibold">80,000 </span>
+                                                </span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div class="hero-cta">
+                                    <a
+                                        class="button button-primary pulse"
+                                        href="https://honey.hivetalk.org"
+                                        target="_blank"
+                                    >
+                                        Try HiveTalk Honey
+                                    </a>
+                                    <a
+                                        class="button"
+                                        href="/"
+                                    >
+                                        Back to Home
+                                    </a>
+                                </div>
+                            </div>
+                            <div class="hero-figure anime-element">
+                                <svg class="placeholder" width="528" height="396" viewBox="0 0 528 396">
+                                    <rect width="528" height="396" style="fill: transparent" />
+                                </svg>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+            </main>
+
+            <footer id="footer" class="site-footer">
+                <div class="container">
+                    <div class="site-footer-inner">
+                        <div class="brand footer-brand">
+                            <a href="/">
+                                <img class="header-logo-image" src="../images/hivelogo50x200.svg" alt="Logo" />
+                            </a>
+                        </div>
+                        <ul class="footer-links list-reset">
+                            <li>
+                                <a href="/">Home</a>
+                            </li>
+                            <li>
+                                <a href="/about">About</a>
+                            </li>
+                            <li>
+                                <a href="/privacy">Privacy</a>
+                            </li>
+                        </ul>
+                        <ul>
+                            <!-- add social icons here-->
+                        </ul>
+                        <div class="footer-copyright">&copy; 2024 HiveTalk, all rights reserved</div>
+                    </div>
+                </div>
+            </footer>
+        </div>
+
+        <script defer src="../js/Landing.js"></script>
+        <script async defer src="https://buttons.github.io/buttons.js"></script>
+
+        <!-- Import Bitcoin Connect module for payment handling -->
+        <script type="module">
+            // Preload the Bitcoin Connect module
+            import('@getalby/bitcoin-connect-react');
+        </script>
+
+        <script>
+            // API configuration
+            const API_BASE_URL = 'https://zapgoalsvr.vercel.app/api/balance';
+            const GOAL_AMOUNT = 80000; // 80k sats goal
+            const DEFAULT_ZAP_AMOUNT = 2100;
+
+            // Fetch and display balance data from API
+            async function fetchBalance() {
+                try {
+                    const response = await fetch(API_BASE_URL);
+                    const data = await response.json();
+                    
+                    if (data.success && data.data) {
+                        // Convert msats to sats
+                        const balanceInSats = Math.floor(data.data.balance / 1000);
+                        const progressPercentage = Math.min((balanceInSats / GOAL_AMOUNT) * 100, 100);
+                        
+                        // Update progress bar
+                        const progressBar = document.getElementById('progressBar');
+                        if (progressBar) {
+                            progressBar.style.width = `${progressPercentage}%`;
+                            const percentageSpan = progressBar.querySelector('span');
+                            if (percentageSpan) {
+                                percentageSpan.textContent = `${Math.round(progressPercentage)}%`;
+                            }
+                        }
+                        
+                        // Update current amount display
+                        const currentAmount = document.getElementById('current-amount');
+                        if (currentAmount) {
+                            currentAmount.textContent = `${balanceInSats.toLocaleString()} sats`;
+                        }
+                        
+                        // Update goal display
+                        const goalDisplay = document.getElementById('goal-amount');
+                        if (goalDisplay) {
+                            goalDisplay.textContent = `${GOAL_AMOUNT.toLocaleString()} sats`;
+                        }
+                    }
+                } catch (error) {
+                    console.error('Failed to fetch balance:', error);
+                    // Progress bar will remain at 0% if fetch fails
+                }
+            }
+
+            // Display current month
+            function updateMonth() {
+                const monthNames = [
+                    'January', 'February', 'March', 'April', 'May', 'June',
+                    'July', 'August', 'September', 'October', 'November', 'December'
+                ];
+                
+                const currentDate = new Date();
+                const currentMonth = monthNames[currentDate.getMonth()];
+                
+                const monthDisplay = document.getElementById('current-month');
+                if (monthDisplay) {
+                    monthDisplay.textContent = `${currentMonth} Goal`;
+                }
+            }
+
+            // Zap link functionality
+            const zapLink = document.getElementById('zaplink');
+            if (zapLink) {
+                zapLink.addEventListener('click', async function (e) {
+                    e.preventDefault();
+                    
+                    try {
+                        const result = await Swal.fire({
+                            background: '#111827',
+                            color: '#fff',
+                            confirmButtonColor: '#2563eb',
+                            title: '<strong>Zap HiveTalk Vanilla</strong>',
+                            html: `<style>.swal2-input { color: #000 !important; } .dark .swal2-input { color: #fff !important; }</style><input id="amount" class="swal2-input" type="number" placeholder="Amount (sats)" value="${DEFAULT_ZAP_AMOUNT}">`,
+                            showCancelButton: true,
+                            confirmButtonText: 'Zap',
+                            cancelButtonText: 'Cancel',
+                            focusConfirm: false,
+                            reverseButtons: true,
+                            preConfirm: () => {
+                                const input = Swal.getPopup().querySelector('#amount');
+                                const sats = input?.value;
+                                if (!sats || parseInt(sats) <= 0) {
+                                    Swal.showValidationMessage('Please enter a valid amount of sats');
+                                    return;
+                                }
+                                return { sats };
+                            },
+                        });
+
+                        if (!result.isConfirmed) return;
+
+                        const amount = parseInt(result.value.sats);
+                        
+                        // Check if payment modal is already open
+                        if (document.querySelector('#bc-modal')) {
+                            await Swal.fire({
+                                background: '#111827',
+                                color: '#fff',
+                                confirmButtonColor: '#2563eb',
+                                title: 'Error',
+                                text: 'Payment modal is already open. Please close it before starting a new payment.',
+                                icon: 'error',
+                            });
+                            return;
+                        }
+
+                        // Create invoice
+                        const response = await fetch(`${API_BASE_URL}/invoice`, {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
+                            body: JSON.stringify({
+                                amount: amount * 1000, // Convert sats to millisats
+                                description: 'HiveTalk Vanilla Zap',
+                                memo: 'HiveTalk Vanilla Zap'
+                            }),
+                        });
+
+                        if (!response.ok) {
+                            const errorText = await response.text();
+                            let errorMessage = 'Failed to generate invoice';
+                            try {
+                                const errorJson = JSON.parse(errorText);
+                                errorMessage = errorJson.error || errorMessage;
+                            } catch (e) {
+                                console.error('Error parsing error response:', e);
+                            }
+                            throw new Error(`${errorMessage}: ${response.status}`);
+                        }
+
+                        const data = await response.json();
+                        if (!data.success || !data.data?.invoice?.request) {
+                            throw new Error('Invalid invoice response from server');
+                        }
+
+                        const paymentRequest = data.data.invoice.request;
+                        
+                        // Import and launch payment modal
+                        const { launchPaymentModal } = await import('@getalby/bitcoin-connect-react');
+                        
+                        launchPaymentModal({
+                            invoice: paymentRequest,
+                            onPaid: () => {
+                                Swal.fire({
+                                    background: '#111827',
+                                    color: '#fff',
+                                    confirmButtonColor: '#2563eb',
+                                    title: 'Success!',
+                                    text: `Payment successful! Amount: ${amount} sats`,
+                                    icon: 'success',
+                                }).then(() => {
+                                    // Refresh balance after successful payment
+                                    fetchBalance();
+                                });
+                            },
+                            onCancelled: () => {
+                                Swal.fire({
+                                    background: '#111827',
+                                    color: '#fff',
+                                    confirmButtonColor: '#2563eb',
+                                    title: 'Cancelled',
+                                    text: 'Payment was cancelled',
+                                    icon: 'info',
+                                });
+                            },
+                        });
+                    } catch (error) {
+                        console.error('Payment error:', error);
+                        Swal.fire({
+                            background: '#111827',
+                            color: '#fff',
+                            confirmButtonColor: '#2563eb',
+                            title: 'Error',
+                            text: error.message || 'Failed to process payment. Please try again.',
+                            icon: 'error',
+                        });
+                    }
+                });
+            }
+
+            // Load balance and month on page load
+            document.addEventListener('DOMContentLoaded', () => {
+                updateMonth();
+                fetchBalance();
+            });
+        </script>
+    </body>
+</html>
+

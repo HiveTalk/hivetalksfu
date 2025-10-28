@@ -267,6 +267,7 @@ const views = {
     faq: path.join(__dirname, '../../', 'public/views/faq.html'),
     presskit: path.join(__dirname, '../../', 'public/views/presskit.html'),
     whoAreYou: path.join(__dirname, '../../', 'public/views/whoAreYou.html'),
+    zapGoal: path.join(__dirname, '../../', 'public/views/zapgoal.html'),
 };
 
 const authHost = new Host(); // Authenticated IP by Login
@@ -372,6 +373,79 @@ function getMeetCount(roomList) {
 
 
 function startServer() {
+    // Middleware to check if zap goal is met before allowing room access
+    // Fetches balance from API and redirects to zapgoal page if goal not met
+    async function checkZapGoal(req, res, next) {
+        const ZAP_GOAL_SATS = 80000; // 80k sats monthly goal
+        const API_URL = 'https://zapgoalsvr.vercel.app/api/balance'; // Correct API endpoint
+        
+        // Log that middleware is executing
+        log.info('[ZapGoal] ===== Middleware executing =====', {
+            path: req.path,
+            url: req.url,
+            method: req.method,
+        });
+        
+        try {
+            // Log before API call
+            log.info('[ZapGoal] Fetching balance from API', { apiUrl: API_URL });
+            
+            // Fetch current balance from zap goal API
+            const response = await axios.get(API_URL, { timeout: 5000 });
+            
+            // Log raw API response
+            log.info('[ZapGoal] API Response received', {
+                status: response.status,
+                hasData: !!response.data,
+                dataKeys: response.data ? Object.keys(response.data) : [],
+                rawData: response.data,
+            });
+            
+            if (response.data && response.data.success && response.data.data) {
+                // Convert millisats to sats
+                const balanceInSats = Math.floor(response.data.data.balance / 1000);
+                
+                log.info('[ZapGoal] Balance calculation', {
+                    balanceInMsats: response.data.data.balance,
+                    balanceInSats: balanceInSats,
+                    goalSats: ZAP_GOAL_SATS,
+                    goalMet: balanceInSats >= ZAP_GOAL_SATS,
+                    percentComplete: ((balanceInSats / ZAP_GOAL_SATS) * 100).toFixed(2) + '%',
+                });
+                
+                // Check if goal is met
+                if (balanceInSats >= ZAP_GOAL_SATS) {
+                    // Goal met - allow access
+                    log.info('[ZapGoal] ✅ Goal MET - Allowing access');
+                    next();
+                } else {
+                    // Goal not met - redirect to zap goal page
+                    log.info('[ZapGoal] ❌ Goal NOT MET - Redirecting to /zapgoal', {
+                        current: balanceInSats,
+                        needed: ZAP_GOAL_SATS,
+                        shortfall: ZAP_GOAL_SATS - balanceInSats,
+                    });
+                    return res.redirect('/zapgoal');
+                }
+            } else {
+                // Invalid response format - allow access to avoid downtime
+                log.warn('[ZapGoal] ⚠️ Invalid API response format, allowing access', {
+                    responseData: response.data,
+                });
+                next();
+            }
+        } catch (error) {
+            // API error - allow access to avoid downtime
+            log.error('[ZapGoal] ⚠️ API check failed, allowing access', {
+                error: error.message,
+                errorCode: error.code,
+                errorStack: error.stack,
+                url: API_URL,
+            });
+            next();
+        }
+    }
+
     // Start the app
     app.use(express.static(dir.public));
     app.use(cors(corsOptions));
@@ -594,8 +668,14 @@ function startServer() {
         return res.sendFile(views.rtmpStreamer);
     });
 
+    // Route to display zap goal status page
+    // This page shows when monthly zap goal is not met
+    app.get('/zapgoal', (req, res) => {
+        res.sendFile(views.zapGoal);
+    });
+
     // set new room name and join
-    app.get(['/newroom'], OIDCAuth, (req, res) => {
+    app.get(['/newroom'], checkZapGoal, OIDCAuth, (req, res) => {
         //log.info('/newroom - hostCfg ----->', hostCfg);
 
         if (!OIDC.enabled && hostCfg.protected) {
@@ -626,7 +706,7 @@ function startServer() {
     });
 
     // Handle Direct join room with params
-    app.get('/join/', async (req, res) => {
+    app.get('/join/', checkZapGoal, async (req, res) => {
         if (Object.keys(req.query).length > 0) {
             //log.debug('/join/params - hostCfg ----->', hostCfg);
 
@@ -727,7 +807,7 @@ function startServer() {
     });
 
     // join room by id
-    app.get('/join/:roomId', async (req, res) => {
+    app.get('/join/:roomId', checkZapGoal, async (req, res) => {
         const { roomId } = req.params;
 
         if (!roomId) {
