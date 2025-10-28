@@ -80,12 +80,7 @@
         "mediasoup": "3.14.16",
         "mediasoup-client": "3.7.17",
         "ngrok": "^5.0.0-beta.2",
-<<<<<<< HEAD
-        "nodemailer": "^7.0.10",
-        "nostr-tools": "^2.10.1",
-=======
         "nodemailer": "^7.0.7",
->>>>>>> eb5ebe61291c8a06744c73b07bb3788800851d75
         "openai": "^4.71.1",
         "qs": "6.13.0",
         "socket.io": "^4.8.1",
