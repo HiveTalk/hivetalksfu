@@ -6,8 +6,8 @@
                 onConnected,
                 requestProvider,
                 launchPaymentModal,
-            } from 'https://esm.sh/@getalby/bitcoin-connect@3.5.1';
-            import { LightningAddress } from 'https://esm.sh/@getalby/lightning-tools@5.0.0';
+            } from 'https://esm.sh/@getalby/bitcoin-connect@latest';
+            import { LightningAddress } from 'https://esm.sh/@getalby/lightning-tools@latest';
             import confetti from 'https://cdn.skypack.dev/canvas-confetti';
 
             onConnected((provider) => {
@@ -88,9 +88,9 @@
         </script>
         <script
             src="https://www.unpkg.com/nostr-login@latest/dist/unpkg.js"
-            data-methods="extension,connect"
+            data-methods="extension,connect,local"
             data-no-banner="true"
-            data-perms="sign_event:1,sign_event:0,nip04_encrypt"
+            data-perms="sign_event:1,sign_event:0,sign_event:27235,nip04_encrypt"
             data-theme="default"
             data-dark-mode="true"
         ></script>

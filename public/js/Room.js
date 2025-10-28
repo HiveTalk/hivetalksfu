@@ -31,9 +31,8 @@ const pool = new SimplePool();
 // default fall back relays
 let defaultRelays = [
     'wss://relay.primal.net',
-    'wss://relay.damus.io/',
+    'wss://relay.damus.io',
     'wss://nos.lol',
-    //    'wss://hivetalk.nostr1.com',
 ];
 
 const socket = io({ transports: ['websocket'] });
@@ -310,7 +309,7 @@ document.addEventListener('DOMContentLoaded', function () {
             peer_pubkey = user.pubkey;
             window.localStorage.peer_pubkey = user.pubkey;
 
-            signSampleEvent(peer_pubkey); // send a sample event to the test relay
+            //signSampleEvent(peer_pubkey); // send a sample event to the test relay
 
             peer_npub = nip19.npubEncode(user.pubkey);
             window.localStorage.peer_npub = peer_npub;
@@ -371,7 +370,7 @@ document.addEventListener('DOMContentLoaded', function () {
 let checkInterval = null;
 // checkInterval = setInterval(checkUserInfo, 1000);
 let cycleCount = 0;
-const maxCycles = 360; // 240 cycles, 120 seconds = 2 minutes to login with Nostr before redirecting to Home Page
+const maxCycles = 60; // 240 cycles, 120 seconds = 2 minutes to login with Nostr before redirecting to Home Page
 
 // helper methods
 function generateRandomName() {
@@ -432,6 +431,7 @@ function setRandomName() {
 // and/or grab NIP-05 or Nprofile info
 async function getNostrProfile(pubkey, relays) {
     return new Promise((resolve, reject) => {
+        let resolved = false;
         let h = pool.subscribeMany(
             relays,
             [
@@ -442,7 +442,8 @@ async function getNostrProfile(pubkey, relays) {
             ],
             {
                 onevent(event) {
-                    if (event && event.kind === 0 && event.pubkey === pubkey) {
+                    if (event && event.kind === 0 && event.pubkey === pubkey && !resolved) {
+                        resolved = true;
                         const content = JSON.parse(event.content);
                         const lightningAddress = content.lud16 || content.lud06;
                         console.log('relays: ', relays);
@@ -473,6 +474,7 @@ async function getNostrProfile(pubkey, relays) {
                         // login fetch info now complete, set it to be true to exit login loop
                         // even if there is no lightning address, that's ok, we are logged in.
                         loggedIn = true;
+                        resolve(true);
                     }
                 },
                 onclose() {
@@ -480,6 +482,17 @@ async function getNostrProfile(pubkey, relays) {
                 },
             },
         );
+
+        // Timeout after 5 seconds to prevent hanging
+        setTimeout(() => {
+            if (!resolved) {
+                resolved = true;
+                h.close();
+                loggedIn = true;
+                console.log('Profile fetch timeout, continuing with login');
+                resolve(false);
+            }
+        }, 5000);
     });
 }
 
@@ -1779,12 +1792,16 @@ async function signSampleEvent(publicKey) {
     try {
         // Create an event and sign it to make sure user is who they say they are.
         // also useful if they want to blast a note out to their relays
+        const relay = 'wss://relay.damus.io';
         const event = {
             kind: 27235,
             pubkey: publicKey,
             created_at: Math.floor(Date.now() / 1000),
-            tags: [],
-            content: "Signing event to prove you own this npub\n #HiveTalk",
+            tags: [
+                ['method', 'POST'],
+                ['u', relay]
+                ],
+            content: "Signing event to prove you own this npub for HiveTalk",
         };
         console.log('Kind 1 - Event created', event);
         // Request the nos2x extension to sign the event
@@ -1807,9 +1824,9 @@ async function signSampleEvent(publicKey) {
 
 async function sendEvent(textNote, publicKey) {
     try {
-        let hiveRelays = ['wss://hivetalk.nostr1.com'];
-        const relays = [...hiveRelays, ...defaultRelays];
-        //const relays = [...hiveRelays]
+        //let hiveRelays = ['wss://hivetalk.nostr1.com'];
+       // const relays = [...hiveRelays, ...defaultRelays];
+        const relays = [...defaultRelays]
 
         // Create an event
         const event = {
@@ -1836,6 +1853,7 @@ async function sendEvent(textNote, publicKey) {
             [...relays],
             [
                 {
+                    kinds: [1],
                     authors: [publicKey],
                 },
             ],
@@ -1927,42 +1945,45 @@ async function showAnnouncements(useNavigator = false) {
     function show() {
         sound('open');
 
-        // Swal.fire({
-        //     background: swalBackground,
-        //     position: 'center',
-        //     //title: 'Latest Updates',
-        //     html: `
-        //     <div>
-        //         <iframe width="100%" height="315" src="https://www.youtube.com/embed/ZIDZKQhRlRk" 
-        //         title="YouTube video player" frameborder="0" 
-        //         allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" 
-        //         allowfullscreen></iframe>
-        //     </div>
-        //     <div>            
-        //     <p align="left"><ul style="text-align: left;">
-        //     <li>
-        //     Try the new version! >> <a href="https://honey.hivetalk.org/dashboard">Honey.Hivetalk.org</a>
-        //     </li>
-            
-        //     </ul>
-        //     </p>
-        //     </div>`,
-        //     showDenyButton: false,
-        //     showCancelButton: true,
-        //     showConfirmButton:false,
-        //     cancelButtonColor: 'red',
-        //     confirmButtonText: `Copy URL`,
-        //     cancelButtonText: `Close`,
-        //     showClass: { popup: 'animate__animated animate__fadeInDown' },
-        //     hideClass: { popup: 'animate__animated animate__fadeOutUp' },
-        // }).then((result) => {
-        //     if (result.isConfirmed) {
-        //         copyRoomURL();
-        //     }
-        //     if (isScreenAllowed) {
-        //         rc.shareScreen();
-        //     }
-        // });
+        Swal.fire({
+            background: swalBackground,
+            position: 'center',
+            title: 'Latest Updates',
+            html: `
+            <div>            
+                <p align="left"><ul style="text-align: left;">
+                <ul>
+                </ul>
+                <ul>
+                    <b> Take Note: </b><br/><br/>
+                    <li> 🌸 <b style="color: #F3E5AB;"> Hivetalk Vanilla</b> 
+                    is best for unlimited time with small groups. <br/><br/> </li>
+                    
+                    <li> 🍯 <b style="color: #FFBF00"><a href="https://honey.hivetalk.org/"  style="color:#FFBF00" target="_blank">
+                    Hivetalk Honey</a></b> 
+                    is a new version, best for hosting global events, permanent rooms, events. 
+                    Ephemeral rooms max 1 hr, Permanent rooms max 4 hours per session.
+                    </li>            
+
+                </ul>
+                </p>
+            </div>`,
+            showDenyButton: false,
+            showCancelButton: true,
+            showConfirmButton:false,
+            cancelButtonColor: 'red',
+            confirmButtonText: `Copy URL`,
+            cancelButtonText: `Close`,
+            showClass: { popup: 'animate__animated animate__fadeInDown' },
+            hideClass: { popup: 'animate__animated animate__fadeOutUp' },
+        }).then((result) => {
+            if (result.isConfirmed) {
+                copyRoomURL();
+            }
+            if (isScreenAllowed) {
+                rc.shareScreen();
+            }
+        });
     }
 }
 

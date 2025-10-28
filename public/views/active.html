@@ -7,8 +7,8 @@
                 onConnected,
                 requestProvider,
                 launchPaymentModal,
-            } from 'https://esm.sh/@getalby/bitcoin-connect@3.5.1';
-            import { LightningAddress } from 'https://esm.sh/@getalby/lightning-tools@5.0.0';
+            } from 'https://esm.sh/@getalby/bitcoin-connect@latest';
+            import { LightningAddress } from 'https://esm.sh/@getalby/lightning-tools@latest';
 
             onConnected((provider) => {
                 window.webln = provider;
@@ -130,7 +130,7 @@
         <script
             src="https://www.unpkg.com/nostr-login@latest/dist/unpkg.js"
             data-methods="extension,connect"
-            data-perms="sign_event:1,sign_event:0,nip04_encrypt"
+            data-perms="sign_event:1,sign_event:0,sign_event:27235,nip04_encrypt"
             data-theme="default"
             data-dark-mode="true"
         ></script>
@@ -232,14 +232,12 @@
                                     .blink-text {
                                         animation: blink 2s infinite;
                                     }
-                                </style>
-                                <!-- 
+                                </style>                                
                                 <div class="flex flex-col items-center space-y-4">
                                     <button id="honeyButton" class="button-donate px-6 py-3 bg-pink-600 text-white font-bold text-lg rounded-2xl hover:bg-pink-500 wiggle-on-hover transition-all duration-300">
                                       👉 Try the New <b>HIVETALK HONEY 🚀</b> 
                                     </button>
-                                  </div>  
-                                -->
+                                  </div>                              
                                     <style>
                                     @keyframes wiggle {
                                         0%, 100% { transform: rotate(-2deg); }
