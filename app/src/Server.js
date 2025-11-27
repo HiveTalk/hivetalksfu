@@ -59,6 +59,10 @@ dev dependencies: {
  *
  */
 
+// Load environment variables from .env file
+// This must be loaded first before any code that uses process.env
+require('dotenv').config();
+
 const express = require('express');
 const exphbs = require('express-handlebars');
 const { auth, requiresAuth } = require('express-openid-connect');
@@ -375,9 +379,11 @@ function getMeetCount(roomList) {
 function startServer() {
     // Middleware to check if zap goal is met before allowing room access
     // Fetches balance from API and redirects to zapgoal page if goal not met
+    // Configuration values are loaded from environment variables (.env file)
+    // Required env vars: ZAP_GOAL_SATS, ZAP_GOAL_API_URL
     async function checkZapGoal(req, res, next) {
-        const ZAP_GOAL_SATS = 80000; // 80k sats monthly goal
-        const API_URL = 'https://zapgoalsvr.vercel.app/api/balance'; // Correct API endpoint
+        const ZAP_GOAL_SATS = parseInt(process.env.ZAP_GOAL_SATS);
+        const API_URL = process.env.ZAP_GOAL_API_URL;
         
         // Log that middleware is executing
         log.info('[ZapGoal] ===== Middleware executing =====', {
@@ -672,6 +678,17 @@ function startServer() {
     // This page shows when monthly zap goal is not met
     app.get('/zapgoal', (req, res) => {
         res.sendFile(views.zapGoal);
+    });
+
+    // API endpoint to provide zap goal configuration to client
+    // Returns configuration values from environment variables
+    // Used by zapgoal.html to avoid hardcoding values
+    app.get('/api/zapgoal/config', (req, res) => {
+        res.json({
+            apiBaseUrl: process.env.ZAP_GOAL_API_URL,
+            goalAmount: parseInt(process.env.ZAP_GOAL_DISPLAY_AMOUNT),
+            defaultZapAmount: parseInt(process.env.ZAP_DEFAULT_AMOUNT)
+        });
     });
 
     // set new room name and join

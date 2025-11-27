@@ -216,12 +216,27 @@
         </script>
 
         <script>
-            // API configuration
-            const API_BASE_URL = 'https://zapgoalsvr.vercel.app/api/balance';
-            const GOAL_AMOUNT = 60000; // 60k sats goal
-            const DEFAULT_ZAP_AMOUNT = 2100;
+            // Configuration variables loaded from server
+            // These are fetched from /api/zapgoal/config endpoint
+            // which reads values from environment variables
+            let API_BASE_URL;
+            let GOAL_AMOUNT;
+            let DEFAULT_ZAP_AMOUNT;
+
+            // Fetch configuration from server endpoint
+            // Loads values from environment variables instead of hardcoded values
+            async function fetchConfig() {
+                const response = await fetch('/api/zapgoal/config');
+                const config = await response.json();
+                
+                // Set configuration values from API response
+                API_BASE_URL = config.apiBaseUrl;
+                GOAL_AMOUNT = config.goalAmount;
+                DEFAULT_ZAP_AMOUNT = config.defaultZapAmount;
+            }
 
             // Fetch and display balance data from API
+            // Uses configuration values loaded from server
             async function fetchBalance() {
                 try {
                     const response = await fetch(API_BASE_URL);
@@ -395,10 +410,12 @@
                 });
             }
 
-            // Load balance and month on page load
-            document.addEventListener('DOMContentLoaded', () => {
+            // Initialize page: Load config from server, then fetch balance and update month
+            // Config must be loaded first as it contains the API URLs and goal amounts
+            document.addEventListener('DOMContentLoaded', async () => {
                 updateMonth();
-                fetchBalance();
+                await fetchConfig(); // Load configuration from environment variables
+                fetchBalance(); // Fetch balance using loaded configuration
             });
         </script>
     </body>
