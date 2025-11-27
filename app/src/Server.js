@@ -686,7 +686,7 @@ function startServer() {
     app.get('/api/zapgoal/config', (req, res) => {
         res.json({
             apiBaseUrl: process.env.ZAP_GOAL_API_URL,
-            goalAmount: parseInt(process.env.ZAP_GOAL_DISPLAY_AMOUNT),
+            goalAmount: parseInt(process.env.ZAP_GOAL_SATS),
             defaultZapAmount: parseInt(process.env.ZAP_DEFAULT_AMOUNT)
         });
     });
