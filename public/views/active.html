@@ -77,7 +77,7 @@
         <title id="title">HiveTalk Vanilla, Video Calls, Messaging and Screen Sharing</title>
         <link id="icon" rel="shortcut icon" href="../images/logo.svg" />
         <link id="appleTouchIcon" rel="apple-touch-icon" href="../images/logo200x200.png" />
-        <link rel="apple-touch-icon" sizes="180x180" href="../images/logo200x200.png">
+        <link rel="apple-touch-icon" sizes="180x180" href="../images/logo200x200.png" />
 
         <!-- Meta Information -->
 
@@ -192,9 +192,13 @@
                             <h3 class="cta-inner mt-0" style="border-radius: 12px">
                                 <button class="button-donate button-wide-mobile pulse" id="zaplink">
                                     ⚡️ Zap Hivetalk
-                                </button>                
-                            </h3>   
-                                <iframe src="https://zapgoalsvr.vercel.app/" class="mx-auto" style="width: 100%; height: 150px; border: none; border-radius: 12px "></iframe>
+                                </button>
+                            </h3>
+                            <iframe
+                                src="https://zapgoalsvr.vercel.app/"
+                                class="mx-auto"
+                                style="width: 100%; height: 150px; border: none; border-radius: 12px"
+                            ></iframe>
                         </div>
                     </div>
                 </section>
@@ -223,35 +227,49 @@
                                     <span>Your recent room:</span>
                                     <a id="lastRoom"></a>
                                 </div>
-                                 <style>
+                                <style>
                                     @keyframes blink {
-                                        0% { opacity: 1; }
-                                        50% { opacity: 0; }
-                                        100% { opacity: 1; }
+                                        0% {
+                                            opacity: 1;
+                                        }
+                                        50% {
+                                            opacity: 0;
+                                        }
+                                        100% {
+                                            opacity: 1;
+                                        }
                                     }
                                     .blink-text {
                                         animation: blink 2s infinite;
                                     }
-                                </style>                                
+                                </style>
                                 <div class="flex flex-col items-center space-y-4">
-                                    <button id="honeyButton" class="button-donate px-6 py-3 bg-pink-600 text-white font-bold text-lg rounded-2xl hover:bg-pink-500 wiggle-on-hover transition-all duration-300">
-                                      👉 Try the New <b>HIVETALK HONEY 🚀</b> 
+                                    <button
+                                        id="honeyButton"
+                                        class="button-donate px-6 py-3 bg-pink-600 text-white font-bold text-lg rounded-2xl hover:bg-pink-500 wiggle-on-hover transition-all duration-300"
+                                    >
+                                        👉 Try the New <b>HIVETALK HONEY 🚀</b>
                                     </button>
-                                  </div>                              
-                                    <style>
+                                </div>
+                                <style>
                                     @keyframes wiggle {
-                                        0%, 100% { transform: rotate(-2deg); }
-                                        50% { transform: rotate(2deg); }
-                                      }
-                                      .wiggle-on-hover:hover {
+                                        0%,
+                                        100% {
+                                            transform: rotate(-2deg);
+                                        }
+                                        50% {
+                                            transform: rotate(2deg);
+                                        }
+                                    }
+                                    .wiggle-on-hover:hover {
                                         animation: wiggle 0.3s ease-in-out;
-                                      }
-                                    </style>
+                                    }
+                                </style>
                                 <script>
-                                    document.getElementById('honeyButton').addEventListener('click', function() {
+                                    document.getElementById('honeyButton').addEventListener('click', function () {
                                         window.location.href = 'https://honey.hivetalk.org/dashboard';
                                     });
-                                </script>  
+                                </script>
                             </div>
                         </div>
                     </div>
@@ -259,18 +277,16 @@
 
                 <section class="cta section">
                     <div class="features-wrap mb-24"><h2>Active Rooms</h2></div>
-                    <div class="features-wrap">                          
-                        <div id="meetingsContainer">
-                            {{activeMeetings}}                    
-                        </div>
+                    <div class="features-wrap">
+                        <div id="meetingsContainer">{{activeMeetings}}</div>
                     </div>
                 </section>
-                
-                <section class="cta section mt-48"> 
+
+                <section class="cta section mt-48">
                     <div class="features-wrap mt-24">
                         <a href="https://hivetalk.printify.me/" target="_blank">
-                            <img src="/images/shophivetalk.png" alt="Hive Shop" id="Shop" width="450"/>
-                        </a>    
+                            <img src="/images/shophivetalk.png" alt="Hive Shop" id="Shop" width="450" />
+                        </a>
                     </div>
                 </section>
 
@@ -295,7 +311,7 @@
                             </a>
                         </div>
 
-                        <ul class="footer-social-links list-reset">                            
+                        <ul class="footer-social-links list-reset">
                             <li>
                                 <a href="https://github.com/hivetalk" target="_blank" rel="noopener noreferrer">
                                     <svg
@@ -314,8 +330,13 @@
                             </li>
                             <li>
                                 <a href="https://nostree.me/soc@hivetalk.org" target="_blank" rel="noopener noreferrer">
-                                    <svg width="24" height="24" viewBox="0 0 28 27" xmlns="http://www.w3.org/2000/svg"><path fill="currentColor" d="M14 0C6.28 0 0 6.35 0 14.15c0 4.66 2.26 9.03 6.1 11.68l.02.03c.03.03.05.05.08.05l.06.03c.5.34 1.18.2 1.51-.3.33-.5.2-1.2-.3-1.54l-.14-.1a12 12 0 0 1-5.13-9.85C2.2 7.58 7.5 2.23 14 2.23c6.5 0 11.8 5.35 11.8 11.92A12 12 0 0 1 20.67 24l-.14.08c-1.21.78-2.48.9-3.5.34a3.83 3.83 0 0 1-1.82-2.7 7.54 7.54 0 0 0 4.16-2.15 7.69 7.69 0 0 0-.02-10.81 7.54 7.54 0 0 0-10.72 0 7.75 7.75 0 0 0 0 10.84 7.59 7.59 0 0 0 4.32 2.17 6.2 6.2 0 0 0 3 4.63c.78.41 1.6.64 2.46.64 1.1 0 2.23-.36 3.33-1.06l.03-.03c.03-.03.06-.05.08-.05l.03-.03a14.25 14.25 0 0 0 6.1-11.68A14.06 14.06 0 0 0 14 0Zm-3.8 10.31a5.33 5.33 0 0 1 7.6 0 5.46 5.46 0 0 1 0 7.66 5.31 5.31 0 0 1-7.58 0 5.43 5.43 0 0 1-.02-7.66Z"></path></svg>
-                                    </a>
+                                    <svg width="24" height="24" viewBox="0 0 28 27" xmlns="http://www.w3.org/2000/svg">
+                                        <path
+                                            fill="currentColor"
+                                            d="M14 0C6.28 0 0 6.35 0 14.15c0 4.66 2.26 9.03 6.1 11.68l.02.03c.03.03.05.05.08.05l.06.03c.5.34 1.18.2 1.51-.3.33-.5.2-1.2-.3-1.54l-.14-.1a12 12 0 0 1-5.13-9.85C2.2 7.58 7.5 2.23 14 2.23c6.5 0 11.8 5.35 11.8 11.92A12 12 0 0 1 20.67 24l-.14.08c-1.21.78-2.48.9-3.5.34a3.83 3.83 0 0 1-1.82-2.7 7.54 7.54 0 0 0 4.16-2.15 7.69 7.69 0 0 0-.02-10.81 7.54 7.54 0 0 0-10.72 0 7.75 7.75 0 0 0 0 10.84 7.59 7.59 0 0 0 4.32 2.17 6.2 6.2 0 0 0 3 4.63c.78.41 1.6.64 2.46.64 1.1 0 2.23-.36 3.33-1.06l.03-.03c.03-.03.06-.05.08-.05l.03-.03a14.25 14.25 0 0 0 6.1-11.68A14.06 14.06 0 0 0 14 0Zm-3.8 10.31a5.33 5.33 0 0 1 7.6 0 5.46 5.46 0 0 1 0 7.66 5.31 5.31 0 0 1-7.58 0 5.43 5.43 0 0 1-.02-7.66Z"
+                                        ></path>
+                                    </svg>
+                                </a>
                             </li>
                             <li>
                                 <a href="https://hivetalk.nostr1.com" target="_blank" rel="noopener noreferrer">
@@ -323,11 +344,7 @@
                                 </a>
                             </li>
                             <li>
-                                <a
-                                    href="http://njump.me/soc@hivetalk.org"
-                                    target="_blank"
-                                    rel="noopener noreferrer"
-                                >
+                                <a href="http://njump.me/soc@hivetalk.org" target="_blank" rel="noopener noreferrer">
                                     <img src="/images/nostrgr.png" alt="nostr" width="24" height="24" />
                                 </a>
                             </li>
@@ -335,15 +352,15 @@
 
                         <ul class="footer-links">
                             <li><a href="/">Home</a></li>
-                            <li><a href="/about">About</a></li>                            
+                            <li><a href="/about">About</a></li>
                             <li><a href="/support">Support</a></li>
                             <li><a href="/privacy">Privacy</a></li>
                             <li><a href="https://status.hivetalk.org/">Status</a></li>
                             <li><a href="/api/v1/docs/">API</a></li>
                         </ul>
-    
+
                         <div class="footer-copyright">
-                            &copy; {{currentYear}} HiveTalk, all rights reserved. 
+                            &copy; {{currentYear}} HiveTalk, all rights reserved.
                             <br />
                             Commit: b2c98604cca94e9ef40baa12da58bd269f72e278
                             <div id="content-placeholder"><!-- Content will be inserted here --></div>
@@ -358,6 +375,3 @@
         <script async defer src="https://buttons.github.io/buttons.js"></script>
     </body>
 </html>
-
-
-

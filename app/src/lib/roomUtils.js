@@ -28,7 +28,6 @@ const log = new Logger('RoomUtils');
 //     }
 // }
 
-
 // // Function to inject OG tags
 
 function injectOGTags(html, roomInfo, roomId) {
@@ -36,11 +35,11 @@ function injectOGTags(html, roomInfo, roomId) {
         title: `${roomId} on Hivetalk Now Open`,
         description: 'HiveTalk Vanilla calling provides real-time video calls, messaging and screen sharing.',
         image: 'https://vanilla.hivetalk.org/images/hivetalk.png',
-        url: `https://vanilla.hivetalk.org/join/${roomId}`
+        url: `https://vanilla.hivetalk.org/join/${roomId}`,
     };
 
-    log.debug("Processing room info:", roomInfo);
-    
+    log.debug('Processing room info:', roomInfo);
+
     //    const ogTitle = roomInfo?.room_name ? `Join ${roomInfo.room_name} on HiveTalk` : defaultOG.title;
     const ogTitle = roomInfo?.room_name || `Join ${defaultOG.title} room on HiveTalk`;
     const ogDescription = roomInfo?.room_description || defaultOG.description;
@@ -51,7 +50,7 @@ function injectOGTags(html, roomInfo, roomId) {
         ogTitle,
         ogDescription,
         ogImage,
-        ogUrl
+        ogUrl,
     });
 
     const safeTitle = escapeHtml(ogTitle);
@@ -72,13 +71,10 @@ function injectOGTags(html, roomInfo, roomId) {
     // Replace the existing OG tags section and title
     html = html.replace(
         /<!-- https:\/\/ogp\.me -->[\s\S]*?<meta property="og:site_name"[^>]*>/,
-        `<!-- https://ogp.me -->${ogTags}`
+        `<!-- https://ogp.me -->${ogTags}`,
     );
 
-    html = html.replace(
-        /<title[^>]*>.*?<\/title>/i,
-        `<title>${safeTitle}</title>`
-    );
+    html = html.replace(/<title[^>]*>.*?<\/title>/i, `<title>${safeTitle}</title>`);
 
     return html;
 }
@@ -86,15 +82,15 @@ function injectOGTags(html, roomInfo, roomId) {
 // Function to escape HTML special characters
 function escapeHtml(unsafe) {
     return unsafe
-        .replace(/&/g, "&amp;")
-        .replace(/</g, "&lt;")
-        .replace(/>/g, "&gt;")
-        .replace(/"/g, "&quot;")
-        .replace(/'/g, "&#039;");
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#039;');
 }
 
 module.exports = {
-//    getRoomInfo,
+    //    getRoomInfo,
     injectOGTags,
     escapeHtml,
 };

@@ -24,7 +24,6 @@
 //   }
 // }
 
-
 // class NostrAuthClient {
 //   /**
 //    * Construct a new NostrAuthClient instance.
@@ -137,7 +136,7 @@
 //             relays: preferredRelays,
 //             isPresenter: isModerator,
 //           }),
-//       }).then(response => { 
+//       }).then(response => {
 //         console.log('response', response.status)
 //         if (response.status === 302) {
 //             console.log("response status is 302") // Get the redirect URL from the response
@@ -159,7 +158,6 @@
 //       document.getElementById('protected').innerHTML = error;
 //     }
 // }
-
 
 // loadUser();
 // authNIP98();

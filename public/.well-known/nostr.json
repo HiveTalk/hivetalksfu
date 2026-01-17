@@ -1,6 +1,6 @@
 {
     "names": {
-        "buttercup":"f288a224a61b7361aa9dc41a90aba8a2dff4544db0bc386728e638b21da1792c",
+        "buttercup": "f288a224a61b7361aa9dc41a90aba8a2dff4544db0bc386728e638b21da1792c",
         "yeghro": "f821179bd5d691c61b4356336388adadc3cc1304f49e771a87c38de7ed4fd022",
         "bitkarrot": "3878d95db7b854c3a0d3b2d6b7bf9bf28b36162be64326f5521ba71cf3b45a69",
         "soc": "13ff84142a6526245124c180fb5342cea130d558fec7d488019d1dae7aaca18a",
@@ -17,7 +17,7 @@
         "3878d95db7b854c3a0d3b2d6b7bf9bf28b36162be64326f5521ba71cf3b45a69": [
             "wss://relay.primal.net",
             "wss://relay.damus.io/",
-            "wss://nos.lol",        
+            "wss://nos.lol",
             "wss://hivetalk.nostr1.com"
         ]
     }

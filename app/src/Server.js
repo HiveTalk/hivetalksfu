@@ -4,7 +4,7 @@
 ███████ ███████ ██████  ██    ██ ███████ ██████  
 ██      ██      ██   ██ ██    ██ ██      ██   ██ 
 ███████ █████   ██████  ██    ██ █████   ██████  
-     ██ ██      ██   ██  ██  ██  ██      ██   ██ 
+     ██ ██      ██   ██  ██  ██  ██      ██   ██ 
 ███████ ███████ ██   ██   ████   ███████ ██   ██                                           
 
 prod dependencies: {
@@ -91,17 +91,9 @@ const yaml = require('js-yaml');
 const swaggerUi = require('swagger-ui-express');
 const swaggerDocument = yaml.load(fs.readFileSync(path.join(__dirname, '/../api/swagger.yaml'), 'utf8'));
 const Sentry = require('@sentry/node');
-// const Discord = require('./Discord.js');
-// const Mattermost = require('./Mattermost.js');
 const restrictAccessByIP = require('./middleware/IpWhitelist.js');
 const packageJson = require('../../package.json');
-//const { invokeCheckRoomOwner } = require('./checkRoomOwner');
-//const { initSupabase } = require('./lib/supabase');
-//const { getRoomInfo, injectOGTags } = require('./lib/roomUtils');
 const { injectOGTags } = require('./lib/roomUtils');
-
-// Initialize Supabase client
-//initSupabase();
 
 // Incoming Stream to RTPM
 const { v4: uuidv4 } = require('uuid');
@@ -129,13 +121,13 @@ const hbs = exphbs.create({
     extname: '.handlebars',
     // Helpers can be used in both .html and .handlebars files
     helpers: {
-        formatDate: function(date) {
+        formatDate: function (date) {
             return new Date(date).toLocaleDateString();
         },
-        json: function(context) {
+        json: function (context) {
             return JSON.stringify(context);
-        }
-    }
+        },
+    },
 });
 
 const options = {
@@ -199,13 +191,6 @@ if (sentryEnabled) {
         ],
         tracesSampleRate: sentryTracesSampleRate,
     });
-    /*
-    log.log('test-log');
-    log.info('test-info');
-    log.warn('test-warning');
-    log.error('test-error');
-    log.debug('test-debug');
-*/
 }
 
 // Discord Bot
@@ -360,94 +345,114 @@ function OIDCAuth(req, res, next) {
 function getMeetCount(roomList) {
     // Check if roomList is empty
     if (roomList.size === 0) {
-        return [];  // Return an empty array if there are no rooms
+        return []; // Return an empty array if there are no rooms
     }
     const meetings = Array.from(roomList.entries()).map(([id, room]) => {
         // hide room if locked
         if (!room._isLocked) {
             const peerCount = room.peers.size; // Use .size instead of converting to array
             return {
-              roomId: id,
-              peerCount: peerCount, // Changed from 'peers' to 'peerCount'
-   
-            }}
-        });
+                roomId: id,
+                peerCount: peerCount, // Changed from 'peers' to 'peerCount'
+            };
+        }
+    });
     return meetings;
 }
 
-
 function startServer() {
-    // Middleware to check if zap goal is met before allowing room access
-    // Fetches balance from API and redirects to zapgoal page if goal not met
-    // Configuration values are loaded from environment variables (.env file)
-    // Required env vars: ZAP_GOAL_SATS, ZAP_GOAL_API_URL
-    async function checkZapGoal(req, res, next) {
-        const ZAP_GOAL_SATS = parseInt(process.env.ZAP_GOAL_SATS);
-        const API_URL = process.env.ZAP_GOAL_API_URL;
-        
-        // Log that middleware is executing
-        log.info('[ZapGoal] ===== Middleware executing =====', {
-            path: req.path,
-            url: req.url,
-            method: req.method,
-        });
-        
+    const ZAP_GOAL_STATE_FILE = path.join(__dirname, 'zapgoal_status.json');
+
+    // Helper to get which months are paid from local file
+    function getZapGoalState() {
         try {
-            // Log before API call
-            log.info('[ZapGoal] Fetching balance from API', { apiUrl: API_URL });
-            
+            if (fs.existsSync(ZAP_GOAL_STATE_FILE)) {
+                return JSON.parse(fs.readFileSync(ZAP_GOAL_STATE_FILE, 'utf8'));
+            }
+        } catch (e) {
+            log.error('[ZapGoal] Failed to read state file', e);
+        }
+        return { unlockedMonths: [] };
+    }
+
+    // Helper to save paid months to local file
+    function saveZapGoalState(state) {
+        try {
+            fs.writeFileSync(ZAP_GOAL_STATE_FILE, JSON.stringify(state, null, 2), 'utf8');
+        } catch (e) {
+            log.error('[ZapGoal] Failed to save state file', e);
+        }
+    }
+
+    // Middleware to check if zap goal is met before allowing room access
+    async function checkZapGoal(req, res, next) {
+        const ZAP_GOAL_SATS = parseInt(process.env.ZAP_GOAL_SATS) || 60000;
+        const API_URL = process.env.ZAP_GOAL_API_URL;
+        const START_YEAR = parseInt(process.env.ZAP_GOAL_START_YEAR) || 2026;
+        const START_MONTH = parseInt(process.env.ZAP_GOAL_START_MONTH) || 1;
+
+        let now = new Date();
+        // Debug override for testing future/past dates
+        if (process.env.ZAP_GOAL_DEBUG === 'true' && req.query.debugDate) {
+            const debugDate = new Date(req.query.debugDate + '-01');
+            if (!isNaN(debugDate.getTime())) {
+                now = debugDate;
+            }
+        }
+
+        const currentYear = now.getFullYear();
+        const currentMonth = now.getMonth() + 1; // 1-indexed
+        const currentMonthKey = `${currentYear}-${currentMonth.toString().padStart(2, '0')}`;
+
+        // Calculate next month for pay-forward
+        const nextDate = new Date(currentYear, currentMonth, 1);
+        const nextMonthKey = `${nextDate.getFullYear()}-${(nextDate.getMonth() + 1).toString().padStart(2, '0')}`;
+
+        const state = getZapGoalState();
+
+        // Any month on or before the project start date is automatically unlocked
+        const startMonthKey = `${START_YEAR}-${START_MONTH.toString().padStart(2, '0')}`;
+        const isPastOrStartMonth = currentMonthKey <= startMonthKey;
+
+        try {
             // Fetch current balance from zap goal API
             const response = await axios.get(API_URL, { timeout: 5000 });
-            
-            // Log raw API response
-            log.info('[ZapGoal] API Response received', {
-                status: response.status,
-                hasData: !!response.data,
-                dataKeys: response.data ? Object.keys(response.data) : [],
-                rawData: response.data,
-            });
-            
+
             if (response.data && response.data.success && response.data.data) {
-                // Convert millisats to sats
                 const balanceInSats = Math.floor(response.data.data.balance / 1000);
-                
-                log.info('[ZapGoal] Balance calculation', {
-                    balanceInMsats: response.data.data.balance,
-                    balanceInSats: balanceInSats,
-                    goalSats: ZAP_GOAL_SATS,
-                    goalMet: balanceInSats >= ZAP_GOAL_SATS,
-                    percentComplete: ((balanceInSats / ZAP_GOAL_SATS) * 100).toFixed(2) + '%',
-                });
-                
-                // Check if goal is met
+
+                // If balance hits goal, unlock CURRENT month AND NEXT month
                 if (balanceInSats >= ZAP_GOAL_SATS) {
-                    // Goal met - allow access
-                    log.info('[ZapGoal] ✅ Goal MET - Allowing access');
+                    let changed = false;
+                    if (!state.unlockedMonths.includes(currentMonthKey)) {
+                        state.unlockedMonths.push(currentMonthKey);
+                        log.info(`[ZapGoal] 🎉 Goal reached! Current month ${currentMonthKey} is now UNLOCKED.`);
+                        changed = true;
+                    }
+                    if (!state.unlockedMonths.includes(nextMonthKey)) {
+                        state.unlockedMonths.push(nextMonthKey);
+                        log.info(`[ZapGoal] 🚀 Goal reached! NEXT month ${nextMonthKey} is now PAID FOR.`);
+                        changed = true;
+                    }
+                    if (changed) saveZapGoalState(state);
+                }
+
+                // Final Access Decision
+                const isCurrentMonthUnlocked = isPastOrStartMonth || state.unlockedMonths.includes(currentMonthKey);
+
+                log.info(`[ZapGoal] Check - Path: ${req.path} | Month: ${currentMonthKey} | Unlocked: ${isCurrentMonthUnlocked} | Balance: ${balanceInSats} | Goal: ${ZAP_GOAL_SATS}`);
+
+                if (isCurrentMonthUnlocked) {
                     next();
                 } else {
-                    // Goal not met - redirect to zap goal page
-                    log.info('[ZapGoal] ❌ Goal NOT MET - Redirecting to /zapgoal', {
-                        current: balanceInSats,
-                        needed: ZAP_GOAL_SATS,
-                        shortfall: ZAP_GOAL_SATS - balanceInSats,
-                    });
+                    log.info(`[ZapGoal] ❌ Goal NOT MET for ${currentMonthKey} - Blocked join request to ${req.path}`);
                     return res.redirect('/zapgoal');
                 }
             } else {
-                // Invalid response format - allow access to avoid downtime
-                log.warn('[ZapGoal] ⚠️ Invalid API response format, allowing access', {
-                    responseData: response.data,
-                });
-                next();
+                next(); // Allow if API is down
             }
         } catch (error) {
-            // API error - allow access to avoid downtime
-            log.error('[ZapGoal] ⚠️ API check failed, allowing access', {
-                error: error.message,
-                errorCode: error.code,
-                errorStack: error.stack,
-                url: API_URL,
-            });
+            log.error('[ZapGoal] API check failed, allowing access', { error: error.message });
             next();
         }
     }
@@ -477,37 +482,27 @@ function startServer() {
     app.use((req, res, next) => {
         // Extend res.render to try both .handlebars first
         const originalRender = res.render;
-        res.render = function(view, locals, callback) {
+        res.render = function (view, locals, callback) {
             // Try .handlebars first
             originalRender.call(this, view + '.handlebars', locals, (err, html) => {
                 if (!err) {
                     return callback ? callback(null, html) : this.send(html);
                 }
                 // If .handlebars fails, try .html
-                originalRender.call(this, view + '.html', locals, callback || ((err, html) => {
-                    if (err) return next(err);
-                    this.send(html);
-                }));
+                originalRender.call(
+                    this,
+                    view + '.html',
+                    locals,
+                    callback ||
+                    ((err, html) => {
+                        if (err) return next(err);
+                        this.send(html);
+                    }),
+                );
             });
         };
         next();
     });
-
-    // Logs requests
-    /*
-    app.use((req, res, next) => {
-        log.debug('New request:', {
-            headers: req.headers,
-            body: req.body,
-            method: req.method,
-            path: req.originalUrl,
-        });
-        next();
-    });
-    */
-
-    // Mattermost
-    // const mattermost = new Mattermost(app);
 
     // POST start from here...
     app.post('*', function (next) {
@@ -548,21 +543,21 @@ function startServer() {
     }
 
     app.get('/active', (req, res) => {
-        let currentYear = new Date().getFullYear()
-        let activeHtml = fs.readFileSync(path.join(__dirname, '../../', 'public/views/active.html'), 'utf8');    
+        let currentYear = new Date().getFullYear();
+        let activeHtml = fs.readFileSync(path.join(__dirname, '../../', 'public/views/active.html'), 'utf8');
         activeHtml = activeHtml.replace('{{currentYear}}', currentYear);
         let roomsHtml = '0';
-        try  {
+        try {
             let meetings = getMeetCount(roomList);
             // Filter out undefined elements
-            meetings = Array.isArray(meetings) ? meetings.filter(room => room !== undefined) : [];
-           // console.log("meetings after filter:", meetings);
+            meetings = Array.isArray(meetings) ? meetings.filter((room) => room !== undefined) : [];
+            // console.log("meetings after filter:", meetings);
 
             if (meetings.length) {
                 roomsHtml = meetings
-                    .map(room => {
+                    .map((room) => {
                         if (!room || !room.roomId) return '';
-                        
+
                         return `
                             <a href="/join/${room.roomId}" target="_blank">
                                 <div class="feature text-center button-like">
@@ -572,9 +567,9 @@ function startServer() {
                             </a>
                         `;
                     })
-                    .filter(html => html !== '')
+                    .filter((html) => html !== '')
                     .join('');
-            
+
                 // roomsHtml will contain only the HTML for the valid room '58248RedPhoto'
                 activeHtml = activeHtml.replace('{{activeMeetings}}', roomsHtml);
             } else {
@@ -582,12 +577,11 @@ function startServer() {
             }
             res.send(activeHtml);
         } catch (err) {
-            console.log("error in active meetings", err)
+            console.log('error in active meetings', err);
             activeHtml = activeHtml.replace('{{activeMeetings}}', '');
-            res.send(activeHtml);       
+            res.send(activeHtml);
         }
     });
-
 
     // Route to display user information
     app.get('/profile', OIDCAuth, (req, res) => {
@@ -686,8 +680,8 @@ function startServer() {
     app.get('/api/zapgoal/config', (req, res) => {
         res.json({
             apiBaseUrl: process.env.ZAP_GOAL_API_URL,
-            goalAmount: parseInt(process.env.ZAP_GOAL_SATS),
-            defaultZapAmount: parseInt(process.env.ZAP_DEFAULT_AMOUNT)
+            goalAmount: parseInt(process.env.ZAP_GOAL_SATS) || 60000,
+            defaultZapAmount: parseInt(process.env.ZAP_DEFAULT_AMOUNT) || 2100,
         });
     });
 
@@ -733,9 +727,8 @@ function startServer() {
             // http://localhost:3010/join?room=test&roomPassword=0&name=mirotalksfu&audio=1&video=1&screen=0&hide=0&notify=0&token=token
 
             // https://localhost:3010/join?room=yourname&nip98=nip98token  // 60 second expiration
-            const { room, roomPassword, name, audio, video, screen, hide, notify, token, nip98, isPresenter } = checkXSS(
-                req.query,
-            );
+            const { room, roomPassword, name, audio, video, screen, hide, notify, token, nip98, isPresenter } =
+                checkXSS(req.query);
 
             if (!Validator.isValidRoomName(room)) {
                 return res.status(400).json({
@@ -747,19 +740,8 @@ function startServer() {
             let peerPassword = '';
             let isPeerValid = false;
             let isPeerPresenter = false;
-            
-            // TODO: Finish nip98 auth here  - dashboard login 60 sec expiration
-            // if (nip98) {                 
-            //     validateNip98Token(nip98).then((result) => {
-            //         if (result) {
-            //             log.debug('Direct Join NIP98 Success');
-            //         }
-            //     }).catch((error) => {
-            //         log.error('Direct Join NIP98 error', { error: error.message });
-            //     })
-            // }
 
-            // TODO: disallow reserved rooms if not owner  
+            // TODO: disallow reserved rooms if not owner
             if (token) {
                 try {
                     const validToken = await isValidToken(token);
@@ -838,13 +820,10 @@ function startServer() {
         }
 
         // Get room info from Supabase
-        // const roomInfo = await getRoomInfo(roomId);
-                
         // Read the room.html file
         const roomHtml = fs.readFileSync(views.room, 'utf8');
-                
+
         // Inject custom OG tags if room info exists
-        // const htmlWithOG = roomInfo ? injectOGTags(roomHtml, roomInfo, roomId) : injectOGTags(roomHtml, null, roomId);
         const htmlWithOG = injectOGTags(roomHtml, null, roomId);
 
         const allowRoomAccess = isAllowedRoomAccess('/join/:roomId', req, hostCfg, authHost, roomList, roomId);
@@ -914,7 +893,6 @@ function startServer() {
     // Get stats endpoint
     app.get(['/stats'], (req, res) => {
         const stats = config.stats ? config.stats : defaultStats;
-        // log.debug('Send stats', stats);
         res.send(stats);
     });
 
@@ -942,26 +920,26 @@ function startServer() {
 
     // handle nostr protected login rooms
     // check for nostr authentication to start room
-        // if open to the public let anyone auth into the room
-        // if not open to the public then check the database for allowed users
-        // nostr_api_endpoint : https://supabase-url/api/v1/nostrAuth 
-        // nostr_api_secret_key: 'insert your secret key here'
+    // if open to the public let anyone auth into the room
+    // if not open to the public then check the database for allowed users
+    // nostr_api_endpoint : https://supabase-url/api/v1/nostrAuth
+    // nostr_api_secret_key: 'insert your secret key here'
 
     app.post(['/nauth'], (req, res) => {
-        // nip98 nostr auth api endpoint 
+        // nip98 nostr auth api endpoint
         // check if request is valid.
         res.sendFile(views.newRoom);
     });
 
     // handle nostr protected login rooms
     // check for nostr authentication to start room
-        // if open to the public let anyone auth into the room
-        // if not open to the public then check the database for allowed users
-        // nostr_api_endpoint : https://supabase-url/api/v1/nostrAuth 
-        // nostr_api_secret_key: 'insert your secret key here'
+    // if open to the public let anyone auth into the room
+    // if not open to the public then check the database for allowed users
+    // nostr_api_endpoint : https://supabase-url/api/v1/nostrAuth
+    // nostr_api_secret_key: 'insert your secret key here'
 
     app.post(['/nauth'], (req, res) => {
-        // nip98 nostr auth api endpoint 
+        // nip98 nostr auth api endpoint
         // check if request is valid.
         res.sendFile(views.newRoom);
     });
@@ -993,8 +971,8 @@ function startServer() {
                 config.presenters && config.presenters.join_first
                     ? true
                     : config.presenters &&
-                      config.presenters.list &&
-                      config.presenters.list.includes(username).toString();
+                    config.presenters.list &&
+                    config.presenters.list.includes(username).toString();
 
             const token = encodeToken({ username: username, password: password, presenter: isPresenter });
             const allowedRooms = await getUserAllowedRooms(username, password);
@@ -1192,7 +1170,6 @@ function startServer() {
     // REST API
     // ####################################################
 
-
     app.get([restApi.basePath + '/count'], (req, res) => {
         // Check if endpoint allowed
         if (restApi.allowed && !restApi.allowed.meetings) {
@@ -1216,7 +1193,7 @@ function startServer() {
         } catch (error) {
             // assume error thrown if no meetings is undefined,
             // so return an empty array
-            return "error" + error;
+            return 'error' + error;
         }
     });
 
@@ -1379,21 +1356,9 @@ function startServer() {
         });
     });
 
-    // API endpoint for room ownership check
-    // app.post('/api/check-room-owner', async (req, res) => {
-    //     try {
-    //         const { room_id } = req.body;
-    //         const data = await invokeCheckRoomOwner(room_id);
-    //         res.json(data);
-    //     } catch (error) {
-    //         console.error('Error checking room ownership:', error);
-    //         res.status(500).json({ error: 'Failed to check room ownership' });
-    //     }
-    // });
-
     app.post('/api/check-room-peers', async (req, res) => {
         const { room_id } = req.body;
-        const room = roomList.get(room_id);    
+        const room = roomList.get(room_id);
         const peerCount = room ? room.peers.size : 0;
         console.log('check-room-peers --> ', peerCount);
 
@@ -1686,10 +1651,23 @@ function startServer() {
 
             const room = getRoom(socket);
 
-            const { peer_name, peer_pubkey, peer_id, peer_uuid, peer_token, os_name, os_version, browser_name, browser_version } =
-                data.peer_info;
+            const {
+                peer_name,
+                peer_pubkey,
+                peer_id,
+                peer_uuid,
+                peer_token,
+                os_name,
+                os_version,
+                browser_name,
+                browser_version,
+            } = data.peer_info;
 
-            console.log('>>>>> [Join] <<<< - socket.on Peer Info', {peer_name: peer_name, peer_pubkey: peer_pubkey, peer_id: peer_id});
+            console.log('>>>>> [Join] <<<< - socket.on Peer Info', {
+                peer_name: peer_name,
+                peer_pubkey: peer_pubkey,
+                peer_id: peer_id,
+            });
             let is_presenter = true;
 
             // User Auth required or detect token, we check if peer valid
@@ -2165,7 +2143,7 @@ function startServer() {
             socket.emit('newProducers', producerList);
         });
 
-        socket.on('getPeerCounts', async ({}, callback) => {
+        socket.on('getPeerCounts', async ({ }, callback) => {
             if (!roomExists(socket)) return;
 
             const room = getRoom(socket);
@@ -2216,12 +2194,7 @@ function startServer() {
 
             const data = checkXSS(dataObject);
 
-            const isPresenter = await isPeerPresenter(
-                socket.room_id,
-                socket.id,
-                data.peer_name,
-                data.peer_uuid,
-            );
+            const isPresenter = await isPeerPresenter(socket.room_id, socket.id, data.peer_name, data.peer_uuid);
             const room = getRoom(socket);
 
             log.debug('Room action:', data);
@@ -2637,7 +2610,7 @@ function startServer() {
         });
 
         // https://docs.heygen.com/reference/avatar-list
-        socket.on('getAvatarList', async ({}, cb) => {
+        socket.on('getAvatarList', async ({ }, cb) => {
             if (!config.videoAI.enabled || !config.videoAI.apiKey)
                 return cb({ error: 'Video AI seems disabled, try later!' });
 
@@ -2661,7 +2634,7 @@ function startServer() {
         });
 
         // https://docs.heygen.com/reference/get-voices
-        socket.on('getVoiceList', async ({}, cb) => {
+        socket.on('getVoiceList', async ({ }, cb) => {
             if (!config.videoAI.enabled || !config.videoAI.apiKey)
                 return cb({ error: 'Video AI seems disabled, try later!' });
 
@@ -2902,7 +2875,7 @@ function startServer() {
             }
         });
 
-        socket.on('getRTMP', async ({}, cb) => {
+        socket.on('getRTMP', async ({ }, cb) => {
             if (!roomExists(socket)) return;
 
             const room = getRoom(socket);
@@ -3245,12 +3218,12 @@ function startServer() {
         function isValidHttpURL(input) {
             const pattern = new RegExp(
                 '^(https?:\\/\\/)?' + // protocol
-                    '((([a-z\\d]([a-z\\d-]*[a-z\\d])*)\\.)+[a-z]{2,}|' + // domain name
-                    'localhost|' + // allow localhost
-                    '((\\d{1,3}\\.){3}\\d{1,3}))' + // OR ip (v4) address
-                    '(\\:\\d+)?(\\/[-a-z\\d%_.~+]*)*' + // port and path
-                    '(\\?[;&a-z\\d%_.~+=-]*)?' + // query string
-                    '(\\#[-a-z\\d_]*)?$',
+                '((([a-z\\d]([a-z\\d-]*[a-z\\d])*)\\.)+[a-z]{2,}|' + // domain name
+                'localhost|' + // allow localhost
+                '((\\d{1,3}\\.){3}\\d{1,3}))' + // OR ip (v4) address
+                '(\\:\\d+)?(\\/[-a-z\\d%_.~+]*)*' + // port and path
+                '(\\?[;&a-z\\d%_.~+=-]*)?' + // query string
+                '(\\#[-a-z\\d_]*)?$',
                 'i',
             ); // fragment locator
             return pattern.test(input);
@@ -3682,7 +3655,7 @@ function startServer() {
 //         log.debug ("no supabase client present")
 //         return null;
 //     }
-    
+
 //     try {
 //         log.debug('Fetching room info for roomId:', roomId);
 //         const { data, error } = await supabase
@@ -3690,7 +3663,7 @@ function startServer() {
 //             .select('*')
 //             .eq('room_id', roomId)
 //             .single();
-            
+
 //         if (error) {
 //             log.error('Supabase error:', error);
 //             return null;

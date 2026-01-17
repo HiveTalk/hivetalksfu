@@ -1,6 +1,5 @@
 // THIS IS SAMPLE CODE ONLY, DOES NOT WORK IN PRODUCTION
 
-
 // const express = require('express')
 // const cors = require('cors')
 // const { verifyEvent } = require('nostr-tools');
@@ -132,7 +131,7 @@
 //       return await this.sha256(serialized);
 //   }
 
-//   async verifySignature(event) { 
+//   async verifySignature(event) {
 //       let isGood = verifyEvent(event)
 //       console.log("Verify Event", isGood)
 //       return isGood
@@ -149,13 +148,13 @@
 //       origin: '*',
 //     })
 //   )
-  
+
 //   app.get('/api', (req, res) => {
 //     res.setHeader('Content-Type', 'text/html')
 //     res.setHeader('Cache-Control', 's-max-age=1, stale-while-revalidate')
 //     res.send('hello world')
 //   })
-  
+
 // app.post('/api/auth',
 //     nostrAuth.middleware(),
 //     (req, res) => {

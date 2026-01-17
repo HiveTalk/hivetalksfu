@@ -21,9 +21,9 @@ module.exports = class ServerApi {
         return true;
     }
 
-    getMeetingCount(roomList) { 
+    getMeetingCount(roomList) {
         // include count of all rooms including locked rooms.
-        return roomList.size
+        return roomList.size;
     }
 
     getMeetings(roomList) {
@@ -31,7 +31,7 @@ module.exports = class ServerApi {
         if (!roomList || roomList.size === 0) {
             return [];
         }
-    
+
         try {
             const meetings = Array.from(roomList.entries())
                 .map(([id, room]) => {
@@ -39,11 +39,11 @@ module.exports = class ServerApi {
                     if (!room || room._isLocked) {
                         return null;
                     }
-    
+
                     try {
                         // Ensure room.peers exists and is valid
                         const peers = Array.from(room.peers?.values() || [])
-                            .map(peer => {
+                            .map((peer) => {
                                 try {
                                     const {
                                         peer_info: {
@@ -54,7 +54,7 @@ module.exports = class ServerApi {
                                             peer_lnaddress = '',
                                         } = {},
                                     } = peer || {};
-    
+
                                     return {
                                         name: peer_name,
                                         presenter: peer_presenter,
@@ -67,8 +67,8 @@ module.exports = class ServerApi {
                                     return null;
                                 }
                             })
-                            .filter(peer => peer !== null); // Remove any failed peer entries
-    
+                            .filter((peer) => peer !== null); // Remove any failed peer entries
+
                         return {
                             roomId: id,
                             peers: peers,
@@ -78,13 +78,11 @@ module.exports = class ServerApi {
                         return null;
                     }
                 })
-                .filter(meeting => {
+                .filter((meeting) => {
                     // Remove null entries and ensure meeting has required properties
-                    return meeting !== null && 
-                           meeting.roomId !== undefined && 
-                           Array.isArray(meeting.peers);
+                    return meeting !== null && meeting.roomId !== undefined && Array.isArray(meeting.peers);
                 });
-    
+
             return meetings;
         } catch (error) {
             console.error('Error in getMeetings:', error);

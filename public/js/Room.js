@@ -29,11 +29,7 @@ const nip19 = NostrTools.nip19;
 const pool = new SimplePool();
 
 // default fall back relays
-let defaultRelays = [
-    'wss://relay.primal.net',
-    'wss://relay.damus.io',
-    'wss://nos.lol',
-];
+let defaultRelays = ['wss://relay.primal.net', 'wss://relay.damus.io', 'wss://nos.lol'];
 
 const socket = io({ transports: ['websocket'] });
 
@@ -221,7 +217,7 @@ let peer_npub = null;
 let peer_lnaddress = null;
 
 let peer_info = null;
-let isSidebarCollapsed = null; 
+let isSidebarCollapsed = null;
 
 let isPushToTalkActive = false;
 let isSpaceDown = false;
@@ -419,11 +415,6 @@ function setRandomName() {
     let name = generateRandomName();
     console.log('just set a peer name');
     name = filterXSS(name);
-    // if (!getCookie(room_id + '_name')) {
-    //     window.localStorage.peer_name = name;
-    // }
-    // TODO - deal with cookies on leave room
-    // setCookie(room_id + '_name', name, 30);
     peer_name = name;
 }
 
@@ -736,8 +727,9 @@ function nostrLogin() {
         allowEscapeKey: false,
         background: swalBackground,
         title: '<img src="../images/hivelogo50x200.svg"/>',
-        html: 'Welcome! <div>Questions? see the <a href="/faq" target="_blank">FAQ</a> or '+ 
-        '<a href="https://discord.com/channels/1315483857650319441/1315483858275405878">Discord Chat.</a></div></br>',
+        html:
+            'Welcome! <div>Questions? see the <a href="/faq" target="_blank">FAQ</a> or ' +
+            '<a href="https://discord.com/channels/1315483857650319441/1315483858275405878">Discord Chat.</a></div></br>',
         showDenyButton: true,
         denyButtonText: `Just set a Name`,
         denyButtonColor: 'green',
@@ -1799,9 +1791,9 @@ async function signSampleEvent(publicKey) {
             created_at: Math.floor(Date.now() / 1000),
             tags: [
                 ['method', 'POST'],
-                ['u', relay]
-                ],
-            content: "Signing event to prove you own this npub for HiveTalk",
+                ['u', relay],
+            ],
+            content: 'Signing event to prove you own this npub for HiveTalk',
         };
         console.log('Kind 1 - Event created', event);
         // Request the nos2x extension to sign the event
@@ -1824,9 +1816,7 @@ async function signSampleEvent(publicKey) {
 
 async function sendEvent(textNote, publicKey) {
     try {
-        //let hiveRelays = ['wss://hivetalk.nostr1.com'];
-       // const relays = [...hiveRelays, ...defaultRelays];
-        const relays = [...defaultRelays]
+        const relays = [...defaultRelays];
 
         // Create an event
         const event = {
@@ -1931,17 +1921,17 @@ async function shareRoomOnNostr(pubkey) {
 // ####################################################
 
 async function showAnnouncements(useNavigator = false) {
-        if (navigator.share && useNavigator) {
-            try {
-                await navigator.share({ url: RoomURL });
-                userLog('info', 'Room Shared successfully', 'top-end');
-            } catch (err) {
-                show();
-            }
-        } else {
-            console.log('share room info on button click');
+    if (navigator.share && useNavigator) {
+        try {
+            await navigator.share({ url: RoomURL });
+            userLog('info', 'Room Shared successfully', 'top-end');
+        } catch (err) {
             show();
         }
+    } else {
+        console.log('share room info on button click');
+        show();
+    }
     function show() {
         sound('open');
 
@@ -1970,7 +1960,7 @@ async function showAnnouncements(useNavigator = false) {
             </div>`,
             showDenyButton: false,
             showCancelButton: true,
-            showConfirmButton:false,
+            showConfirmButton: false,
             cancelButtonColor: 'red',
             confirmButtonText: `Copy URL`,
             cancelButtonText: `Close`,
@@ -2178,13 +2168,13 @@ function roomIsReady() {
     });
     show(toggleExtraButton); //*
 
-  /*  if (rc.isValidEmail(peer_name)) {
-        myProfileAvatar.style.borderRadius = `50px`;
-        myProfileAvatar.setAttribute('src', rc.genGravatar(peer_name));
-    } else {
-        myProfileAvatar.setAttribute('src', rc.genAvatarSvg(peer_name, 64));
-    }
-    show(toggleExtraButton); //* */
+    /*  if (rc.isValidEmail(peer_name)) {
+          myProfileAvatar.style.borderRadius = `50px`;
+          myProfileAvatar.setAttribute('src', rc.genGravatar(peer_name));
+      } else {
+          myProfileAvatar.setAttribute('src', rc.genAvatarSvg(peer_name, 64));
+      }
+      show(toggleExtraButton); //* */
     BUTTONS.main.exitButton && show(exitButton);
     BUTTONS.main.shareButton && show(shareButton);
     BUTTONS.main.hideMeButton && show(hideMeButton);
@@ -3758,7 +3748,7 @@ function loadSettingsFromLocalStorage() {
     const keepVisible = localStorageSettings.keep_buttons_visible || false;
     document.getElementById('switchKeepButtonsVisible').checked = keepVisible;
     localStorageSettings.keep_buttons_visible = keepVisible;
-    
+
     recPrioritizeH264 = localStorageSettings.rec_prioritize_h264;
     switchH264Recording.checked = recPrioritizeH264;
 

@@ -45,7 +45,8 @@
 
             /* Pulse animation for the zap button */
             @keyframes gentle-pulse {
-                0%, 100% {
+                0%,
+                100% {
                     opacity: 1;
                     transform: scale(1);
                 }
@@ -112,7 +113,8 @@
                             <div class="hero-copy">
                                 <h1 class="hero-title mt-0 mb-2 text-xl"><strong>Zap Goal Not Met</strong></h1>
                                 <p class="hero-paragraph">
-                                    Apologies. Without the Vanilla zap goal being met, the app unfortunately cannot continue to operate.
+                                    Apologies. Without the Vanilla zap goal being met, the app unfortunately cannot
+                                    continue to operate.
                                 </p>
                                 <p class="hero-paragraph">
                                     Room creation and joining will be re-enabled when the Vanilla zap goal is met.
@@ -120,26 +122,36 @@
 
                                 <!-- ZapRaiser Goal Card -->
                                 <div class="zap-goal-container">
-                                    <div class="w-full text-center mb-8">   
-                                        <div class="text-xl font-bold mb-4 flex flex-col items-center gap-3 text-gray-800 dark:text-white">
-                                            <button 
+                                    <div class="w-full text-center mb-8">
+                                        <div
+                                            class="text-xl font-bold mb-4 flex flex-col items-center gap-3 text-gray-800 dark:text-white"
+                                        >
+                                            <button
                                                 type="button"
                                                 class="inline-flex items-center justify-center px-4 py-2 text-sm font-medium text-center text-white bg-orange-500 rounded-lg hover:bg-orange-600 focus:ring-4 focus:outline-none focus:ring-orange-300 dark:focus:ring-orange-800 shadow transition-all duration-200 ease-in-out w-full max-w-32"
                                                 id="zaplink"
                                             >
                                                 ⚡️ Zap
                                             </button>
-                                            <span id="current-month" class="font-medium" style="font-size: 30px;">Loading...</span>
+                                            <span id="current-month" class="font-medium" style="font-size: 30px"
+                                                >Loading...</span
+                                            >
                                         </div>
-                                        
+
                                         <!-- Flowbite Progress Bar -->
                                         <div class="w-full bg-cyan-400 rounded-full h-6 dark:bg-cyan-500 mb-3">
-                                            <div id="progressBar" class="bg-orange-500 h-6 rounded-full transition-all duration-500 ease-out flex items-center justify-center text-xs font-bold text-white animate-pulse" style="width: 0%">
+                                            <div
+                                                id="progressBar"
+                                                class="bg-orange-500 h-6 rounded-full transition-all duration-500 ease-out flex items-center justify-center text-xs font-bold text-white animate-pulse"
+                                                style="width: 0%"
+                                            >
                                                 <span class="text-xs font-bold">0%</span>
                                             </div>
                                         </div>
-                                        
-                                        <div class="text-sm opacity-90 text-center space-y-1 text-gray-600 dark:text-gray-300">
+
+                                        <div
+                                            class="text-sm opacity-90 text-center space-y-1 text-gray-600 dark:text-gray-300"
+                                        >
                                             <div class="flex justify-between items-center">
                                                 <span class="bg-white/10 px-2 py-1 rounded text-xs">
                                                     <span id="current-amount" class="font-semibold">0 </span>
@@ -160,12 +172,7 @@
                                     >
                                         Try HiveTalk Honey
                                     </a>
-                                    <a
-                                        class="button"
-                                        href="/"
-                                    >
-                                        Back to Home
-                                    </a>
+                                    <a class="button" href="/"> Back to Home </a>
                                 </div>
                             </div>
                             <div class="hero-figure anime-element">
@@ -228,7 +235,7 @@
             async function fetchConfig() {
                 const response = await fetch('/api/zapgoal/config');
                 const config = await response.json();
-                
+
                 // Set configuration values from API response
                 API_BASE_URL = config.apiBaseUrl;
                 GOAL_AMOUNT = config.goalAmount;
@@ -241,12 +248,12 @@
                 try {
                     const response = await fetch(API_BASE_URL);
                     const data = await response.json();
-                    
+
                     if (data.success && data.data) {
                         // Convert msats to sats
                         const balanceInSats = Math.floor(data.data.balance / 1000);
                         const progressPercentage = Math.min((balanceInSats / GOAL_AMOUNT) * 100, 100);
-                        
+
                         // Update progress bar
                         const progressBar = document.getElementById('progressBar');
                         if (progressBar) {
@@ -256,13 +263,13 @@
                                 percentageSpan.textContent = `${Math.round(progressPercentage)}%`;
                             }
                         }
-                        
+
                         // Update current amount display
                         const currentAmount = document.getElementById('current-amount');
                         if (currentAmount) {
                             currentAmount.textContent = `${balanceInSats.toLocaleString()} sats`;
                         }
-                        
+
                         // Update goal display
                         const goalDisplay = document.getElementById('goal-amount');
                         if (goalDisplay) {
@@ -278,13 +285,23 @@
             // Display current month
             function updateMonth() {
                 const monthNames = [
-                    'January', 'February', 'March', 'April', 'May', 'June',
-                    'July', 'August', 'September', 'October', 'November', 'December'
+                    'January',
+                    'February',
+                    'March',
+                    'April',
+                    'May',
+                    'June',
+                    'July',
+                    'August',
+                    'September',
+                    'October',
+                    'November',
+                    'December',
                 ];
-                
+
                 const currentDate = new Date();
                 const currentMonth = monthNames[currentDate.getMonth()];
-                
+
                 const monthDisplay = document.getElementById('current-month');
                 if (monthDisplay) {
                     monthDisplay.textContent = `${currentMonth} Goal`;
@@ -296,7 +313,7 @@
             if (zapLink) {
                 zapLink.addEventListener('click', async function (e) {
                     e.preventDefault();
-                    
+
                     try {
                         const result = await Swal.fire({
                             background: '#111827',
@@ -323,7 +340,7 @@
                         if (!result.isConfirmed) return;
 
                         const amount = parseInt(result.value.sats);
-                        
+
                         // Check if payment modal is already open
                         if (document.querySelector('#bc-modal')) {
                             await Swal.fire({
@@ -340,11 +357,11 @@
                         // Create invoice
                         const response = await fetch(`${API_BASE_URL}/invoice`, {
                             method: 'POST',
-                            headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
+                            headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
                             body: JSON.stringify({
                                 amount: amount * 1000, // Convert sats to millisats
                                 description: 'HiveTalk Vanilla Zap',
-                                memo: 'HiveTalk Vanilla Zap'
+                                memo: 'HiveTalk Vanilla Zap',
                             }),
                         });
 
@@ -366,10 +383,10 @@
                         }
 
                         const paymentRequest = data.data.invoice.request;
-                        
+
                         // Import and launch payment modal
                         const { launchPaymentModal } = await import('@getalby/bitcoin-connect-react');
-                        
+
                         launchPaymentModal({
                             invoice: paymentRequest,
                             onPaid: () => {
@@ -420,4 +437,3 @@
         </script>
     </body>
 </html>
-

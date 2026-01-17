@@ -222,7 +222,9 @@
     cursor: default;
     overflow: hidden;
     transform: translateY(-100%);
-    transition: transform 0.3s ease-out, opacity 0.3s ease-out;
+    transition:
+        transform 0.3s ease-out,
+        opacity 0.3s ease-out;
 }
 
 .videoMenuBarClose {
@@ -243,7 +245,6 @@
     user-select: none;
     transition: background-color 0.3s ease;
 }
-
 
 .videoMenuBar.active {
     transform: translateY(0);
@@ -278,7 +279,7 @@
 }
 
 .expand-video-content {
-    z-index: 200 ;
+    z-index: 200;
     display: none;
     position: fixed;
     right: 10px;
@@ -289,9 +290,8 @@
     border-radius: 5px;
     background: var(--body-bg);
     box-shadow: var(--box-shadow);
-    max-height: calc(100vh - 80px);  /* viewport height minus menubar and some padding */
-    top: 60px;  /* position below the menubar */
-
+    max-height: calc(100vh - 80px); /* viewport height minus menubar and some padding */
+    top: 60px; /* position below the menubar */
 }
 
 .expand-video:hover .expand-video-content {

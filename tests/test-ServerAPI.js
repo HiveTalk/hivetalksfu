@@ -43,7 +43,7 @@ describe('test-ServerAPI', () => {
             const roomList = new Map([
                 [
                     'room1',
-                    {  
+                    {
                         _isLocked: false,
                         peers: new Map([
                             [

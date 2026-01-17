@@ -22,3 +22,6 @@ rec
 rtmp
 .aider*
 .env
+
+# Zap Goal state file
+app/src/zapgoal_status.json

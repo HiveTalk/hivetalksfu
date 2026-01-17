@@ -84,23 +84,23 @@ async function initialize() {
 
 async function getBrand() {
     let needsFetch = true;
-    
+
     if (brandData) {
         // We have cached data, but let's check if we need to refresh
         const cachedBrand = JSON.parse(brandData);
         setBrand(cachedBrand); // Use cached data initially
-        
+
         // Check if the cache is still fresh (less than 1 hour old)
         const cacheTimestamp = cachedBrand.timestamp || 0;
         const currentTime = new Date().getTime();
         const cacheAge = currentTime - cacheTimestamp;
         const maxCacheAge = 60 * 60 * 1000; // 1 hour in milliseconds
-        
+
         if (cacheAge < maxCacheAge) {
             needsFetch = false; // Cache is fresh enough
         }
     }
-    
+
     // Fetch from server if needed (no cache or cache is stale)
     if (needsFetch) {
         try {
@@ -113,7 +113,7 @@ async function getBrand() {
             if (serverBrand) {
                 // Add timestamp to track when this data was fetched
                 serverBrand.timestamp = new Date().getTime();
-                
+
                 setBrand(serverBrand);
                 console.log('FETCH BRAND SETTINGS', {
                     serverBrand: serverBrand,
