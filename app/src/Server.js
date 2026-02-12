@@ -385,8 +385,23 @@ function startServer() {
         const ZAP_GOAL_SATS = parseInt(process.env.ZAP_GOAL_SATS);
         const API_URL = process.env.ZAP_GOAL_API_URL;
         
+        // Only enforce zap goal on the last day of the month
+        const now = new Date();
+        const today = now.getDate();
+        const lastDayOfMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate();
+        const isLastDay = today === lastDayOfMonth;
+
+        if (!isLastDay) {
+            log.info('[ZapGoal] ⏭️ Not the last day of the month, bypassing zap goal check', {
+                today: today,
+                lastDayOfMonth: lastDayOfMonth,
+                path: req.path,
+            });
+            return next();
+        }
+
         // Log that middleware is executing
-        log.info('[ZapGoal] ===== Middleware executing =====', {
+        log.info('[ZapGoal] ===== Middleware executing (last day of month) =====', {
             path: req.path,
             url: req.url,
             method: req.method,
