@@ -474,6 +474,15 @@ async function getNostrProfile(pubkey, relays) {
                         // login fetch info now complete, set it to be true to exit login loop
                         // even if there is no lightning address, that's ok, we are logged in.
                         loggedIn = true;
+                        // Update __nostrlogin_accounts with fetched profile info
+                        try {
+                            const accts = JSON.parse(window.localStorage.getItem('__nostrlogin_accounts') || '[]');
+                            if (accts.length > 0) {
+                                accts[0].name = peer_name;
+                                accts[0].picture = peer_url;
+                                window.localStorage.setItem('__nostrlogin_accounts', JSON.stringify(accts));
+                            }
+                        } catch (e) { /* ignore */ }
                         resolve(true);
                     }
                 },
@@ -577,7 +586,9 @@ async function loadUser() {
                                 window.localStorage.peer_name = peer_name;
                             }
                         } else {
-                            console.log('No user info available (empty array)');
+                            console.log('No user info from __nostrlogin_accounts, storing extension pubkey');
+                            const accounts = [{ pubkey: pubkey }];
+                            window.localStorage.setItem('__nostrlogin_accounts', JSON.stringify(accounts));
                         }
                     } catch (error) {
                         console.log('Error parsing userInfo:', error);
@@ -746,8 +757,8 @@ function nostrLogin() {
         preConfirm: async () => {
             try {
                 setTimeout(() => {
-                    // triggers nostr login extension
-                    loadUser();
+                    // open Nostr login dialog (extension or nsec)
+                    document.dispatchEvent(new CustomEvent('nlLaunch', { detail: 'switch-account' }));
                 }, 500);
             } catch (error) {
                 // loggedIn = false

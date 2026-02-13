@@ -1,242 +1,218 @@
 <!doctype html>
 <html lang="en" class="no-js">
-    <head>
-        <!-- Title and Icon -->
 
-        <title id="title">HiveTalk Vanilla - Create your Room name and start the new call.</title>
-        <link id="icon" rel="shortcut icon" href="../images/logo.svg" />
-        <link id="appleTouchIcon" rel="apple-touch-icon" href="../images/logo.svg" />
+<head>
+    <!-- Title and Icon -->
 
-        <!-- Meta Information -->
+    <title id="title">HiveTalk Vanilla - Create your Room name and start the new call.</title>
+    <link id="icon" rel="shortcut icon" href="../images/logo.svg" />
+    <link id="appleTouchIcon" rel="apple-touch-icon" href="../images/logo.svg" />
 
-        <meta charset="utf-8" />
-        <meta http-equiv="X-UA-Compatible" content="IE=edge" />
-        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <!-- Meta Information -->
 
-        <meta
-            id="description"
-            name="description"
-            content="HiveTalk Vanilla powered by WebRTC and mediasoup, Real-time Simple Secure Fast video calls, messaging and screen sharing capabilities in the browser."
-        />
-        <meta
-            id="keywords"
-            name="keywords"
-            content="webrtc, miro, mediasoup, mediasoup-client, self hosted, voip, sip, real-time communications, chat, messaging, meet, webrtc stun, webrtc turn, webrtc p2p, webrtc sfu, video meeting, video chat, video conference, multi video chat, multi video conference, peer to peer, p2p, sfu, rtc, alternative to, zoom, microsoft teams, google meet, jitsi, meeting"
-        />
+    <meta charset="utf-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 
-        <!-- https://ogp.me -->
+    <meta id="description" name="description"
+        content="HiveTalk Vanilla powered by WebRTC and mediasoup, Real-time Simple Secure Fast video calls, messaging and screen sharing capabilities in the browser." />
+    <meta id="keywords" name="keywords"
+        content="webrtc, miro, mediasoup, mediasoup-client, self hosted, voip, sip, real-time communications, chat, messaging, meet, webrtc stun, webrtc turn, webrtc p2p, webrtc sfu, video meeting, video chat, video conference, multi video chat, multi video conference, peer to peer, p2p, sfu, rtc, alternative to, zoom, microsoft teams, google meet, jitsi, meeting" />
 
-        <meta id="ogType" property="og:type" content="app-webrtc" />
-        <meta id="ogSiteName" property="og:site_name" content="HiveTalk Vanilla" />
-        <meta id="ogTitle" property="og:title" content="Click the link to make a call." />
-        <meta
-            id="ogDescription"
-            property="og:description"
-            content="HiveTalk Vanilla calling provides real-time video calls, messaging and screen sharing."
-        />
-        <meta id="ogImage" property="og:image" content="https://vanilla.hivetalk.org/images/hivetalk.png" />
-        <meta id="ogUrl" property="og:url" content="https://vanilla.hivetalk.org" />
+    <!-- https://ogp.me -->
 
-        <!-- StyleSheet -->
+    <meta id="ogType" property="og:type" content="app-webrtc" />
+    <meta id="ogSiteName" property="og:site_name" content="HiveTalk Vanilla" />
+    <meta id="ogTitle" property="og:title" content="Click the link to make a call." />
+    <meta id="ogDescription" property="og:description"
+        content="HiveTalk Vanilla calling provides real-time video calls, messaging and screen sharing." />
+    <meta id="ogImage" property="og:image" content="https://vanilla.hivetalk.org/images/hivetalk.png" />
+    <meta id="ogUrl" property="og:url" content="https://vanilla.hivetalk.org" />
 
-        <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.1.1/css/all.min.css" />
-        <link rel="stylesheet" type="text/css" href="../css/landing.css" />
+    <!-- StyleSheet -->
 
-        <!-- Js scripts -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.1.1/css/all.min.css" />
+    <link rel="stylesheet" type="text/css" href="../css/landing.css" />
 
-        <script defer src="../js/Brand.js"></script>
-        <script async src="../js/Umami.js"></script>
+    <!-- Js scripts -->
 
-        <script src="https://unpkg.com/animejs@3.0.1/lib/anime.min.js"></script>
-        <script src="https://unpkg.com/scrollreveal@4.0.0/dist/scrollreveal.min.js"></script>
-        <script src="https://cdn.jsdelivr.net/npm/xss/dist/xss.min.js"></script>
-        <script src="https://unpkg.com/nostr-tools/lib/nostr.bundle.js"></script>
-        <script
-            src="https://www.unpkg.com/nostr-login@latest/dist/unpkg.js"
-            data-methods="extension,connect"
-            data-perms="sign_event:1,sign_event:0,sign_event:27235,nip04_encrypt"
-            data-theme="default"
-            data-dark-mode="true"
-        ></script>
-    </head>
-    <body class="is-boxed has-animations">
-        <div class="body-wrap">
-            <header class="site-header">
-                <div class="container">
-                    <div class="site-header-inner">
-                        <div class="brand header-brand">
-                            <h1 class="m-0">
-                                <a href="/">
-                                    <img
-                                        class="header-logo-image"
-                                        src="../images/logo.svg"
-                                        alt="mirotalksfu-webrtc-logo"
-                                    />
-                                    <!-- <img
+    <script defer src="../js/Brand.js"></script>
+    <script async src="../js/Umami.js"></script>
+
+    <script src="https://unpkg.com/animejs@3.0.1/lib/anime.min.js"></script>
+    <script src="https://unpkg.com/scrollreveal@4.0.0/dist/scrollreveal.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/xss/dist/xss.min.js"></script>
+    <script src="https://unpkg.com/nostr-tools/lib/nostr.bundle.js"></script>
+    <script src="../js/NostrLogin.js"></script>
+</head>
+
+<body class="is-boxed has-animations">
+    <div class="body-wrap">
+        <header class="site-header">
+            <div class="container">
+                <div class="site-header-inner">
+                    <div class="brand header-brand">
+                        <h1 class="m-0">
+                            <a href="/">
+                                <img class="header-logo-image" src="../images/logo.svg" alt="mirotalksfu-webrtc-logo" />
+                                <!-- <img
                                         class="header-logo-image reveal-from-left"
                                         src="../images/mirotalk-mc.png"
                                         alt="mirotalksfu-webrtc-logo"
                                         width="96"
                                         height="auto"
                                     /> -->
-                                </a>
-                            </h1>
-                        </div>
-                    </div>
-                </div>
-            </header>
-
-            <main>
-                <section class="hero">
-                    <div class="container">
-                        <div class="hero-inner">
-                            <div class="hero-copy reveal-from-bottom">
-                                <h1 class="hero-title mt-0">
-                                    HiveTalk <br />
-                                    Pick name. <br />
-                                    Share URL. <br />
-                                    Start conference.
-                                </h1>
-                                <p class="hero-paragraph">
-                                    Each room has its disposable URL. Just pick a room name and share your custom URL.
-                                    It's that easy.
-                                </p>
-                            </div>
-                            <div class="hero-figure anime-element">
-                                <svg class="placeholder" width="528" height="396" viewBox="0 0 528 396">
-                                    <rect width="528" height="396" style="fill: transparent" />
-                                </svg>
-                                <div class="hero-figure-box hero"></div>
-                            </div>
-                        </div>
-                    </div>
-                </section>
-
-                <hr />
-
-                <section class="cta section mb-32">
-                    <div class="container">
-                        <div class="cta-inner section-inner br-12">
-                            <h3 class="section-title mt-0">
-                                Pick a room name.<br />
-                                How about this one?
-                            </h3>
-                            <div>
-                                <div class="mb-24">
-                                    <label for="roomName"></label>
-                                    <div class="form-group-desktop">
-                                        <input id="roomName" class="form-input" type="text" maxlength="36" value="" />
-                                        <button
-                                            id="genRoomButton"
-                                            class="button button-primary br-6 mr-8 mb-8 fas fa-arrows-rotate"
-                                        ></button>
-                                        <button id="joinRoomButton" class="button button-primary pulse">
-                                            Join Room
-                                        </button>
-                                    </div>
-                                </div>
-                                <div id="lastRoomContainer" class="last-room">
-                                    <span>Your recent room:</span>
-                                    <a id="lastRoom"></a>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </section>
-            </main>
-
-            <footer id="footer" class="site-footer">
-                <div class="container">
-                    <div class="site-footer-inner">
-                        <div class="brand footer-brand">
-                            <a href="/">
-                                <div class="form-group-desktop">
-                                    <img class="header-logo-image" src="../images/hivelogo50x200.svg" alt="Logo" />
-                                </div>
                             </a>
-                        </div>
-                        <ul class="footer-social-links list-reset">                            
-                            <li>
-                                <a href="https://github.com/hivetalk" target="_blank" rel="noopener noreferrer">
-                                    <svg
-                                        xmlns="http://www.w3.org/2000/svg"
-                                        width="24"
-                                        height="24"
-                                        viewBox="0 0 24 24"
-                                        fill="currentColor"
-                                    >
-                                        <title>Github</title>
-                                        <path
-                                            d="M12 0c-6.626 0-12 5.373-12 12 0 5.302 3.438 9.8 8.207 11.387.599.111.793-.261.793-.577v-2.234c-3.338.726-4.033-1.416-4.033-1.416-.546-1.387-1.333-1.756-1.333-1.756-1.089-.745.083-.729.083-.729 1.205.084 1.839 1.237 1.839 1.237 1.07 1.834 2.807 1.304 3.492.997.107-.775.418-1.305.762-1.604-2.665-.305-5.467-1.334-5.467-5.931 0-1.311.469-2.381 1.236-3.221-.124-.303-.535-1.524.117-3.176 0 0 1.008-.322 3.301 1.23.957-.266 1.983-.399 3.003-.404 1.02.005 2.047.138 3.006.404 2.291-1.552 3.297-1.23 3.297-1.23.653 1.653.242 2.874.118 3.176.77.84 1.235 1.911 1.235 3.221 0 4.609-2.807 5.624-5.479 5.921.43.372.823 1.102.823 2.222v3.293c0 .319.192.694.801.576 4.765-1.589 8.199-6.086 8.199-11.386 0-6.627-5.373-12-12-12z"
-                                        />
-                                    </svg>
-                                </a>
-                            </li>
-                            <li>
-                                <a href="https://nostree.me/soc@hivetalk.org" target="_blank" rel="noopener noreferrer">
-                                    <svg width="24" height="24" viewBox="0 0 28 27" xmlns="http://www.w3.org/2000/svg"><path fill="currentColor" d="M14 0C6.28 0 0 6.35 0 14.15c0 4.66 2.26 9.03 6.1 11.68l.02.03c.03.03.05.05.08.05l.06.03c.5.34 1.18.2 1.51-.3.33-.5.2-1.2-.3-1.54l-.14-.1a12 12 0 0 1-5.13-9.85C2.2 7.58 7.5 2.23 14 2.23c6.5 0 11.8 5.35 11.8 11.92A12 12 0 0 1 20.67 24l-.14.08c-1.21.78-2.48.9-3.5.34a3.83 3.83 0 0 1-1.82-2.7 7.54 7.54 0 0 0 4.16-2.15 7.69 7.69 0 0 0-.02-10.81 7.54 7.54 0 0 0-10.72 0 7.75 7.75 0 0 0 0 10.84 7.59 7.59 0 0 0 4.32 2.17 6.2 6.2 0 0 0 3 4.63c.78.41 1.6.64 2.46.64 1.1 0 2.23-.36 3.33-1.06l.03-.03c.03-.03.06-.05.08-.05l.03-.03a14.25 14.25 0 0 0 6.1-11.68A14.06 14.06 0 0 0 14 0Zm-3.8 10.31a5.33 5.33 0 0 1 7.6 0 5.46 5.46 0 0 1 0 7.66 5.31 5.31 0 0 1-7.58 0 5.43 5.43 0 0 1-.02-7.66Z"></path></svg>
-                                    </a>
-                            </li>
-                            <li>
-                                <a href="https://hivetalk.nostr1.com" target="_blank" rel="noopener noreferrer">
-                                    <img src="/images/relaygr.png" alt="nostr" width="24" height="24" />
-                                </a>
-                            </li>
-                            <li>
-                                <a
-                                    href="http://njump.me/soc@hivetalk.org"
-                                    target="_blank"
-                                    rel="noopener noreferrer"
-                                >
-                                    <img src="/images/nostrgr.png" alt="nostr" width="24" height="24" />
-                                </a>
-                            </li>
-                        </ul>
-                        <ul class="footer-links">
-                            <li><a href="/">Home</a></li>
-                            <li><a href="/about">About</a></li>                            
-                            <li><a href="/support">Support</a></li>
-                            <li><a href="/privacy">Privacy</a></li>
-                            <li><a href="https://status.hivetalk.org/">Status</a></li>
-                            <li><a href="/api/v1/docs/">API</a></li>
-                        </ul>
+                        </h1>
+                    </div>
+                </div>
+            </div>
+        </header>
 
-                        <div class="footer-copyright">
-                            &copy; 2024 HiveTalk, all rights reserved
-                            <br />
-                            <div id="content-placeholder"><!-- Content will be inserted here --></div>
+        <main>
+            <section class="hero">
+                <div class="container">
+                    <div class="hero-inner">
+                        <div class="hero-copy reveal-from-bottom">
+                            <h1 class="hero-title mt-0">
+                                HiveTalk <br />
+                                Pick name. <br />
+                                Share URL. <br />
+                                Start conference.
+                            </h1>
+                            <p class="hero-paragraph">
+                                Each room has its disposable URL. Just pick a room name and share your custom URL.
+                                It's that easy.
+                            </p>
+                        </div>
+                        <div class="hero-figure anime-element">
+                            <svg class="placeholder" width="528" height="396" viewBox="0 0 528 396">
+                                <rect width="528" height="396" style="fill: transparent" />
+                            </svg>
+                            <div class="hero-figure-box hero"></div>
                         </div>
                     </div>
                 </div>
-            </footer>
-        </div>
+            </section>
 
-        <script defer src="../js/Landing.js"></script>
-        <script defer src="../js/Common.js"></script>
-        <script async defer src="https://buttons.github.io/buttons.js"></script>
-        <script>
-            document.getElementById('roomName').addEventListener('input', function (event) {
-                const input = event.target;
-                const value = input.value;
-                const isValid = /^[a-zA-Z0-9-_ ]*$/.test(value);
-                if (!isValid) {
-                    input.setCustomValidity('Only alphanumeric characters, "-" and "_" are allowed.');
-                    input.reportValidity();
-                } else {
-                    input.setCustomValidity('');
-                }
-            });
+            <hr />
 
-            document.getElementById('joinRoomButton').addEventListener('click', function (event) {
-                const input = document.getElementById('roomName');
-                const value = input.value;
-                const isValid = /^[a-zA-Z0-9-_ ]*$/.test(value);
+            <section class="cta section mb-32">
+                <div class="container">
+                    <div class="cta-inner section-inner br-12">
+                        <h3 class="section-title mt-0">
+                            Pick a room name.<br />
+                            How about this one?
+                        </h3>
+                        <div>
+                            <div class="mb-24">
+                                <label for="roomName"></label>
+                                <div class="form-group-desktop">
+                                    <input id="roomName" class="form-input" type="text" maxlength="36" value="" />
+                                    <button id="genRoomButton"
+                                        class="button button-primary br-6 mr-8 mb-8 fas fa-arrows-rotate"></button>
+                                    <button id="joinRoomButton" class="button button-primary pulse">
+                                        Join Room
+                                    </button>
+                                </div>
+                            </div>
+                            <div id="lastRoomContainer" class="last-room">
+                                <span>Your recent room:</span>
+                                <a id="lastRoom"></a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+        </main>
 
-                if (!isValid) {
-                    alert('Only alphanumeric characters, "-" and "_" are allowed.');
-                    event.preventDefault(); // Prevents the form from being submitted
-                }
-            });
-        </script>
-    </body>
+        <footer id="footer" class="site-footer">
+            <div class="container">
+                <div class="site-footer-inner">
+                    <div class="brand footer-brand">
+                        <a href="/">
+                            <div class="form-group-desktop">
+                                <img class="header-logo-image" src="../images/hivelogo50x200.svg" alt="Logo" />
+                            </div>
+                        </a>
+                    </div>
+                    <ul class="footer-social-links list-reset">
+                        <li>
+                            <a href="https://github.com/hivetalk" target="_blank" rel="noopener noreferrer">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24"
+                                    fill="currentColor">
+                                    <title>Github</title>
+                                    <path
+                                        d="M12 0c-6.626 0-12 5.373-12 12 0 5.302 3.438 9.8 8.207 11.387.599.111.793-.261.793-.577v-2.234c-3.338.726-4.033-1.416-4.033-1.416-.546-1.387-1.333-1.756-1.333-1.756-1.089-.745.083-.729.083-.729 1.205.084 1.839 1.237 1.839 1.237 1.07 1.834 2.807 1.304 3.492.997.107-.775.418-1.305.762-1.604-2.665-.305-5.467-1.334-5.467-5.931 0-1.311.469-2.381 1.236-3.221-.124-.303-.535-1.524.117-3.176 0 0 1.008-.322 3.301 1.23.957-.266 1.983-.399 3.003-.404 1.02.005 2.047.138 3.006.404 2.291-1.552 3.297-1.23 3.297-1.23.653 1.653.242 2.874.118 3.176.77.84 1.235 1.911 1.235 3.221 0 4.609-2.807 5.624-5.479 5.921.43.372.823 1.102.823 2.222v3.293c0 .319.192.694.801.576 4.765-1.589 8.199-6.086 8.199-11.386 0-6.627-5.373-12-12-12z" />
+                                </svg>
+                            </a>
+                        </li>
+                        <li>
+                            <a href="https://nostree.me/soc@hivetalk.org" target="_blank" rel="noopener noreferrer">
+                                <svg width="24" height="24" viewBox="0 0 28 27" xmlns="http://www.w3.org/2000/svg">
+                                    <path fill="currentColor"
+                                        d="M14 0C6.28 0 0 6.35 0 14.15c0 4.66 2.26 9.03 6.1 11.68l.02.03c.03.03.05.05.08.05l.06.03c.5.34 1.18.2 1.51-.3.33-.5.2-1.2-.3-1.54l-.14-.1a12 12 0 0 1-5.13-9.85C2.2 7.58 7.5 2.23 14 2.23c6.5 0 11.8 5.35 11.8 11.92A12 12 0 0 1 20.67 24l-.14.08c-1.21.78-2.48.9-3.5.34a3.83 3.83 0 0 1-1.82-2.7 7.54 7.54 0 0 0 4.16-2.15 7.69 7.69 0 0 0-.02-10.81 7.54 7.54 0 0 0-10.72 0 7.75 7.75 0 0 0 0 10.84 7.59 7.59 0 0 0 4.32 2.17 6.2 6.2 0 0 0 3 4.63c.78.41 1.6.64 2.46.64 1.1 0 2.23-.36 3.33-1.06l.03-.03c.03-.03.06-.05.08-.05l.03-.03a14.25 14.25 0 0 0 6.1-11.68A14.06 14.06 0 0 0 14 0Zm-3.8 10.31a5.33 5.33 0 0 1 7.6 0 5.46 5.46 0 0 1 0 7.66 5.31 5.31 0 0 1-7.58 0 5.43 5.43 0 0 1-.02-7.66Z">
+                                    </path>
+                                </svg>
+                            </a>
+                        </li>
+                        <li>
+                            <a href="https://hivetalk.nostr1.com" target="_blank" rel="noopener noreferrer">
+                                <img src="/images/relaygr.png" alt="nostr" width="24" height="24" />
+                            </a>
+                        </li>
+                        <li>
+                            <a href="http://njump.me/soc@hivetalk.org" target="_blank" rel="noopener noreferrer">
+                                <img src="/images/nostrgr.png" alt="nostr" width="24" height="24" />
+                            </a>
+                        </li>
+                    </ul>
+                    <ul class="footer-links">
+                        <li><a href="/">Home</a></li>
+                        <li><a href="/about">About</a></li>
+                        <li><a href="/support">Support</a></li>
+                        <li><a href="/privacy">Privacy</a></li>
+                        <li><a href="https://status.hivetalk.org/">Status</a></li>
+                        <li><a href="/api/v1/docs/">API</a></li>
+                    </ul>
+
+                    <div class="footer-copyright">
+                        &copy; 2024 HiveTalk, all rights reserved
+                        <br />
+                        <div id="content-placeholder"><!-- Content will be inserted here --></div>
+                    </div>
+                </div>
+            </div>
+        </footer>
+    </div>
+
+    <script defer src="../js/Landing.js"></script>
+    <script defer src="../js/Common.js"></script>
+    <script async defer src="https://buttons.github.io/buttons.js"></script>
+    <script>
+        document.getElementById('roomName').addEventListener('input', function (event) {
+            const input = event.target;
+            const value = input.value;
+            const isValid = /^[a-zA-Z0-9-_ ]*$/.test(value);
+            if (!isValid) {
+                input.setCustomValidity('Only alphanumeric characters, "-" and "_" are allowed.');
+                input.reportValidity();
+            } else {
+                input.setCustomValidity('');
+            }
+        });
+
+        document.getElementById('joinRoomButton').addEventListener('click', function (event) {
+            const input = document.getElementById('roomName');
+            const value = input.value;
+            const isValid = /^[a-zA-Z0-9-_ ]*$/.test(value);
+
+            if (!isValid) {
+                alert('Only alphanumeric characters, "-" and "_" are allowed.');
+                event.preventDefault(); // Prevents the form from being submitted
+            }
+        });
+    </script>
+</body>
+
 </html>
