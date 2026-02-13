@@ -221,7 +221,7 @@ let peer_npub = null;
 let peer_lnaddress = null;
 
 let peer_info = null;
-let isSidebarCollapsed = null; 
+let isSidebarCollapsed = null;
 
 let isPushToTalkActive = false;
 let isSpaceDown = false;
@@ -736,8 +736,8 @@ function nostrLogin() {
         allowEscapeKey: false,
         background: swalBackground,
         title: '<img src="../images/hivelogo50x200.svg"/>',
-        html: 'Welcome! <div>Questions? see the <a href="/faq" target="_blank">FAQ</a> or '+ 
-        '<a href="https://discord.com/channels/1315483857650319441/1315483858275405878">Discord Chat.</a></div></br>',
+        html: 'Welcome! <div>Questions? see the <a href="/faq" target="_blank">FAQ</a> or ' +
+            '<a href="https://discord.com/channels/1315483857650319441/1315483858275405878">Discord Chat.</a></div></br>',
         showDenyButton: true,
         denyButtonText: `Just set a Name`,
         denyButtonColor: 'green',
@@ -1800,7 +1800,7 @@ async function signSampleEvent(publicKey) {
             tags: [
                 ['method', 'POST'],
                 ['u', relay]
-                ],
+            ],
             content: "Signing event to prove you own this npub for HiveTalk",
         };
         console.log('Kind 1 - Event created', event);
@@ -1825,7 +1825,7 @@ async function signSampleEvent(publicKey) {
 async function sendEvent(textNote, publicKey) {
     try {
         //let hiveRelays = ['wss://hivetalk.nostr1.com'];
-       // const relays = [...hiveRelays, ...defaultRelays];
+        // const relays = [...hiveRelays, ...defaultRelays];
         const relays = [...defaultRelays]
 
         // Create an event
@@ -1931,17 +1931,17 @@ async function shareRoomOnNostr(pubkey) {
 // ####################################################
 
 async function showAnnouncements(useNavigator = false) {
-        if (navigator.share && useNavigator) {
-            try {
-                await navigator.share({ url: RoomURL });
-                userLog('info', 'Room Shared successfully', 'top-end');
-            } catch (err) {
-                show();
-            }
-        } else {
-            console.log('share room info on button click');
+    if (navigator.share && useNavigator) {
+        try {
+            await navigator.share({ url: RoomURL });
+            userLog('info', 'Room Shared successfully', 'top-end');
+        } catch (err) {
             show();
         }
+    } else {
+        console.log('share room info on button click');
+        show();
+    }
     function show() {
         sound('open');
 
@@ -1950,27 +1950,16 @@ async function showAnnouncements(useNavigator = false) {
             position: 'center',
             title: 'Latest Updates',
             html: `
-            <div>            
-                <p align="left"><ul style="text-align: left;">
-                <ul>
-                </ul>
-                <ul>
-                    <b> Take Note: </b><br/><br/>
-                    <li> 🌸 <b style="color: #F3E5AB;"> Hivetalk Vanilla</b> 
-                    is best for unlimited time with small groups. <br/><br/> </li>
-                    
-                    <li> 🍯 <b style="color: #FFBF00"><a href="https://honey.hivetalk.org/"  style="color:#FFBF00" target="_blank">
-                    Hivetalk Honey</a></b> 
-                    is a new version, best for hosting global events, permanent rooms, events. 
-                    Ephemeral rooms max 1 hr, Permanent rooms max 4 hours per session.
-                    </li>            
-
-                </ul>
+            <div style="text-align: left;">            
+                <p>
+                    From now on, if you want to <b>"Lock a room"</b> you have to pay to lock. 
+                    <br/><br/>
+                    The goal of Hivetalk is to encourage more open public community discussions and while we value need for privacy, the privacy comes with a cost, its no longer free.
                 </p>
             </div>`,
             showDenyButton: false,
             showCancelButton: true,
-            showConfirmButton:false,
+            showConfirmButton: false,
             cancelButtonColor: 'red',
             confirmButtonText: `Copy URL`,
             cancelButtonText: `Close`,
@@ -2178,13 +2167,13 @@ function roomIsReady() {
     });
     show(toggleExtraButton); //*
 
-  /*  if (rc.isValidEmail(peer_name)) {
-        myProfileAvatar.style.borderRadius = `50px`;
-        myProfileAvatar.setAttribute('src', rc.genGravatar(peer_name));
-    } else {
-        myProfileAvatar.setAttribute('src', rc.genAvatarSvg(peer_name, 64));
-    }
-    show(toggleExtraButton); //* */
+    /*  if (rc.isValidEmail(peer_name)) {
+          myProfileAvatar.style.borderRadius = `50px`;
+          myProfileAvatar.setAttribute('src', rc.genGravatar(peer_name));
+      } else {
+          myProfileAvatar.setAttribute('src', rc.genAvatarSvg(peer_name, 64));
+      }
+      show(toggleExtraButton); //* */
     BUTTONS.main.exitButton && show(exitButton);
     BUTTONS.main.shareButton && show(shareButton);
     BUTTONS.main.hideMeButton && show(hideMeButton);
@@ -3758,7 +3747,7 @@ function loadSettingsFromLocalStorage() {
     const keepVisible = localStorageSettings.keep_buttons_visible || false;
     document.getElementById('switchKeepButtonsVisible').checked = keepVisible;
     localStorageSettings.keep_buttons_visible = keepVisible;
-    
+
     recPrioritizeH264 = localStorageSettings.rec_prioritize_h264;
     switchH264Recording.checked = recPrioritizeH264;
 
@@ -4272,7 +4261,7 @@ function getCookie(cName) {
 function isHtml(str) {
     var a = document.createElement('div');
     a.innerHTML = str;
-    for (var c = a.childNodes, i = c.length; i--; ) {
+    for (var c = a.childNodes, i = c.length; i--;) {
         if (c[i].nodeType == 1) return true;
     }
     return false;
