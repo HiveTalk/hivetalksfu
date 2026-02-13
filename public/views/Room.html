@@ -84,6 +84,38 @@
                         }, 1000);
                     });
                 },
+                payInvoice: async (invoice, verifyPaymentFn) => {
+                    return new Promise((resolve, reject) => {
+                        let checkPaymentInterval;
+
+                        const { setPaid } = launchPaymentModal({
+                            invoice: invoice,
+                            onPaid: ({ preimage }) => {
+                                clearInterval(checkPaymentInterval);
+                                resolve({ preimage });
+                            },
+                            onCancelled: () => {
+                                clearInterval(checkPaymentInterval);
+                                reject('Payment cancelled');
+                            },
+                        });
+
+                        if (verifyPaymentFn) {
+                            checkPaymentInterval = setInterval(async () => {
+                                try {
+                                    const result = await verifyPaymentFn();
+                                    if (result && result.paid) {
+                                        setPaid({
+                                            preimage: result.preimage || 'confirmed',
+                                        });
+                                    }
+                                } catch (error) {
+                                    console.log('waiting inside check payment interval....');
+                                }
+                            }, 2000);
+                        }
+                    });
+                },
             };
         </script>
         <script

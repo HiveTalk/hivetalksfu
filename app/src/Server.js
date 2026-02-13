@@ -1394,6 +1394,67 @@ function startServer() {
         });
     });
 
+    // ZBD Payment Endpoints
+    app.post('/api/zbd/charge', async (req, res) => {
+        const { amount, description } = req.body;
+        const zbdApiKey = process.env.ZBD_API_KEY;
+
+        if (!zbdApiKey) {
+            return res.status(500).json({ error: 'ZBD_API_KEY not configured' });
+        }
+
+        try {
+            const payload = {
+                expiresIn: 300,
+                amount: (parseInt(amount) * 1000).toString(), // millisats
+                description: description || 'Zap Hivetalk',
+                internalId: `zap-${Date.now()}`,
+            };
+
+            log.debug('ZBD Request payload (REST):', payload);
+
+            const response = await axios.post(
+                'https://api.zebedee.io/v0/charges',
+                payload,
+                {
+                    headers: { apikey: zbdApiKey, 'Content-Type': 'application/json' },
+                }
+            );
+
+            log.debug('ZBD Response full (REST):', JSON.stringify(response.data, null, 2));
+
+            const { invoice, id } = response.data.data;
+            const request = invoice ? invoice.request : null;
+
+            if (!request) {
+                return res.status(500).json({ error: 'Failed to generate invoice' });
+            }
+
+            res.json({ invoice: request, paymentHash: id });
+        } catch (err) {
+            log.error('ZBD Create Charge error (REST)', err.response?.data || err.message);
+            res.status(500).json({ error: 'Failed to create invoice' });
+        }
+    });
+
+    app.get('/api/zbd/charge/:paymentHash', async (req, res) => {
+        const { paymentHash } = req.params;
+        const zbdApiKey = process.env.ZBD_API_KEY;
+
+        if (!zbdApiKey) return res.json({ paid: false });
+
+        try {
+            const response = await axios.get(`https://api.zebedee.io/v0/charges/${paymentHash}`, {
+                headers: { apikey: zbdApiKey },
+            });
+            const { status } = response.data.data;
+            res.json({ paid: status === 'completed', status });
+        } catch (err) {
+            log.error('ZBD Check Charge error (REST)', err.response?.data || err.message);
+            res.json({ paid: false });
+        }
+    });
+
     // API endpoint for room ownership check
     // app.post('/api/check-room-owner', async (req, res) => {
     //     try {
@@ -2226,6 +2287,81 @@ function startServer() {
             data.broadcast ? room.broadCast(socket.id, 'cmd', data) : room.sendTo(data.peer_id, 'cmd', data);
         });
 
+
+        socket.on('createLockPayment', async (_, callback) => {
+            if (!roomExists(socket)) return callback({ error: 'Room not found' });
+
+            const priceSats = parseInt(process.env.ROOM_LOCK_PRICE_SATS || 1000);
+            const zbdApiKey = process.env.ZBD_API_KEY;
+
+            if (!zbdApiKey) {
+                // If ZBD_API_KEY is not configured, we return an error.
+                // Alternatively, for dev/testing without key, we could bypass, but better to be explicit.
+                return callback({ error: 'Payment not configured (ZBD_API_KEY missing)' });
+            }
+
+            try {
+                // Call ZBD API to create a charge
+                // https://api.zebedee.io/v0/charges
+                const payload = {
+                    expiresIn: 300,
+                    amount: (priceSats * 1000).toString(), // millisats
+                    description: `Lock Room ${socket.room_id}`,
+                    internalId: `lock-${socket.room_id}-${Date.now()}`,
+                };
+                
+                log.debug('ZBD Request payload:', payload);
+
+                const response = await axios.post(
+                    'https://api.zebedee.io/v0/charges',
+                    payload,
+                    {
+                        headers: { apikey: zbdApiKey, 'Content-Type': 'application/json' },
+                    },
+                );
+
+                log.debug('ZBD Response full:', JSON.stringify(response.data, null, 2));
+
+                const { invoice, id } = response.data.data;
+                const request = invoice ? invoice.request : null;
+                
+                if (!request) {
+                    log.error('ZBD Response missing request (invoice)', response.data);
+                    return callback({ error: 'Failed to generate invoice' });
+                }
+
+                callback({ invoice: request, paymentHash: id });
+            } catch (err) {
+                log.error('ZBD Create Charge error', err.response?.data || err.message);
+                log.error('ZBD API Key used (masked):', zbdApiKey ? zbdApiKey.substring(0, 4) + '***' : 'missing');
+                callback({ error: 'Failed to create invoice: ' + (err.response?.data?.message || err.message) });
+            }
+        });
+
+        socket.on('checkLockPayment', async ({ paymentHash }, callback) => {
+            const zbdApiKey = process.env.ZBD_API_KEY;
+            if (!zbdApiKey) return callback({ paid: false });
+
+            try {
+                // Check charge status
+                const response = await axios.get(`https://api.zebedee.io/v0/charges/${paymentHash}`, {
+                    headers: { apikey: zbdApiKey },
+                });
+                const { status } = response.data.data;
+
+                if (status === 'completed') {
+                    const peer = getPeer(socket);
+                    if (peer) peer.hasPaidLock = true;
+                    callback({ paid: true });
+                } else {
+                    callback({ paid: false });
+                }
+            } catch (err) {
+                log.error('ZBD Check Charge error', err.response?.data || err.message);
+                callback({ paid: false });
+            }
+        });
+
         socket.on('roomAction', async (dataObject) => {
             if (!roomExists(socket)) return;
 
@@ -2249,6 +2385,14 @@ function startServer() {
                     break;
                 case 'lock':
                     if (!isPresenter) return;
+
+                    // Payment Check
+                    const peer = getPeer(socket);
+                    const zbdApiKey = process.env.ZBD_API_KEY;
+                    if (zbdApiKey && !peer.hasPaidLock) {
+                        return; // Reject lock if not paid
+                    }
+
                     if (!room.isLocked()) {
                         room.setLocked(true, data.password);
                         room.broadCast(socket.id, 'roomAction', data.action);
@@ -2267,6 +2411,11 @@ function startServer() {
                     break;
                 case 'unlock':
                     if (!isPresenter) return;
+                    
+                    // Reset payment verification on unlock so they must pay again to lock
+                    const peerUnlock = getPeer(socket);
+                    if (peerUnlock) peerUnlock.hasPaidLock = false;
+
                     room.setLocked(false);
                     room.broadCast(socket.id, 'roomAction', data.action);
                     break;
