@@ -7222,21 +7222,6 @@ class RoomClient {
                     this.socket
                         .request('createLockPayment')
                         .then(async (response) => {
-                            if (response.error) {
-                                Swal.fire({
-                                    allowOutsideClick: false,
-                                    allowEscapeKey: false,
-                                    background: swalBackground,
-                                    imageUrl: image.locked,
-                                    title: 'Lock Room Payment',
-                                    text: response.error,
-                                    confirmButtonText: `OK`,
-                                    showClass: { popup: 'animate__animated animate__fadeInDown' },
-                                    hideClass: { popup: 'animate__animated animate__fadeOutUp' },
-                                });
-                                return;
-                            }
-
                             // Payment Verification
                             const verifyPayment = async () => {
                                 const result = await this.socket.request('checkLockPayment', {
@@ -7302,6 +7287,17 @@ class RoomClient {
                         })
                         .catch((err) => {
                             console.error('Lock payment error:', err);
+                            Swal.fire({
+                                allowOutsideClick: false,
+                                allowEscapeKey: false,
+                                background: swalBackground,
+                                imageUrl: image.locked,
+                                title: 'Lock Room Payment',
+                                text: typeof err === 'string' ? err : 'Failed to create payment. Please try again.',
+                                confirmButtonText: `OK`,
+                                showClass: { popup: 'animate__animated animate__fadeInDown' },
+                                hideClass: { popup: 'animate__animated animate__fadeOutUp' },
+                            });
                         });
                     break;
                 case 'unlock':

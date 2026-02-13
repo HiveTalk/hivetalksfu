@@ -39,12 +39,14 @@
                         paymentHash = data.paymentHash;
                     } catch (err) {
                         console.error(err);
-                        alert('Error creating payment request: ' + err.message);
+                        alert('Error creating payment request. Please try again.');
                         reject(err);
                         return;
                     }
 
                     let checkPaymentInterval;
+                    const POLL_TIMEOUT_MS = 310_000; // slightly longer than invoice expiresIn (300s)
+                    const pollStart = Date.now();
                     const { setPaid } = launchPaymentModal({
                         invoice: invoiceReq,
                         onPaid: ({ preimage }) => {
@@ -71,6 +73,12 @@
                     });
 
                     checkPaymentInterval = setInterval(async () => {
+                        if (Date.now() - pollStart > POLL_TIMEOUT_MS) {
+                            clearInterval(checkPaymentInterval);
+                            alert('Invoice expired, please try again.');
+                            reject('Invoice expired');
+                            return;
+                        }
                         try {
                             const response = await fetch(`/api/zbd/charge/${paymentHash}`);
                             const data = await response.json();
