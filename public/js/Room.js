@@ -33,6 +33,7 @@ let defaultRelays = [
     'wss://relay.primal.net',
     'wss://relay.damus.io',
     'wss://nos.lol',
+    'wss://purplepag.es',
 ];
 
 const socket = io({ transports: ['websocket'] });
@@ -295,75 +296,77 @@ document.addEventListener('DOMContentLoaded', function () {
     // check localstorage if actually logged in before
     console.log('CHECK IF LOGGED IN on Nostr or Previously in LocalStorage');
 
-    try {
-        const userInfo = JSON.parse(window.localStorage.getItem('__nostrlogin_accounts'));
+    (async () => {
+        try {
+            const userInfo = JSON.parse(window.localStorage.getItem('__nostrlogin_accounts'));
 
-        if (userInfo && userInfo.length > 0) {
-            // Do something with the userInfo
-            const user = userInfo[0];
-            peer_name = user.name;
-            if (user.name !== undefined && user.name.length > 30) {
-                // truncate peer_name to be < 30 chars
-                peer_name = truncateString(user.name, 29);
-            }
-            peer_pubkey = user.pubkey;
-            window.localStorage.peer_pubkey = user.pubkey;
+            if (userInfo && userInfo.length > 0) {
+                // Do something with the userInfo
+                const user = userInfo[0];
+                peer_name = user.name;
+                if (user.name !== undefined && user.name.length > 30) {
+                    // truncate peer_name to be < 30 chars
+                    peer_name = truncateString(user.name, 29);
+                }
+                peer_pubkey = user.pubkey;
+                window.localStorage.peer_pubkey = user.pubkey;
 
-            //signSampleEvent(peer_pubkey); // send a sample event to the test relay
+                //signSampleEvent(peer_pubkey); // send a sample event to the test relay
 
-            peer_npub = nip19.npubEncode(user.pubkey);
-            window.localStorage.peer_npub = peer_npub;
+                peer_npub = nip19.npubEncode(user.pubkey);
+                window.localStorage.peer_npub = peer_npub;
 
-            // if there is no peer_name but we have a pubkey, use first 5 chars
-            if (user.name === undefined) {
-                // offer to set a username as the first 7 chars of the pubkey
-                peer_name = truncateString(user.pubkey + '...', 10);
-            }
-            window.localStorage.peer_name = user.name;
+                // if there is no peer_name but we have a pubkey, use first 5 chars
+                if (user.name === undefined) {
+                    // offer to set a username as the first 7 chars of the pubkey
+                    peer_name = truncateString(user.pubkey + '...', 10);
+                }
+                window.localStorage.peer_name = user.name;
 
-            peer_url = user.picture;
-            window.localStorage.peer_url = user.picture;
-            console.log('checkUserInfo :', user.pubkey, user.name, user.picture, peer_npub);
+                peer_url = user.picture;
+                window.localStorage.peer_url = user.picture;
+                console.log('checkUserInfo :', user.pubkey, user.name, user.picture, peer_npub);
 
-            if (peer_name && peer_pubkey) {
-                console.log('discovery complete: checkUserInfo: ', peer_name, peer_pubkey, peer_url);
+                if (peer_name && peer_pubkey) {
+                    console.log('discovery complete: checkUserInfo: ', peer_name, peer_pubkey, peer_url);
 
-                // try to get lightning address
-                loggedIn = getInfoAndContinue();
-                console.log('checking if loggedIn pre clearInterval: ', loggedIn);
+                    // try to get lightning address and profile from relays
+                    loggedIn = await getInfoAndContinue();
+                    console.log('checking if loggedIn pre clearInterval: ', loggedIn);
 
-                if (loggedIn) {
-                    // clearInterval(checkInterval);      // Then clear the interval
-                    continueNostrLogin('nostr'); // And continue with the next step
+                    if (loggedIn) {
+                        // clearInterval(checkInterval);      // Then clear the interval
+                        continueNostrLogin('nostr'); // And continue with the next step
+                    }
+                }
+            } else {
+                // look for peer_name and peer lnaddress from previous local storage session
+                // if not found, offer to set a username
+                if (window.localStorage.peer_name) {
+                    peer_name = window.localStorage.peer_name;
+                    if (window.localStorage.peer_url) {
+                        peer_url = window.localStorage.peer_url;
+                    }
+                    if (window.localStorage.peer_lnaddress) {
+                        peer_lnaddress = window.localStorage.peer_lnaddress;
+                    }
+                    console.log('adopt prior localStorage ', peer_name, peer_pubkey, peer_url);
+                    loggedIn = true; // set logged in is now true
+                    continueNostrLogin('priorlocalStorage'); // And continue with the next step
+                    // if the user doesn't want the above settings, they can change it
+                    // during the continueNostrLogin() flow
                 }
             }
-        } else {
-            // look for peer_name and peer lnaddress from previous local storage session
-            // if not found, offer to set a username
-            if (window.localStorage.peer_name) {
-                peer_name = window.localStorage.peer_name;
-                if (window.localStorage.peer_url) {
-                    peer_url = window.localStorage.peer_url;
-                }
-                if (window.localStorage.peer_lnaddress) {
-                    peer_lnaddress = window.localStorage.peer_lnaddress;
-                }
-                console.log('adopt prior localStorage ', peer_name, peer_pubkey, peer_url);
-                loggedIn = true; // set logged in is now true
-                continueNostrLogin('priorlocalStorage'); // And continue with the next step
-                // if the user doesn't want the above settings, they can change it
-                // during the continueNostrLogin() flow
-            }
+        } catch (error) {
+            console.log('Error parsing userInfo:', error);
         }
-    } catch (error) {
-        console.log('Error parsing userInfo:', error);
-    }
-    // if both of the above methods fail then we try nostr or random login
-    if (!loggedIn) {
-        console.log(' no priornostr login, try setting random username');
-        checkInterval = setInterval(checkUserInfo, 1000);
-        nostrLogin();
-    }
+        // if both of the above methods fail then we try nostr or random login
+        if (!loggedIn) {
+            console.log(' no priornostr login, try setting random username');
+            checkInterval = setInterval(checkUserInfo, 1000);
+            nostrLogin();
+        }
+    })();
 });
 
 // Check every 500 milliseconds (0.5 second)
@@ -611,7 +614,7 @@ function truncateString(str, maxLength) {
     return str;
 }
 
-function checkUserInfo() {
+async function checkUserInfo() {
     console.log('....inside checkUserInfo....' + cycleCount);
     cycleCount++;
 
@@ -678,12 +681,14 @@ function checkUserInfo() {
             if (peer_name && peer_pubkey) {
                 console.log('discovery complete: checkUserInfo: ', peer_name, peer_pubkey, peer_url);
 
-                // try to get lightning address
-                getInfoAndContinue();
-                console.log('checking if loggedIn pre clearInteraval: ', loggedIn);
+                // stop polling while we fetch profile from relays
+                clearInterval(checkInterval);
+
+                // try to get lightning address and profile from relays
+                loggedIn = await getInfoAndContinue();
+                console.log('checking if loggedIn pre clearInterval: ', loggedIn);
 
                 if (loggedIn) {
-                    clearInterval(checkInterval); // Then clear the interval
                     continueNostrLogin('nostr'); // And continue with the next step
                 }
             }

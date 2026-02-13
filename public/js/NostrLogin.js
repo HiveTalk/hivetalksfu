@@ -129,6 +129,105 @@
         document.dispatchEvent(new CustomEvent('nlAuth', { detail: { type } }));
     }
 
+    // ─── Core: fetch profile from relays after login ─────────────────
+    // Query relays for kind:0 metadata so name+picture are available
+    // immediately in __nostrlogin_accounts for Room.js to read.
+    const _allProfileRelays = [
+        'wss://relay.primal.net',
+        'wss://relay.damus.io',
+        'wss://nos.lol',
+        'wss://purplepag.es',
+    ];
+
+    // Temporarily dropped relays: { url: timestamp_when_dropped }
+    const _droppedRelays = {};
+    const _RELAY_DROP_DURATION_MS = 60000; // 60 seconds
+
+    function getActiveRelays() {
+        const now = Date.now();
+        const active = _allProfileRelays.filter(url => {
+            const droppedAt = _droppedRelays[url];
+            if (!droppedAt) return true;
+            // Re-enable relay after drop duration expires
+            if (now - droppedAt > _RELAY_DROP_DURATION_MS) {
+                delete _droppedRelays[url];
+                console.log('[NostrLogin] Re-enabling relay:', url);
+                return true;
+            }
+            return false;
+        });
+        // Fallback: if all relays are dropped, use them all anyway
+        return active.length > 0 ? active : _allProfileRelays;
+    }
+
+    function dropRelay(url) {
+        _droppedRelays[url] = Date.now();
+        console.log('[NostrLogin] Temporarily dropping relay (timeout):', url);
+    }
+
+    function fetchProfileFromRelays(pubkey) {
+        const activeRelays = getActiveRelays();
+        console.log('[NostrLogin] Querying relays for profile:', activeRelays);
+        let resolved = false;
+        const subId = 'nl-profile-' + Math.random().toString(36).slice(2, 8);
+        const sockets = [];
+
+        activeRelays.forEach(url => {
+            try {
+                const ws = new WebSocket(url);
+                sockets.push({ ws, url });
+
+                ws.onopen = () => {
+                    // Send NIP-01 REQ for kind:0 (profile metadata)
+                    const req = JSON.stringify(['REQ', subId, { kinds: [0], authors: [pubkey], limit: 1 }]);
+                    ws.send(req);
+                };
+
+                ws.onmessage = (msg) => {
+                    if (resolved) { ws.close(); return; }
+                    try {
+                        const data = JSON.parse(msg.data);
+                        // NIP-01: ["EVENT", subId, event]
+                        if (data[0] === 'EVENT' && data[2] && data[2].kind === 0 && data[2].pubkey === pubkey) {
+                            resolved = true;
+                            const content = JSON.parse(data[2].content);
+                            const name = content.name || content.display_name;
+                            const picture = content.picture || content.image;
+                            if (name || picture) {
+                                storeAccount(pubkey, name, picture);
+                                console.log('[NostrLogin] Profile fetched from relay:', url, name, picture);
+                                if (name) window.localStorage.peer_name = name;
+                                if (picture) window.localStorage.peer_url = picture;
+                                updateFloatingButton();
+                            }
+                            // Close all sockets
+                            sockets.forEach(s => { try { s.ws.close(); } catch (e) { /* ignore */ } });
+                        }
+                    } catch (e) { /* ignore parse errors */ }
+                };
+
+                ws.onerror = () => { /* ignore */ };
+            } catch (e) {
+                console.log('[NostrLogin] Failed to connect to relay:', url, e);
+            }
+        });
+
+        // Timeout after 6 seconds — drop relays that didn't respond
+        setTimeout(() => {
+            if (!resolved) {
+                resolved = true;
+                console.log('[NostrLogin] Profile fetch timed out');
+                // Drop all relays that are still connecting or open (didn't deliver)
+                sockets.forEach(s => {
+                    if (s.ws.readyState === WebSocket.CONNECTING || s.ws.readyState === WebSocket.OPEN) {
+                        dropRelay(s.url);
+                    }
+                    try { s.ws.close(); } catch (e) { /* ignore */ }
+                });
+            }
+        }, 6000);
+    }
+
     // ─── Core: extension login ───────────────────────────────────────
     async function loginWithExtension() {
         if (!window.nostr) {
@@ -140,6 +239,8 @@
         _loginMethod = 'extension';
         storeAccount(pubkey);
         fireNlAuth('login');
+        // Fetch profile in background so name+picture are ready for Room.js
+        fetchProfileFromRelays(pubkey);
         return pubkey;
     }
 
@@ -160,6 +261,8 @@
         setWindowNostrFromNsec(privkeyHex, pubkeyHex);
         storeAccount(pubkeyHex);
         fireNlAuth('login');
+        // Fetch profile in background so name+picture are ready for Room.js
+        fetchProfileFromRelays(pubkeyHex);
         return pubkeyHex;
     }
 
@@ -595,6 +698,16 @@
     //     can't restore the signer (no privkey stored for security).
     //     Extension logins auto-restore via the extension itself.
     //     We just ensure __nostrlogin_accounts is consistent. ─────────
+
+    // ─── Auto-fetch profile on page load if account is missing name/picture ─
+    // This covers pages like /active that load NostrLogin.js but not Room.js.
+    (function autoFetchProfileIfNeeded() {
+        const account = getCurrentAccount();
+        if (account && account.pubkey && (!account.name || !account.picture)) {
+            console.log('[NostrLogin] Account missing name/picture, fetching from relays...');
+            fetchProfileFromRelays(account.pubkey);
+        }
+    })();
 
     // ─── Floating Nostr "N" button (for pages without data-no-banner) ─
     function shouldShowBanner() {
