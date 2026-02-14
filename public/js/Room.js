@@ -330,13 +330,16 @@ document.addEventListener('DOMContentLoaded', function () {
                 if (peer_name && peer_pubkey) {
                     console.log('discovery complete: checkUserInfo: ', peer_name, peer_pubkey, peer_url);
 
-                    // try to get lightning address and profile from relays
-                    loggedIn = await getInfoAndContinue();
+                    // Continue immediately with cached profile; do not block UI on relay fetch.
+                    loggedIn = true;
                     console.log('checking if loggedIn pre clearInterval: ', loggedIn);
+                    continueNostrLogin('nostr');
 
-                    if (loggedIn) {
-                        // clearInterval(checkInterval);      // Then clear the interval
-                        continueNostrLogin('nostr'); // And continue with the next step
+                    // Fetch extra profile/ln data in background only when cache is incomplete.
+                    if (!peer_url || !peer_name) {
+                        getInfoAndContinue().catch((error) => {
+                            console.error('Background profile fetch failed:', error);
+                        });
                     }
                 }
             } else {
@@ -437,12 +440,10 @@ async function getNostrProfile(pubkey, relays) {
         let resolved = false;
         let h = pool.subscribeMany(
             relays,
-            [
-                {
-                    kinds: [0],
-                    authors: [pubkey],
-                },
-            ],
+            {
+                kinds: [0],
+                authors: [pubkey],
+            },
             {
                 onevent(event) {
                     if (event && event.kind === 0 && event.pubkey === pubkey && !resolved) {
@@ -513,10 +514,10 @@ async function getInfoAndContinue() {
     try {
         // fetch preferred relays as an option
         // for now, we usedefault relays instead of fetching preferred relays
-        await getNostrProfile(peer_pubkey, defaultRelays); // Wait for getNostrProfile to complete
-        return true;
+        return await getNostrProfile(peer_pubkey, defaultRelays);
     } catch (error) {
         console.error('Error in getInfo:', error);
+        return false;
     }
 }
 
@@ -1867,12 +1868,10 @@ async function sendEvent(textNote, publicKey) {
         // Subscribe to all user events, log the one we just published
         const h = pool.subscribeMany(
             [...relays],
-            [
-                {
-                    kinds: [1],
-                    authors: [publicKey],
-                },
-            ],
+            {
+                kinds: [1],
+                authors: [publicKey],
+            },
             {
                 onevent(event) {
                     if (event.id === eventID) {
@@ -1969,8 +1968,7 @@ async function showAnnouncements(useNavigator = false) {
             <div style="text-align: left;">            
                 <p>
                     From now on, if you want to <b>"Lock a room"</b> you have to pay to lock. 
-                    <br/><br/>
-                    The goal of Hivetalk is to encourage more open public community discussions and while we value need for privacy, the privacy comes with a cost, its no longer free.
+                    The goal of Hivetalk is to encourage more open public community discussions and while we value need for privacy, the privacy is not free!
                 </p>
             </div>`,
             showDenyButton: false,

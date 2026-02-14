@@ -214,17 +214,16 @@ function getUUID4() {
 }
 
 function joinRoom() {
-   // TODO: Validate
-   // const roomName = filterXSS(document.getElementById('roomName').value).trim().replace(/\s+/g, '-');
-   // const roomValid = isValidRoomName(roomName);
-   // if (!roomName) {
-
     const roomNameInput = document.getElementById('roomName');
-    let roomName = filterXSS(roomNameInput.value).trim(); // Remove any leading or trailing spaces
+    let roomName = filterXSS(roomNameInput.value).trim();
 
-    // Check for invalid characters
     if (roomName.includes(' ')) {
-        roomName = roomName.replace(/\s/g, '_'); // Replace spaces with underscores
+        roomName = roomName.replace(/\s/g, '_');
+    }
+
+    if (!roomName) {
+        alert('Room name empty!\nPlease pick a room name.');
+        return;
     }
 
     if (roomName.includes('/')) {
@@ -232,20 +231,12 @@ function joinRoom() {
         return;
     }
 
-    if (roomName) {
-        window.location.href = '/join/' + roomName;
-        window.localStorage.lastRoom = roomName;
-    } else {
-        alert('Room name empty!\nPlease pick a room name.');
-        return;
-    }
-    if (!roomValid) {
+    if (!isValidRoomName(roomName)) {
         alert('Invalid Room name!\nPath traversal pattern detected!');
         return;
     }
 
-    //window.location.href = '/join/' + roomName;
-    window.location.href = '/join/?room=' + roomName;
+    window.location.href = '/join/' + roomName;
     window.localStorage.lastRoom = roomName;
 }
 
