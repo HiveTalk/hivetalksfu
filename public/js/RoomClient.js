@@ -504,8 +504,8 @@ class RoomClient {
 
         this.checkRoomHasPeers();
     }
-    
-    async checkRoomHasPeers() { 
+
+    async checkRoomHasPeers() {
         const response = await fetch('/api/check-room-peers', {
             method: 'POST',
             headers: {
@@ -528,7 +528,7 @@ class RoomClient {
                 this._isConnected = true;
                 this.successCallback();
             });
-        }  else { 
+        } else {
             this.createRoom(this.room_id).then(async () => {
                 const data = {
                     room_id: this.room_id,
@@ -545,7 +545,7 @@ class RoomClient {
         //     this.checkRoomOwnership();
         // }
     }
- 
+
     // async checkRoomOwnership() {
     //     try {
     //         const response = await fetch('/api/check-room-owner', {
@@ -555,11 +555,11 @@ class RoomClient {
     //             },
     //             body: JSON.stringify({ room_id: this.room_id }),
     //         });
-            
+
     //         if (!response.ok) {
     //             throw new Error('Failed to check room ownership');
     //         }
-            
+
     //         const data = await response.json();
     //         // console.log('checkRoomOwnership', data);
     //         // console.log('json response state = ', data[0].success)
@@ -756,7 +756,7 @@ class RoomClient {
             if (BUTTONS.settings.tabRecording) {
                 room.config.hostOnlyRecording
                     ? (console.log('07.1 ----> WARNING Room Host only recording enabled'),
-                      this.event(_EVENTS.hostOnlyRecordingOn))
+                        this.event(_EVENTS.hostOnlyRecordingOn))
                     : this.event(_EVENTS.hostOnlyRecordingOff);
             }
 
@@ -2213,22 +2213,22 @@ class RoomClient {
                     d.appendChild(zp);
                 }
                 d.appendChild(p);
-             /*   this.videoMediaContainer.appendChild(vb);
-                this.videoMediaContainer.appendChild(d);
+                /*   this.videoMediaContainer.appendChild(vb);
+                   this.videoMediaContainer.appendChild(d);
+   
+                   let pv;
+       
+                   // Create and append volume control to peerNameSpan
+                   pv = document.createElement('input');
+                   pv.id = this.peer_id + '___pVolume';
+                   pv.type = 'range';
+                   pv.min = 0;
+                   pv.max = 100;
+                   pv.value = 100;
+                   peerNameContainer.appendChild(pv);
+                   
+                   peerNameContainer.appendChild(peerNameSpan); */
 
-                let pv;
-    
-                // Create and append volume control to peerNameSpan
-                pv = document.createElement('input');
-                pv.id = this.peer_id + '___pVolume';
-                pv.type = 'range';
-                pv.min = 0;
-                pv.max = 100;
-                pv.value = 100;
-                peerNameContainer.appendChild(pv);
-                
-                peerNameContainer.appendChild(peerNameSpan); */
-    
                 if (peer_info.peer_npub) {
                     const nostrIcon = document.createElement('span');
                     nostrIcon.className = html.nostrIcon + ' nostr-icon-inline';
@@ -2242,29 +2242,29 @@ class RoomClient {
                 // Create and append peer name header
                 const peerNameHeader = document.createElement('div');
                 peerNameHeader.className = 'peer-name-header';
-                
+
                 const peerNameContainer = document.createElement('div');
                 peerNameContainer.className = 'peer-name-container';
-                
+
                 const peerNameSpan = document.createElement('span');
                 peerNameSpan.className = 'peer-name';
-                peerNameSpan.textContent = peer_name;                 
+                peerNameSpan.textContent = peer_name;
 
-    
+
                 peerNameHeader.appendChild(peerNameContainer);
                 vb.appendChild(peerNameHeader);
 
-                
-              /*  // Update the event listener
-                d.addEventListener('click', (event) => {
-                    if (!event.target.closest('.' + html.zapIcon.split(' ')[0])) {
-                        const menuBarElement = vb; // Reference to the videoMenuBar element
-                        this.toggleVideoMenuBar(menuBarElement);
-                    }
-                });
 
-
-                this.attachMediaStream(elem, stream, type, 'Producer'); */
+                /*  // Update the event listener
+                  d.addEventListener('click', (event) => {
+                      if (!event.target.closest('.' + html.zapIcon.split(' ')[0])) {
+                          const menuBarElement = vb; // Reference to the videoMenuBar element
+                          this.toggleVideoMenuBar(menuBarElement);
+                      }
+                  });
+  
+  
+                  this.attachMediaStream(elem, stream, type, 'Producer'); */
                 //d.appendChild(vb);
                 document.body.appendChild(vb);
                 this.videoMediaContainer.appendChild(d);
@@ -2597,28 +2597,28 @@ class RoomClient {
         };
     }
 
-   /* handleConsumer(id, type, stream, peer_name, peer_info) {
-        const {
-            peer_id: remotePeerId,
-            peer_audio: remotePeerAudio,
-            peer_video_privacy: remotePrivacyOn,
-            peer_presenter: remotePeerPresenter,
-            peer_lnaddress: remoteLNAddress,
-            peer_npub,
-            peer_url
-        } = peer_info;
-    
-        const isScreen = type === mediaType.screen;
-    
-        const createButton = (id, className) => {
-            const button = document.createElement('button');
-            button.id = id;
-            button.className = className;
-            return button;
-        };
-    
-        let elem, vb, d, p, i, cm, au, pip, fs, ts, sf, sm, sv, gl, ban, ko, pb, pm, pv, pn; */
-    
+    /* handleConsumer(id, type, stream, peer_name, peer_info) {
+         const {
+             peer_id: remotePeerId,
+             peer_audio: remotePeerAudio,
+             peer_video_privacy: remotePrivacyOn,
+             peer_presenter: remotePeerPresenter,
+             peer_lnaddress: remoteLNAddress,
+             peer_npub,
+             peer_url
+         } = peer_info;
+     
+         const isScreen = type === mediaType.screen;
+     
+         const createButton = (id, className) => {
+             const button = document.createElement('button');
+             button.id = id;
+             button.className = className;
+             return button;
+         };
+     
+         let elem, vb, d, p, i, cm, au, pip, fs, ts, sf, sm, sv, gl, ban, ko, pb, pm, pv, pn; */
+
     async handleConsumer(id, type, stream, peer_name, peer_info) {
         let elem, vb, d, p, i, cm, au, pip, fs, ts, sf, sm, sv, gl, ban, ko, pb, pm, pv, pn, ha, mv;
 
@@ -2631,7 +2631,7 @@ class RoomClient {
         const remotePeerAudio = peer_info.peer_audio;
         const remotePeerAudioVolume = peer_info.peer_audio_volume;
         const remotePrivacyOn = peer_info.peer_video_privacy;
-        const remotePeerPresenter = peer_info.peer_presenter; 
+        const remotePeerPresenter = peer_info.peer_presenter;
         const remoteLNAddress = peer_info.peer_lnaddress;
         const peer_npub = peer_info.peer_npub;
         const peer_url = peer_info.peer_url;
@@ -2655,32 +2655,32 @@ class RoomClient {
                 elem.autoplay = true;
                 elem.className = '';
                 elem.poster = image.poster;
-           /*     elem.style.objectFit = isScreen || isBroadcastingEnabled ? 'contain' : 'var(--videoObjFit)';
-                vb = document.createElement('div');
-                vb.setAttribute('id', remotePeerId + '__vb');
-                vb.className = 'videoMenuBar fadein';
-                
-                // Create and append peer name header
-                const peerNameHeader = document.createElement('div');
-                peerNameHeader.className = 'peer-name-header';
-                
-                const peerNameContainer = document.createElement('div');
-                peerNameContainer.className = 'peer-name-container';
-                
-                const peerNameSpan = document.createElement('span');
-                peerNameSpan.className = 'peer-name';
-                peerNameSpan.textContent = peer_name;
-    
-                // Create and append volume control to peerNameSpan
-                pv = document.createElement('input');
-                pv.id = remotePeerId + '___pVolume';
-                pv.type = 'range';
-                pv.min = 0;
-                pv.max = 100;
-                pv.value = 100;                
-                peerNameContainer.appendChild(peerNameSpan);
-                peerNameContainer.appendChild(pv);  */
-        
+                /*     elem.style.objectFit = isScreen || isBroadcastingEnabled ? 'contain' : 'var(--videoObjFit)';
+                     vb = document.createElement('div');
+                     vb.setAttribute('id', remotePeerId + '__vb');
+                     vb.className = 'videoMenuBar fadein';
+                     
+                     // Create and append peer name header
+                     const peerNameHeader = document.createElement('div');
+                     peerNameHeader.className = 'peer-name-header';
+                     
+                     const peerNameContainer = document.createElement('div');
+                     peerNameContainer.className = 'peer-name-container';
+                     
+                     const peerNameSpan = document.createElement('span');
+                     peerNameSpan.className = 'peer-name';
+                     peerNameSpan.textContent = peer_name;
+         
+                     // Create and append volume control to peerNameSpan
+                     pv = document.createElement('input');
+                     pv.id = remotePeerId + '___pVolume';
+                     pv.type = 'range';
+                     pv.min = 0;
+                     pv.max = 100;
+                     pv.value = 100;                
+                     peerNameContainer.appendChild(peerNameSpan);
+                     peerNameContainer.appendChild(pv);  */
+
                 /*  this.addCloseButton(peerNameHeader, vb);
     
                 pip = createButton(id + '__pictureInPicture', html.pip);
@@ -2695,7 +2695,7 @@ class RoomClient {
                 gl = createButton(id + '___' + remotePeerId + '___geoLocation', html.geolocation);
                 ban = createButton(id + '___' + remotePeerId + '___ban', html.ban);
                 ko = createButton(id + '___' + remotePeerId + '___kickOut', html.kickOut); */
-    
+
                 elem.style.objectFit = remoteIsScreen || isBroadcastingEnabled ? 'contain' : 'var(--videoObjFit)';
 
                 vb = document.createElement('div');
@@ -2752,44 +2752,44 @@ class RoomClient {
                 pb.className = 'bar';
                 pb.style.height = '1%';
                 pm.appendChild(pb);
-    
-      /*          const appendButtons = (parent, buttons) => {
-                    buttons.forEach(button => parent.appendChild(button));
-                };
-    
-                if (this.isMobileDevice) {
-                    appendButtons(vb, [sm, sf, sv, gl, ban, ko, au, cm]);
-                } else {
-                    const eDiv = document.createElement('div');
-                    eDiv.className = 'expand-video';
-                    const eBtn = createButton(remotePeerId + '_videoExpandBtn', html.expand);
-                    const eVc = document.createElement('div');
-                    eVc.className = 'expand-video-content';
-                    eDiv.appendChild(eBtn);
-                    appendButtons(eVc, [sm, sf, sv, gl, ban, ko]);
-                    eDiv.appendChild(eVc);
-                    appendButtons(vb, [au, cm]);
-                    vb.appendChild(eDiv);
-                
-                    // Add event listener for expand button
-                    eBtn.addEventListener('click', (e) => {
-                        e.stopPropagation();
-                        eDiv.classList.toggle('show');
-                    });
-                
-                    // Close expand menu when clicking outside
-                    document.addEventListener('click', () => {
-                        eDiv.classList.remove('show');
-                    });
-                
-                    eDiv.addEventListener('click', (e) => {
-                        e.stopPropagation();
-                    });
-                }
-                
-                appendButtons(vb, [ts, pip, fs]);
-                if (!this.isMobileDevice) vb.appendChild(pn); */
-                    
+
+                /*          const appendButtons = (parent, buttons) => {
+                              buttons.forEach(button => parent.appendChild(button));
+                          };
+              
+                          if (this.isMobileDevice) {
+                              appendButtons(vb, [sm, sf, sv, gl, ban, ko, au, cm]);
+                          } else {
+                              const eDiv = document.createElement('div');
+                              eDiv.className = 'expand-video';
+                              const eBtn = createButton(remotePeerId + '_videoExpandBtn', html.expand);
+                              const eVc = document.createElement('div');
+                              eVc.className = 'expand-video-content';
+                              eDiv.appendChild(eBtn);
+                              appendButtons(eVc, [sm, sf, sv, gl, ban, ko]);
+                              eDiv.appendChild(eVc);
+                              appendButtons(vb, [au, cm]);
+                              vb.appendChild(eDiv);
+                          
+                              // Add event listener for expand button
+                              eBtn.addEventListener('click', (e) => {
+                                  e.stopPropagation();
+                                  eDiv.classList.toggle('show');
+                              });
+                          
+                              // Close expand menu when clicking outside
+                              document.addEventListener('click', () => {
+                                  eDiv.classList.remove('show');
+                              });
+                          
+                              eDiv.addEventListener('click', (e) => {
+                                  e.stopPropagation();
+                              });
+                          }
+                          
+                          appendButtons(vb, [ts, pip, fs]);
+                          if (!this.isMobileDevice) vb.appendChild(pn); */
+
 
                 const peerNameHeader = document.createElement('div');
                 peerNameHeader.className = 'peer-name-header';
@@ -2846,7 +2846,7 @@ class RoomClient {
 
                 d.appendChild(elem);
                 d.appendChild(i);
-    
+
                 if (remoteLNAddress) {
                     const zp = document.createElement('button');
                     zp.id = remoteLNAddress + '__zap';
@@ -2854,7 +2854,7 @@ class RoomClient {
                     handleLightning(zp);
                     d.appendChild(zp);
                 }
-    
+
                 d.appendChild(p);
                 d.appendChild(pm);
 
@@ -2863,7 +2863,7 @@ class RoomClient {
                         this.toggleVideoMenuBar(vb);
                     }
                 });
-                
+
                 document.body.appendChild(vb);
                 this.videoMediaContainer.appendChild(d);
                 await this.attachMediaStream(elem, stream, type, 'Consumer');
@@ -3036,88 +3036,88 @@ class RoomClient {
     setVideoOff(peer_info, remotePeer = false) {
         console.log('setVideoOff', peer_info);
         let d, vb, i, h, au, sf, sm, sv, gl, ban, ko, p, pm, pb, pv;
-    
+
         const { peer_id, peer_name, peer_audio, peer_presenter, peer_npub, peer_lnaddress, peer_url } = peer_info;
-    
+
         // Error handling: Check if peer_id is valid
         if (!peer_id) {
             console.error('Invalid peer_id in setVideoOff');
             return;
         }
-    
-        this.removeVideoOff(peer_id);
-        
-     /*   // Create main container
-        d = document.createElement('div');
-        d.className = 'Camera';
-        d.id = peer_id + '__videoOff';
-    
-        // Create video menu bar
-        vb = document.createElement('div');
-        vb.id = peer_id + 'vb';
-        vb.className = 'videoMenuBar fadein';
-    
-        // Create and append peer name header
-        const peerNameHeader = document.createElement('div');
-        peerNameHeader.className = 'peer-name-header';
-        
-        const peerNameContainer = document.createElement('div');
-        peerNameContainer.className = 'peer-name-container';
-        
-        const peerNameSpan = document.createElement('span');
-        peerNameSpan.className = 'peer-name';
-        peerNameSpan.textContent = peer_name;
-        peerNameContainer.appendChild(peerNameSpan);
-        
-        if (this.isMobileDevice) {
-            peerNameHeader.style.backgroundImage = `url('${peer_info.peer_url || image.avatar}')`;
-        } */
-        
-    
-      /*  peerNameHeader.appendChild(peerNameContainer);
-        vb.appendChild(peerNameHeader);
-    
-        // Create audio button
-        au = document.createElement('button');
-        au.id = peer_id + '__audio';
-        au.className = peer_audio ? html.audioOn : html.audioOff;
-            
-        // Create and append controls for remote peers
-        if (remotePeer) {
-            pv = document.createElement('input');
-            pv.id = 'remotePeer___' + peer_id + '___pVolume';
-            pv.type = 'range';
-            pv.min = 0;
-            pv.max = 100;
-            pv.value = 100;
-            peerNameContainer.appendChild(pv);
-                    
 
-            sf = document.createElement('button');
-            sf.id = 'remotePeer___' + peer_id + '___sendFile';
-            sf.className = html.sendFile;
-    
-            sm = document.createElement('button');
-            sm.id = 'remotePeer___' + peer_id + '___sendMsg';
-            sm.className = html.sendMsg;
-    
-            sv = document.createElement('button');
-            sv.id = 'remotePeer___' + peer_id + '___sendVideo';
-            sv.className = html.sendVideo;
-    
-            gl = document.createElement('button');
-            gl.id = 'remotePeer___' + peer_id + '___geoLocation';
-            gl.className = html.geolocation;
-    
-            ban = document.createElement('button');
-            ban.id = 'remotePeer___' + peer_id + '___ban';
-            ban.className = html.ban;
-    
-            ko = document.createElement('button');
-            ko.id = 'remotePeer___' + peer_id + '___kickOut';
-            ko.className = html.kickOut;
-    
-            // Append buttons to video menu bar  */
+        this.removeVideoOff(peer_id);
+
+        /*   // Create main container
+           d = document.createElement('div');
+           d.className = 'Camera';
+           d.id = peer_id + '__videoOff';
+       
+           // Create video menu bar
+           vb = document.createElement('div');
+           vb.id = peer_id + 'vb';
+           vb.className = 'videoMenuBar fadein';
+       
+           // Create and append peer name header
+           const peerNameHeader = document.createElement('div');
+           peerNameHeader.className = 'peer-name-header';
+           
+           const peerNameContainer = document.createElement('div');
+           peerNameContainer.className = 'peer-name-container';
+           
+           const peerNameSpan = document.createElement('span');
+           peerNameSpan.className = 'peer-name';
+           peerNameSpan.textContent = peer_name;
+           peerNameContainer.appendChild(peerNameSpan);
+           
+           if (this.isMobileDevice) {
+               peerNameHeader.style.backgroundImage = `url('${peer_info.peer_url || image.avatar}')`;
+           } */
+
+
+        /*  peerNameHeader.appendChild(peerNameContainer);
+          vb.appendChild(peerNameHeader);
+      
+          // Create audio button
+          au = document.createElement('button');
+          au.id = peer_id + '__audio';
+          au.className = peer_audio ? html.audioOn : html.audioOff;
+              
+          // Create and append controls for remote peers
+          if (remotePeer) {
+              pv = document.createElement('input');
+              pv.id = 'remotePeer___' + peer_id + '___pVolume';
+              pv.type = 'range';
+              pv.min = 0;
+              pv.max = 100;
+              pv.value = 100;
+              peerNameContainer.appendChild(pv);
+                      
+  
+              sf = document.createElement('button');
+              sf.id = 'remotePeer___' + peer_id + '___sendFile';
+              sf.className = html.sendFile;
+      
+              sm = document.createElement('button');
+              sm.id = 'remotePeer___' + peer_id + '___sendMsg';
+              sm.className = html.sendMsg;
+      
+              sv = document.createElement('button');
+              sv.id = 'remotePeer___' + peer_id + '___sendVideo';
+              sv.className = html.sendVideo;
+      
+              gl = document.createElement('button');
+              gl.id = 'remotePeer___' + peer_id + '___geoLocation';
+              gl.className = html.geolocation;
+      
+              ban = document.createElement('button');
+              ban.id = 'remotePeer___' + peer_id + '___ban';
+              ban.className = html.ban;
+      
+              ko = document.createElement('button');
+              ko.id = 'remotePeer___' + peer_id + '___kickOut';
+              ko.className = html.kickOut;
+      
+              // Append buttons to video menu bar  */
 
         d = document.createElement('div');
         d.className = 'Camera';
@@ -3161,7 +3161,7 @@ class RoomClient {
         i.className = 'videoAvatarImage center';
         i.id = peer_id + '__img';
         d.appendChild(i);
-            
+
 
         p = document.createElement('p');
         p.id = peer_id + '__name';
@@ -3192,7 +3192,7 @@ class RoomClient {
         BUTTONS.videoOff.audioVolumeInput && vb.appendChild(pv);
 
         vb.appendChild(au);
-    
+
         // Add lightning address button if available
         if (peer_lnaddress) {
             const zp = document.createElement('button');
@@ -3204,17 +3204,17 @@ class RoomClient {
             });
             d.appendChild(zp);
         }
-            
+
         // Create and append other UI elements
         p = document.createElement('p');
         p.id = peer_id + '__name';
         p.className = html.userName;
         p.innerText = (peer_presenter ? '⭐️ ' : '') + peer_name + (remotePeer ? '' : ' (me) ');
-    
+
         h = document.createElement('i');
         h.id = peer_id + '__hand';
         h.className = html.userHand;
-    
+
         pm = document.createElement('div');
         pb = document.createElement('div');
         pm.id = peer_id + '__pitchMeter';
@@ -3223,7 +3223,7 @@ class RoomClient {
         pb.className = 'bar';
         pb.style.height = '1%';
         pm.appendChild(pb);
-    
+
         d.appendChild(p);
         d.appendChild(h);
         d.appendChild(pm);
@@ -3231,7 +3231,7 @@ class RoomClient {
 
         document.body.appendChild(vb);
         this.videoMediaContainer.appendChild(d);
-    
+
         // Set up event handlers
         BUTTONS.videoOff.muteAudioButton && this.handleAU(au.id);
 
@@ -3269,7 +3269,7 @@ class RoomClient {
             this.setTippy(ko.id, 'Eject', 'bottom');
         }
         remotePeer ? this.setPeerAudio(peer_id, peer_audio) : this.setIsAudio(peer_id, peer_audio);
-    
+
         // Update the event listener
         d.addEventListener('click', (event) => {
             if (!event.target.closest('.' + html.zapIcon.split(' ')[0])) {
@@ -3281,7 +3281,7 @@ class RoomClient {
         // This was close button for the menu bar which may be needed after merge.
         // this.addCloseButton(peerNameHeader, vb);
 
-    
+
         console.log('[setVideoOff] Video-element-count', this.videoMediaContainer.childElementCount);
         wbUpdate();
 
@@ -3289,7 +3289,7 @@ class RoomClient {
 
         this.handleHideMe();
     }
-    
+
     // Helper function to handle Nostr button click
     handleNostrClick(peer_npub) {
         const iframe = getProfile(peer_npub);
@@ -3309,17 +3309,17 @@ class RoomClient {
             showConfirmButton: false,
         });
     }
-    
+
     toggleVideoMenuBar(menuBarElement, options = {}) {
         if (!menuBarElement) {
             console.warn('toggleVideoMenuBar called with undefined menuBarElement');
             return;
         }
-        
+
         const { isMobile = this.isMobileDevice, closeOthers = true } = options;
-    
+
         const isActive = menuBarElement.classList.contains('active');
-    
+
         if (isActive) {
             // Close the menu bar
             menuBarElement.classList.remove('active');
@@ -3353,13 +3353,13 @@ class RoomClient {
             }
         }
     }
-    
+
     closeVideoMenuBar(peer_id) {
         const videoMenuBar = this.findVideoMenuBar(peer_id);
         if (!videoMenuBar) return;
-    
+
         videoMenuBar.classList.remove('active');
-        
+
         if (this.isMobileDevice) {
             document.body.style.overflow = '';
             videoMenuBar.style.transition = 'transform 0.3s, opacity 0.3s';
@@ -3370,11 +3370,11 @@ class RoomClient {
             }, 300);
         }
     }
-    
+
     findMenuBar(selector) {
         return document.querySelector(selector);
     }
-            
+
     closeAllVideoMenuBars() {
         const allMenuBars = document.querySelectorAll('.videoMenuBar.active');
         allMenuBars.forEach(menuBar => {
@@ -3384,7 +3384,7 @@ class RoomClient {
             }
         });
     }
-    
+
     closeOtherMenuBars(exceptMenuBar) {
         const allMenuBars = document.querySelectorAll('.videoMenuBar.active');
         allMenuBars.forEach(bar => {
@@ -3397,7 +3397,7 @@ class RoomClient {
             }
         });
     }
-        
+
     addCloseButton(containerElement, menuBarElement) {
         // Create close button
         const closeBtn = document.createElement('div');
@@ -3409,27 +3409,27 @@ class RoomClient {
         });
         containerElement.appendChild(closeBtn);
     }
-        
+
     addLowLatencySwipeListener() {
         let startY, currentY;
         let isDragging = false;
         let activeMenuBar = null;
-    
+
         const handleTouchStart = (e) => {
             if (e.target.type === 'range') return;
-    
+
             activeMenuBar = e.target.closest('.videoMenuBar');
             if (!activeMenuBar) return;
-    
+
             startY = currentY = e.touches[0].clientY;
             isDragging = true;
         };
-    
+
         const handleTouchMove = (e) => {
             if (!isDragging || !activeMenuBar) return;
             e.preventDefault();
             currentY = e.touches[0].clientY;
-    
+
             const deltaY = currentY - startY;
             if (deltaY > 0) {
                 const progress = Math.min(deltaY / activeMenuBar.offsetHeight, 1);
@@ -3438,13 +3438,13 @@ class RoomClient {
                 activeMenuBar.style.opacity = opacity.toFixed(2);
             }
         };
-    
+
         const handleTouchEnd = (e) => {
             if (!isDragging || !activeMenuBar) return;
-    
+
             isDragging = false;
             const finalDeltaY = currentY - startY;
-    
+
             if (finalDeltaY > activeMenuBar.offsetHeight / 4) {
                 this.toggleVideoMenuBar(activeMenuBar);
             } else {
@@ -3457,15 +3457,15 @@ class RoomClient {
                     }
                 }, 300);
             }
-    
+
             activeMenuBar = null;
         };
-    
+
         this.videoMediaContainer.addEventListener('touchstart', handleTouchStart);
         this.videoMediaContainer.addEventListener('touchmove', handleTouchMove, { passive: false });
         this.videoMediaContainer.addEventListener('touchend', handleTouchEnd);
     }
-    
+
     removeVideoOff(peer_id) {
         const pvOff = this.getId(peer_id + '__videoOff');
         const vb = this.getId(peer_id + '__vb');
@@ -4155,7 +4155,7 @@ class RoomClient {
             }
         }
     }
-    
+
     toggleFullScreen(elem = null) {
         if (this.isDocumentOnFullScreen) return;
         const element = elem ? elem : document.documentElement;
@@ -4167,7 +4167,7 @@ class RoomClient {
         }
         if (elem === null) this.isVideoOnFullScreen = fullScreen;
     }
-    
+
 
     isFullScreen() {
         const elementFullScreen =
@@ -4192,7 +4192,7 @@ class RoomClient {
             this.userLog('warning', 'Full screen mode not supported by this browser on this device', 'top-end');
         }
     }
-    
+
 
     goOutFullscreen(element) {
         if (document.exitFullscreen) document.exitFullscreen();
@@ -4204,7 +4204,7 @@ class RoomClient {
             this.userLog('info', 'Tap "Done" to exit fullscreen mode on iOS devices', 'top-end');
         }
     }
-    
+
     handleFS(elemId, fsId) {
         let videoPlayer = this.getId(elemId);
         let btnFs = this.getId(fsId);
@@ -4243,7 +4243,7 @@ class RoomClient {
                 this.isVideoOnFullScreen = false;
                 videoPlayer.style.pointerEvents = 'auto';
             });
-        
+
         }
     }
 
@@ -4876,18 +4876,18 @@ class RoomClient {
 
     wrapLongStrings(message) {
         const allowedPrefixes = ['npub', 'nprofile', 'note', 'nevent', 'nrelay', 'naddr',]; // You can add more prefixes here
-    
+
         try {
             const words = message.split(' ');
             const wrappedWords = words.map(word => {
-                            // Ignore words that start with 'https'
+                // Ignore words that start with 'https'
                 if (word.startsWith('https')) {
                     return word; // Ignore this word, return it as is
                 }
 
                 // Check if the word starts with any of the allowed prefixes
                 const hasPrefix = allowedPrefixes.some(prefix => word.startsWith(prefix));
-    
+
                 if (hasPrefix && word.length > 30) {
                     // If it has a prefix and is longer than 30, wrap it in quotes
                     return `"${word}"`;
@@ -4896,20 +4896,20 @@ class RoomClient {
                     alert(`The entered text "${word}" is too long and cannot be processed for security reasons.`);
                     throw new Error(`Text "${word}" exceeds allowed length without a valid prefix.`);
                 }
-    
+
                 // Return the word unmodified if none of the above conditions are met
                 return word;
             });
-    
+
             // Join the modified words back into a string and return
             return wrappedWords.join(' ');
-    
+
         } catch (error) {
             console.error('An error occurred: ', error.message);
             return null; // or you can return a different message if needed
         }
     }
-    
+
 
     sendMessage() {
         // comment out for testing,  allow send if no participants
@@ -4960,7 +4960,7 @@ class RoomClient {
             return this.cleanMessage();
         }
         this.peer_name = filterXSS(this.peer_name);
-    
+
         const data = {
             room_id: this.room_id,
             peer_name: this.peer_name,
@@ -4970,7 +4970,7 @@ class RoomClient {
             peer_msg: peer_msg,
             peer_info: this.peer_info,
         };
-        
+
         if (isChatGPTOn) {
             console.log('Send message:', data);
             this.socket.emit('message', data);
@@ -5131,7 +5131,7 @@ class RoomClient {
 
     setMsgAvatar(avatar, peerName, peerInfo) {
         let avatarImg;
-    
+
         if (peerInfo && peerInfo.peer_url) {
             // Use the avatar URL from peerInfo
             avatarImg = peerInfo.peer_url;
@@ -5142,7 +5142,7 @@ class RoomClient {
             // Generate an avatar SVG based on peerName
             avatarImg = this.genAvatarSvg(peerName, 32);
         }
-    
+
         // Set the avatar image for the appropriate side
         if (avatar === 'left') {
             this.leftMsgAvatar = avatarImg;
@@ -5150,7 +5150,7 @@ class RoomClient {
             this.rightMsgAvatar = avatarImg;
         }
     }
-        
+
     appendMessage(side, img, fromName, fromId, msg, toId, toName, peerInfo) {
         //
         const getSide = filterXSS(side);
@@ -5313,7 +5313,7 @@ class RoomClient {
     isHtml(str) {
         var a = document.createElement('div');
         a.innerHTML = str;
-        for (var c = a.childNodes, i = c.length; i--; ) {
+        for (var c = a.childNodes, i = c.length; i--;) {
             if (c[i].nodeType == 1) return true;
         }
         return false;
@@ -5322,12 +5322,12 @@ class RoomClient {
     isValidHttpURL(input) {
         const pattern = new RegExp(
             '^(https?:\\/\\/)?' + // protocol
-                '((([a-z\\d]([a-z\\d-]*[a-z\\d])*)\\.)+[a-z]{2,}|' + // domain name
-                'localhost|' + // allow localhost
-                '((\\d{1,3}\\.){3}\\d{1,3}))' + // OR ip (v4) address
-                '(\\:\\d+)?(\\/[-a-z\\d%_.~+]*)*' + // port and path
-                '(\\?[;&a-z\\d%_.~+=-]*)?' + // query string
-                '(\\#[-a-z\\d_]*)?$',
+            '((([a-z\\d]([a-z\\d-]*[a-z\\d])*)\\.)+[a-z]{2,}|' + // domain name
+            'localhost|' + // allow localhost
+            '((\\d{1,3}\\.){3}\\d{1,3}))' + // OR ip (v4) address
+            '(\\:\\d+)?(\\/[-a-z\\d%_.~+]*)*' + // port and path
+            '(\\?[;&a-z\\d%_.~+=-]*)?' + // query string
+            '(\\#[-a-z\\d_]*)?$',
             'i',
         ); // fragment locator
         return pattern.test(input);
@@ -7218,48 +7218,87 @@ class RoomClient {
                     if (popup) this.roomStatus(action);
                     break;
                 case 'lock':
-                    if (room_password) {
-                        this.socket
-                            .request('getPeerCounts')
-                            .then(async (res) => {
-                                // Only the presenter can lock the room
-                                if (isPresenter || res.peerCounts == 1) {
-                                    isPresenter = true;
-                                    this.peer_info.peer_presenter = isPresenter;
-                                    this.getId('isUserPresenter').innerText = isPresenter;
-                                    data.password = room_password;
-                                    this.socket.emit('roomAction', data);
-                                    if (popup) this.roomStatus(action);
-                                }
-                            })
-                            .catch((err) => {
-                                console.log('Get peer counts:', err);
-                            });
-                    } else {
-                        Swal.fire({
-                            allowOutsideClick: false,
-                            allowEscapeKey: false,
-                            showDenyButton: true,
-                            background: swalBackground,
-                            imageUrl: image.locked,
-                            input: 'text',
-                            inputPlaceholder: 'Set Room password',
-                            confirmButtonText: `OK`,
-                            denyButtonText: `Cancel`,
-                            showClass: { popup: 'animate__animated animate__fadeInDown' },
-                            hideClass: { popup: 'animate__animated animate__fadeOutUp' },
-                            inputValidator: (pwd) => {
-                                if (!pwd) return 'Please enter the Room password';
-                                this.RoomPassword = pwd;
-                            },
-                        }).then((result) => {
-                            if (result.isConfirmed) {
-                                data.password = this.RoomPassword;
-                                this.socket.emit('roomAction', data);
-                                this.roomStatus(action);
+                    // Payment Check
+                    this.socket
+                        .request('createLockPayment')
+                        .then(async (response) => {
+                            // Payment Verification
+                            const verifyPayment = async () => {
+                                const result = await this.socket.request('checkLockPayment', {
+                                    paymentHash: response.paymentHash,
+                                });
+                                return result;
+                            };
+
+                            try {
+                                const result = await window.moduleFunctions.payInvoice(
+                                    response.invoice,
+                                    verifyPayment,
+                                );
+                                // if result.preimage ...
+                            } catch (err) {
+                                // User cancelled payment
+                                return;
                             }
+
+                            // Proceed to Lock
+                            if (room_password) {
+                                this.socket
+                                    .request('getPeerCounts')
+                                    .then(async (res) => {
+                                        // Only the presenter can lock the room
+                                        if (isPresenter || res.peerCounts == 1) {
+                                            isPresenter = true;
+                                            this.peer_info.peer_presenter = isPresenter;
+                                            this.getId('isUserPresenter').innerText = isPresenter;
+                                            data.password = room_password;
+                                            this.socket.emit('roomAction', data);
+                                            if (popup) this.roomStatus(action); // this.roomStatus usage check
+                                        }
+                                    })
+                                    .catch((err) => {
+                                        console.log('Get peer counts:', err);
+                                    });
+                            } else {
+                                Swal.fire({
+                                    allowOutsideClick: false,
+                                    allowEscapeKey: false,
+                                    showDenyButton: true,
+                                    background: swalBackground,
+                                    imageUrl: image.locked,
+                                    input: 'text',
+                                    inputPlaceholder: 'Set Room password',
+                                    confirmButtonText: `OK`,
+                                    denyButtonText: `Cancel`,
+                                    showClass: { popup: 'animate__animated animate__fadeInDown' },
+                                    hideClass: { popup: 'animate__animated animate__fadeOutUp' },
+                                    inputValidator: (pwd) => {
+                                        if (!pwd) return 'Please enter the Room password';
+                                        this.RoomPassword = pwd;
+                                    },
+                                }).then((result) => {
+                                    if (result.isConfirmed) {
+                                        data.password = this.RoomPassword;
+                                        this.socket.emit('roomAction', data);
+                                        this.roomStatus(action);
+                                    }
+                                });
+                            }
+                        })
+                        .catch((err) => {
+                            console.error('Lock payment error:', err);
+                            Swal.fire({
+                                allowOutsideClick: false,
+                                allowEscapeKey: false,
+                                background: swalBackground,
+                                imageUrl: image.locked,
+                                title: 'Lock Room Payment',
+                                text: typeof err === 'string' ? err : 'Failed to create payment. Please try again.',
+                                confirmButtonText: `OK`,
+                                showClass: { popup: 'animate__animated animate__fadeInDown' },
+                                hideClass: { popup: 'animate__animated animate__fadeOutUp' },
+                            });
                         });
-                    }
                     break;
                 case 'unlock':
                     this.socket.emit('roomAction', data);
@@ -7354,10 +7393,10 @@ class RoomClient {
                 active
                     ? this.userLog('info', `${icons.chat} Chat will be shown, when you receive a message`, 'top-end')
                     : this.userLog(
-                          'info',
-                          `${icons.chat} Chat not will be shown, when you receive a message`,
-                          'top-end',
-                      );
+                        'info',
+                        `${icons.chat} Chat not will be shown, when you receive a message`,
+                        'top-end',
+                    );
                 break;
             case 'speechMessages':
                 this.userLog('info', `${icons.speech} Speech incoming messages ${status}`, 'top-end');
@@ -7365,15 +7404,15 @@ class RoomClient {
             case 'transcriptShowOnMsg':
                 active
                     ? this.userLog(
-                          'info',
-                          `${icons.transcript} Transcript will be shown, when you receive a message`,
-                          'top-end',
-                      )
+                        'info',
+                        `${icons.transcript} Transcript will be shown, when you receive a message`,
+                        'top-end',
+                    )
                     : this.userLog(
-                          'info',
-                          `${icons.transcript} Transcript not will be shown, when you receive a message`,
-                          'top-end',
-                      );
+                        'info',
+                        `${icons.transcript} Transcript not will be shown, when you receive a message`,
+                        'top-end',
+                    );
                 break;
             case 'video_start_privacy':
                 this.userLog(
@@ -8355,9 +8394,8 @@ class RoomClient {
             switch (action) {
                 case 'ban':
                     if (peerActionAllowed) {
-                        const message = `Will ban you from the room${
-                            msg ? `<br><br><span class="red">Reason: ${msg}</span>` : ''
-                        }`;
+                        const message = `Will ban you from the room${msg ? `<br><br><span class="red">Reason: ${msg}</span>` : ''
+                            }`;
                         this.exit(true);
                         this.sound(action);
                         this.peerActionProgress(from_peer_name, message, 5000, action);
@@ -8365,9 +8403,8 @@ class RoomClient {
                     break;
                 case 'eject':
                     if (peerActionAllowed) {
-                        const message = `Will eject you from the room${
-                            msg ? `<br><br><span class="red">Reason: ${msg}</span>` : ''
-                        }`;
+                        const message = `Will eject you from the room${msg ? `<br><br><span class="red">Reason: ${msg}</span>` : ''
+                            }`;
                         this.exit(true);
                         this.sound(action);
                         this.peerActionProgress(from_peer_name, message, 5000, action);
@@ -9256,12 +9293,12 @@ class RoomClient {
                             img.setAttribute(
                                 'avatarData',
                                 avatarUi.id +
-                                    '|' +
-                                    avatar.name +
-                                    '|' +
-                                    avatarUi.default_voice.free.voice_id +
-                                    '|' +
-                                    avatarUi.video_url.grey,
+                                '|' +
+                                avatar.name +
+                                '|' +
+                                avatarUi.default_voice.free.voice_id +
+                                '|' +
+                                avatarUi.video_url.grey,
                             );
                             img.onclick = () => {
                                 const avatarImages = document.querySelectorAll('.avatarImg');

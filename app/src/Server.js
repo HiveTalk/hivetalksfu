@@ -278,6 +278,8 @@ const authHost = new Host(); // Authenticated IP by Login
 
 const roomList = new Map(); // All Rooms
 
+const pendingLockCharges = new Map(); // Track lock charges: socket.id -> { chargeId, roomId, expectedMsats, expiresAt }
+
 const presenters = {}; // Collect presenters grp by roomId
 
 const streams = {}; // Collect all rtmp streams
@@ -385,8 +387,23 @@ function startServer() {
         const ZAP_GOAL_SATS = parseInt(process.env.ZAP_GOAL_SATS);
         const API_URL = process.env.ZAP_GOAL_API_URL;
         
+        // Only enforce zap goal on the last day of the month
+        const now = new Date();
+        const today = now.getDate();
+        const lastDayOfMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate();
+        const isLastDay = today === lastDayOfMonth;
+
+        if (!isLastDay) {
+            log.info('[ZapGoal] ⏭️ Not the last day of the month, bypassing zap goal check', {
+                today: today,
+                lastDayOfMonth: lastDayOfMonth,
+                path: req.path,
+            });
+            return next();
+        }
+
         // Log that middleware is executing
-        log.info('[ZapGoal] ===== Middleware executing =====', {
+        log.info('[ZapGoal] ===== Middleware executing (last day of month) =====', {
             path: req.path,
             url: req.url,
             method: req.method,
@@ -1379,6 +1396,79 @@ function startServer() {
         });
     });
 
+    // ZBD Payment Endpoints
+    app.post('/api/zbd/charge', async (req, res) => {
+        const { amount, description } = req.body;
+        const zbdApiKey = process.env.ZBD_API_KEY;
+
+        if (!zbdApiKey) {
+            log.error('ZBD charge request failed: ZBD_API_KEY not configured');
+            return res.status(503).json({ error: 'Payment service unavailable' });
+        }
+
+        const parsedAmount = parseInt(amount);
+        if (!Number.isFinite(parsedAmount) || parsedAmount < 1 || parsedAmount > 1_000_000) {
+            return res.status(400).json({ error: 'Invalid amount' });
+        }
+
+        const safeDescription = typeof description === 'string' ? description.slice(0, 200) : 'Zap Hivetalk';
+
+        try {
+            const payload = {
+                expiresIn: 300,
+                amount: (parsedAmount * 1000).toString(), // millisats
+                description: safeDescription,
+                internalId: `zap-${Date.now()}`,
+            };
+
+            log.debug('ZBD charge request (REST)', { amount: parsedAmount, internalId: payload.internalId });
+
+            const response = await axios.post(
+                'https://api.zebedee.io/v0/charges',
+                payload,
+                {
+                    headers: { apikey: zbdApiKey, 'Content-Type': 'application/json' },
+                }
+            );
+
+            const { invoice, id } = response.data.data;
+            const request = invoice ? invoice.request : null;
+
+            if (!request) {
+                log.error('ZBD charge response missing invoice', { internalId: payload.internalId });
+                return res.status(500).json({ error: 'Failed to generate invoice' });
+            }
+
+            log.debug('ZBD charge created (REST)', { chargeId: id, internalId: payload.internalId });
+            res.json({ invoice: request, paymentHash: id });
+        } catch (err) {
+            log.error('ZBD Create Charge error (REST)', { message: err.message });
+            res.status(500).json({ error: 'Failed to create invoice' });
+        }
+    });
+
+    app.get('/api/zbd/charge/:paymentHash', async (req, res) => {
+        const { paymentHash } = req.params;
+        const zbdApiKey = process.env.ZBD_API_KEY;
+
+        if (!zbdApiKey) return res.json({ paid: false });
+
+        if (!paymentHash || !/^[a-f0-9-]{8,64}$/i.test(paymentHash)) {
+            return res.status(400).json({ paid: false, error: 'Invalid payment identifier' });
+        }
+
+        try {
+            const response = await axios.get(`https://api.zebedee.io/v0/charges/${paymentHash}`, {
+                headers: { apikey: zbdApiKey },
+            });
+            const { status } = response.data.data;
+            res.json({ paid: status === 'completed', status });
+        } catch (err) {
+            log.error('ZBD Check Charge error (REST)', { message: err.message });
+            res.json({ paid: false });
+        }
+    });
+
     // API endpoint for room ownership check
     // app.post('/api/check-room-owner', async (req, res) => {
     //     try {
@@ -2211,6 +2301,103 @@ function startServer() {
             data.broadcast ? room.broadCast(socket.id, 'cmd', data) : room.sendTo(data.peer_id, 'cmd', data);
         });
 
+
+        socket.on('createLockPayment', async (_, callback) => {
+            if (!roomExists(socket)) return callback({ error: 'Room not found' });
+
+            const priceSats = parseInt(process.env.ROOM_LOCK_PRICE_SATS || 1000);
+            const zbdApiKey = process.env.ZBD_API_KEY;
+
+            if (!zbdApiKey) {
+                log.error('createLockPayment failed: ZBD_API_KEY not configured', { socket_id: socket.id, room_id: socket.room_id });
+                return callback({ error: 'Payment service unavailable' });
+            }
+
+            const expectedMsats = (priceSats * 1000).toString();
+
+            try {
+                const payload = {
+                    expiresIn: 300,
+                    amount: expectedMsats, // millisats
+                    description: `Lock Room ${socket.room_id}`,
+                    internalId: `lock-${socket.room_id}-${Date.now()}`,
+                };
+
+                log.debug('createLockPayment request', { socket_id: socket.id, room_id: socket.room_id, amount: priceSats, internalId: payload.internalId });
+
+                const response = await axios.post(
+                    'https://api.zebedee.io/v0/charges',
+                    payload,
+                    {
+                        headers: { apikey: zbdApiKey, 'Content-Type': 'application/json' },
+                    },
+                );
+
+                const { invoice, id } = response.data.data;
+                const request = invoice ? invoice.request : null;
+
+                if (!request) {
+                    log.error('createLockPayment: ZBD response missing invoice', { socket_id: socket.id, room_id: socket.room_id, internalId: payload.internalId });
+                    return callback({ error: 'Failed to generate invoice' });
+                }
+
+                pendingLockCharges.set(socket.id, {
+                    chargeId: id,
+                    roomId: socket.room_id,
+                    expectedMsats,
+                    internalId: payload.internalId,
+                    expiresAt: Date.now() + 300_000,
+                });
+
+                log.debug('createLockPayment success', { socket_id: socket.id, room_id: socket.room_id, chargeId: id });
+                callback({ invoice: request, paymentHash: id });
+            } catch (err) {
+                log.error('createLockPayment error', { socket_id: socket.id, room_id: socket.room_id, message: err.message });
+                callback({ error: 'Failed to create invoice' });
+            }
+        });
+
+        socket.on('checkLockPayment', async ({ paymentHash }, callback) => {
+            const zbdApiKey = process.env.ZBD_API_KEY;
+            if (!zbdApiKey) return callback({ paid: false });
+
+            if (!paymentHash || !/^[a-f0-9-]{8,64}$/i.test(paymentHash)) {
+                log.warn('checkLockPayment: invalid paymentHash', { socket_id: socket.id });
+                return callback({ paid: false });
+            }
+
+            const pending = pendingLockCharges.get(socket.id);
+            if (!pending || pending.chargeId !== paymentHash || pending.roomId !== socket.room_id) {
+                log.warn('checkLockPayment: paymentHash mismatch or no pending charge', { socket_id: socket.id, room_id: socket.room_id });
+                return callback({ paid: false });
+            }
+
+            try {
+                const response = await axios.get(`https://api.zebedee.io/v0/charges/${paymentHash}`, {
+                    headers: { apikey: zbdApiKey },
+                });
+                const chargeData = response.data.data;
+                const { status, amount, internalId } = chargeData;
+
+                if (
+                    status === 'completed' &&
+                    amount === pending.expectedMsats &&
+                    internalId === pending.internalId
+                ) {
+                    const peer = getPeer(socket);
+                    if (peer) peer.hasPaidLock = true;
+                    pendingLockCharges.delete(socket.id);
+                    log.debug('checkLockPayment: verified', { socket_id: socket.id, room_id: socket.room_id, chargeId: paymentHash });
+                    callback({ paid: true });
+                } else {
+                    callback({ paid: false });
+                }
+            } catch (err) {
+                log.error('checkLockPayment error', { socket_id: socket.id, message: err.message });
+                callback({ paid: false });
+            }
+        });
+
         socket.on('roomAction', async (dataObject) => {
             if (!roomExists(socket)) return;
 
@@ -2234,6 +2421,16 @@ function startServer() {
                     break;
                 case 'lock':
                     if (!isPresenter) return;
+
+                    // Payment Check
+                    const peer = getPeer(socket);
+                    const zbdApiKey = process.env.ZBD_API_KEY;
+                    if (zbdApiKey && !peer.hasPaidLock) {
+                        log.warn('roomAction lock rejected: payment not verified', { socket_id: socket.id, room_id: socket.room_id });
+                        room.sendTo(socket.id, 'roomAction', 'lockRejected');
+                        return;
+                    }
+
                     if (!room.isLocked()) {
                         room.setLocked(true, data.password);
                         room.broadCast(socket.id, 'roomAction', data.action);
@@ -2252,6 +2449,11 @@ function startServer() {
                     break;
                 case 'unlock':
                     if (!isPresenter) return;
+                    
+                    // Reset payment verification on unlock so they must pay again to lock
+                    const peerUnlock = getPeer(socket);
+                    if (peerUnlock) peerUnlock.hasPaidLock = false;
+
                     room.setLocked(false);
                     room.broadCast(socket.id, 'roomAction', data.action);
                     break;
@@ -3130,6 +3332,8 @@ function startServer() {
         });
 
         socket.on('disconnect', async () => {
+            pendingLockCharges.delete(socket.id);
+
             if (!roomExists(socket)) return;
 
             const { room, peer } = getRoomAndPeer(socket);

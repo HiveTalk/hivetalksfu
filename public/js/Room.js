@@ -33,6 +33,7 @@ let defaultRelays = [
     'wss://relay.primal.net',
     'wss://relay.damus.io',
     'wss://nos.lol',
+    'wss://purplepag.es',
 ];
 
 const socket = io({ transports: ['websocket'] });
@@ -221,7 +222,7 @@ let peer_npub = null;
 let peer_lnaddress = null;
 
 let peer_info = null;
-let isSidebarCollapsed = null; 
+let isSidebarCollapsed = null;
 
 let isPushToTalkActive = false;
 let isSpaceDown = false;
@@ -295,75 +296,80 @@ document.addEventListener('DOMContentLoaded', function () {
     // check localstorage if actually logged in before
     console.log('CHECK IF LOGGED IN on Nostr or Previously in LocalStorage');
 
-    try {
-        const userInfo = JSON.parse(window.localStorage.getItem('__nostrlogin_accounts'));
+    (async () => {
+        try {
+            const userInfo = JSON.parse(window.localStorage.getItem('__nostrlogin_accounts'));
 
-        if (userInfo && userInfo.length > 0) {
-            // Do something with the userInfo
-            const user = userInfo[0];
-            peer_name = user.name;
-            if (user.name !== undefined && user.name.length > 30) {
-                // truncate peer_name to be < 30 chars
-                peer_name = truncateString(user.name, 29);
-            }
-            peer_pubkey = user.pubkey;
-            window.localStorage.peer_pubkey = user.pubkey;
+            if (userInfo && userInfo.length > 0) {
+                // Do something with the userInfo
+                const user = userInfo[0];
+                peer_name = user.name;
+                if (user.name !== undefined && user.name.length > 30) {
+                    // truncate peer_name to be < 30 chars
+                    peer_name = truncateString(user.name, 29);
+                }
+                peer_pubkey = user.pubkey;
+                window.localStorage.peer_pubkey = user.pubkey;
 
-            //signSampleEvent(peer_pubkey); // send a sample event to the test relay
+                //signSampleEvent(peer_pubkey); // send a sample event to the test relay
 
-            peer_npub = nip19.npubEncode(user.pubkey);
-            window.localStorage.peer_npub = peer_npub;
+                peer_npub = nip19.npubEncode(user.pubkey);
+                window.localStorage.peer_npub = peer_npub;
 
-            // if there is no peer_name but we have a pubkey, use first 5 chars
-            if (user.name === undefined) {
-                // offer to set a username as the first 7 chars of the pubkey
-                peer_name = truncateString(user.pubkey + '...', 10);
-            }
-            window.localStorage.peer_name = user.name;
+                // if there is no peer_name but we have a pubkey, use first 5 chars
+                if (user.name === undefined) {
+                    // offer to set a username as the first 7 chars of the pubkey
+                    peer_name = truncateString(user.pubkey + '...', 10);
+                }
+                window.localStorage.peer_name = user.name;
 
-            peer_url = user.picture;
-            window.localStorage.peer_url = user.picture;
-            console.log('checkUserInfo :', user.pubkey, user.name, user.picture, peer_npub);
+                peer_url = user.picture;
+                window.localStorage.peer_url = user.picture;
+                console.log('checkUserInfo :', user.pubkey, user.name, user.picture, peer_npub);
 
-            if (peer_name && peer_pubkey) {
-                console.log('discovery complete: checkUserInfo: ', peer_name, peer_pubkey, peer_url);
+                if (peer_name && peer_pubkey) {
+                    console.log('discovery complete: checkUserInfo: ', peer_name, peer_pubkey, peer_url);
 
-                // try to get lightning address
-                loggedIn = getInfoAndContinue();
-                console.log('checking if loggedIn pre clearInterval: ', loggedIn);
+                    // Continue immediately with cached profile; do not block UI on relay fetch.
+                    loggedIn = true;
+                    console.log('checking if loggedIn pre clearInterval: ', loggedIn);
+                    continueNostrLogin('nostr');
 
-                if (loggedIn) {
-                    // clearInterval(checkInterval);      // Then clear the interval
-                    continueNostrLogin('nostr'); // And continue with the next step
+                    // Fetch extra profile/ln data in background only when cache is incomplete.
+                    if (!peer_url || !peer_name) {
+                        getInfoAndContinue().catch((error) => {
+                            console.error('Background profile fetch failed:', error);
+                        });
+                    }
+                }
+            } else {
+                // look for peer_name and peer lnaddress from previous local storage session
+                // if not found, offer to set a username
+                if (window.localStorage.peer_name) {
+                    peer_name = window.localStorage.peer_name;
+                    if (window.localStorage.peer_url) {
+                        peer_url = window.localStorage.peer_url;
+                    }
+                    if (window.localStorage.peer_lnaddress) {
+                        peer_lnaddress = window.localStorage.peer_lnaddress;
+                    }
+                    console.log('adopt prior localStorage ', peer_name, peer_pubkey, peer_url);
+                    loggedIn = true; // set logged in is now true
+                    continueNostrLogin('priorlocalStorage'); // And continue with the next step
+                    // if the user doesn't want the above settings, they can change it
+                    // during the continueNostrLogin() flow
                 }
             }
-        } else {
-            // look for peer_name and peer lnaddress from previous local storage session
-            // if not found, offer to set a username
-            if (window.localStorage.peer_name) {
-                peer_name = window.localStorage.peer_name;
-                if (window.localStorage.peer_url) {
-                    peer_url = window.localStorage.peer_url;
-                }
-                if (window.localStorage.peer_lnaddress) {
-                    peer_lnaddress = window.localStorage.peer_lnaddress;
-                }
-                console.log('adopt prior localStorage ', peer_name, peer_pubkey, peer_url);
-                loggedIn = true; // set logged in is now true
-                continueNostrLogin('priorlocalStorage'); // And continue with the next step
-                // if the user doesn't want the above settings, they can change it
-                // during the continueNostrLogin() flow
-            }
+        } catch (error) {
+            console.log('Error parsing userInfo:', error);
         }
-    } catch (error) {
-        console.log('Error parsing userInfo:', error);
-    }
-    // if both of the above methods fail then we try nostr or random login
-    if (!loggedIn) {
-        console.log(' no priornostr login, try setting random username');
-        checkInterval = setInterval(checkUserInfo, 1000);
-        nostrLogin();
-    }
+        // if both of the above methods fail then we try nostr or random login
+        if (!loggedIn) {
+            console.log(' no priornostr login, try setting random username');
+            checkInterval = setInterval(checkUserInfo, 1000);
+            nostrLogin();
+        }
+    })();
 });
 
 // Check every 500 milliseconds (0.5 second)
@@ -434,12 +440,10 @@ async function getNostrProfile(pubkey, relays) {
         let resolved = false;
         let h = pool.subscribeMany(
             relays,
-            [
-                {
-                    kinds: [0],
-                    authors: [pubkey],
-                },
-            ],
+            {
+                kinds: [0],
+                authors: [pubkey],
+            },
             {
                 onevent(event) {
                     if (event && event.kind === 0 && event.pubkey === pubkey && !resolved) {
@@ -474,6 +478,15 @@ async function getNostrProfile(pubkey, relays) {
                         // login fetch info now complete, set it to be true to exit login loop
                         // even if there is no lightning address, that's ok, we are logged in.
                         loggedIn = true;
+                        // Update __nostrlogin_accounts with fetched profile info
+                        try {
+                            const accts = JSON.parse(window.localStorage.getItem('__nostrlogin_accounts') || '[]');
+                            if (accts.length > 0) {
+                                accts[0].name = peer_name;
+                                accts[0].picture = peer_url;
+                                window.localStorage.setItem('__nostrlogin_accounts', JSON.stringify(accts));
+                            }
+                        } catch (e) { /* ignore */ }
                         resolve(true);
                     }
                 },
@@ -501,10 +514,10 @@ async function getInfoAndContinue() {
     try {
         // fetch preferred relays as an option
         // for now, we usedefault relays instead of fetching preferred relays
-        await getNostrProfile(peer_pubkey, defaultRelays); // Wait for getNostrProfile to complete
-        return true;
+        return await getNostrProfile(peer_pubkey, defaultRelays);
     } catch (error) {
         console.error('Error in getInfo:', error);
+        return false;
     }
 }
 
@@ -577,7 +590,9 @@ async function loadUser() {
                                 window.localStorage.peer_name = peer_name;
                             }
                         } else {
-                            console.log('No user info available (empty array)');
+                            console.log('No user info from __nostrlogin_accounts, storing extension pubkey');
+                            const accounts = [{ pubkey: pubkey }];
+                            window.localStorage.setItem('__nostrlogin_accounts', JSON.stringify(accounts));
                         }
                     } catch (error) {
                         console.log('Error parsing userInfo:', error);
@@ -600,7 +615,7 @@ function truncateString(str, maxLength) {
     return str;
 }
 
-function checkUserInfo() {
+async function checkUserInfo() {
     console.log('....inside checkUserInfo....' + cycleCount);
     cycleCount++;
 
@@ -667,12 +682,14 @@ function checkUserInfo() {
             if (peer_name && peer_pubkey) {
                 console.log('discovery complete: checkUserInfo: ', peer_name, peer_pubkey, peer_url);
 
-                // try to get lightning address
-                getInfoAndContinue();
-                console.log('checking if loggedIn pre clearInteraval: ', loggedIn);
+                // stop polling while we fetch profile from relays
+                clearInterval(checkInterval);
+
+                // try to get lightning address and profile from relays
+                loggedIn = await getInfoAndContinue();
+                console.log('checking if loggedIn pre clearInterval: ', loggedIn);
 
                 if (loggedIn) {
-                    clearInterval(checkInterval); // Then clear the interval
                     continueNostrLogin('nostr'); // And continue with the next step
                 }
             }
@@ -736,8 +753,8 @@ function nostrLogin() {
         allowEscapeKey: false,
         background: swalBackground,
         title: '<img src="../images/hivelogo50x200.svg"/>',
-        html: 'Welcome! <div>Questions? see the <a href="/faq" target="_blank">FAQ</a> or '+ 
-        '<a href="https://discord.com/channels/1315483857650319441/1315483858275405878">Discord Chat.</a></div></br>',
+        html: 'Welcome! <div>Questions? see the <a href="/faq" target="_blank">FAQ</a> or ' +
+            '<a href="https://discord.com/channels/1315483857650319441/1315483858275405878">Discord Chat.</a></div></br>',
         showDenyButton: true,
         denyButtonText: `Just set a Name`,
         denyButtonColor: 'green',
@@ -746,8 +763,8 @@ function nostrLogin() {
         preConfirm: async () => {
             try {
                 setTimeout(() => {
-                    // triggers nostr login extension
-                    loadUser();
+                    // open Nostr login dialog (extension or nsec)
+                    document.dispatchEvent(new CustomEvent('nlLaunch', { detail: 'switch-account' }));
                 }, 500);
             } catch (error) {
                 // loggedIn = false
@@ -1800,7 +1817,7 @@ async function signSampleEvent(publicKey) {
             tags: [
                 ['method', 'POST'],
                 ['u', relay]
-                ],
+            ],
             content: "Signing event to prove you own this npub for HiveTalk",
         };
         console.log('Kind 1 - Event created', event);
@@ -1825,7 +1842,7 @@ async function signSampleEvent(publicKey) {
 async function sendEvent(textNote, publicKey) {
     try {
         //let hiveRelays = ['wss://hivetalk.nostr1.com'];
-       // const relays = [...hiveRelays, ...defaultRelays];
+        // const relays = [...hiveRelays, ...defaultRelays];
         const relays = [...defaultRelays]
 
         // Create an event
@@ -1851,12 +1868,10 @@ async function sendEvent(textNote, publicKey) {
         // Subscribe to all user events, log the one we just published
         const h = pool.subscribeMany(
             [...relays],
-            [
-                {
-                    kinds: [1],
-                    authors: [publicKey],
-                },
-            ],
+            {
+                kinds: [1],
+                authors: [publicKey],
+            },
             {
                 onevent(event) {
                     if (event.id === eventID) {
@@ -1931,17 +1946,17 @@ async function shareRoomOnNostr(pubkey) {
 // ####################################################
 
 async function showAnnouncements(useNavigator = false) {
-        if (navigator.share && useNavigator) {
-            try {
-                await navigator.share({ url: RoomURL });
-                userLog('info', 'Room Shared successfully', 'top-end');
-            } catch (err) {
-                show();
-            }
-        } else {
-            console.log('share room info on button click');
+    if (navigator.share && useNavigator) {
+        try {
+            await navigator.share({ url: RoomURL });
+            userLog('info', 'Room Shared successfully', 'top-end');
+        } catch (err) {
             show();
         }
+    } else {
+        console.log('share room info on button click');
+        show();
+    }
     function show() {
         sound('open');
 
@@ -1950,27 +1965,15 @@ async function showAnnouncements(useNavigator = false) {
             position: 'center',
             title: 'Latest Updates',
             html: `
-            <div>            
-                <p align="left"><ul style="text-align: left;">
-                <ul>
-                </ul>
-                <ul>
-                    <b> Take Note: </b><br/><br/>
-                    <li> 🌸 <b style="color: #F3E5AB;"> Hivetalk Vanilla</b> 
-                    is best for unlimited time with small groups. <br/><br/> </li>
-                    
-                    <li> 🍯 <b style="color: #FFBF00"><a href="https://honey.hivetalk.org/"  style="color:#FFBF00" target="_blank">
-                    Hivetalk Honey</a></b> 
-                    is a new version, best for hosting global events, permanent rooms, events. 
-                    Ephemeral rooms max 1 hr, Permanent rooms max 4 hours per session.
-                    </li>            
-
-                </ul>
+            <div style="text-align: left;">            
+                <p>
+                    From now on, if you want to <b>"Lock a room"</b> you have to pay to lock. 
+                    The goal of Hivetalk is to encourage more open public community discussions and while we value need for privacy, the privacy is not free!
                 </p>
             </div>`,
             showDenyButton: false,
             showCancelButton: true,
-            showConfirmButton:false,
+            showConfirmButton: false,
             cancelButtonColor: 'red',
             confirmButtonText: `Copy URL`,
             cancelButtonText: `Close`,
@@ -2178,13 +2181,13 @@ function roomIsReady() {
     });
     show(toggleExtraButton); //*
 
-  /*  if (rc.isValidEmail(peer_name)) {
-        myProfileAvatar.style.borderRadius = `50px`;
-        myProfileAvatar.setAttribute('src', rc.genGravatar(peer_name));
-    } else {
-        myProfileAvatar.setAttribute('src', rc.genAvatarSvg(peer_name, 64));
-    }
-    show(toggleExtraButton); //* */
+    /*  if (rc.isValidEmail(peer_name)) {
+          myProfileAvatar.style.borderRadius = `50px`;
+          myProfileAvatar.setAttribute('src', rc.genGravatar(peer_name));
+      } else {
+          myProfileAvatar.setAttribute('src', rc.genAvatarSvg(peer_name, 64));
+      }
+      show(toggleExtraButton); //* */
     BUTTONS.main.exitButton && show(exitButton);
     BUTTONS.main.shareButton && show(shareButton);
     BUTTONS.main.hideMeButton && show(hideMeButton);
@@ -3758,7 +3761,7 @@ function loadSettingsFromLocalStorage() {
     const keepVisible = localStorageSettings.keep_buttons_visible || false;
     document.getElementById('switchKeepButtonsVisible').checked = keepVisible;
     localStorageSettings.keep_buttons_visible = keepVisible;
-    
+
     recPrioritizeH264 = localStorageSettings.rec_prioritize_h264;
     switchH264Recording.checked = recPrioritizeH264;
 
@@ -4272,7 +4275,7 @@ function getCookie(cName) {
 function isHtml(str) {
     var a = document.createElement('div');
     a.innerHTML = str;
-    for (var c = a.childNodes, i = c.length; i--; ) {
+    for (var c = a.childNodes, i = c.length; i--;) {
         if (c[i].nodeType == 1) return true;
     }
     return false;
