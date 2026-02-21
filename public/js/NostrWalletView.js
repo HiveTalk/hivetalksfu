@@ -13,13 +13,6 @@
     const WALLET_HTML = `
         <div id="nl-wallet-view" style="display:none;">
             <div class="nl-view-body">
-                <div class="nl-view-header">
-                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#9ca3af" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                        <rect x="2" y="5" width="20" height="14" rx="2"/>
-                        <line x1="2" y1="10" x2="22" y2="10"/>
-                    </svg>
-                    <span class="nl-view-title">Wallet Settings</span>
-                </div>
                 <p class="nl-view-subtitle">Connect your Bitcoin Lightning wallet to enable payments.</p>
 
                 <div class="nl-bc-slot">
