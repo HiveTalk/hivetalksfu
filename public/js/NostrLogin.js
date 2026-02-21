@@ -592,9 +592,10 @@
         const overlay = document.createElement('div');
         overlay.id = 'nl-dialog-overlay';
         // Inject HTML from sub-view modules (if loaded)
-        const signupHtml  = window.NostrSignupView  ? window.NostrSignupView.getHTML()  : '';
-        const profileHtml = window.NostrProfileView ? window.NostrProfileView.getHTML() : '';
-        const walletHtml  = window.NostrWalletView  ? window.NostrWalletView.getHTML()  : '';
+        const signupCardHtml  = window.NostrSignupView  ? window.NostrSignupView.getCardHTML()  : '';
+        const signupStepsHtml = window.NostrSignupView  ? window.NostrSignupView.getStepsHTML() : '';
+        const profileHtml     = window.NostrProfileView ? window.NostrProfileView.getHTML()     : '';
+        const walletHtml      = window.NostrWalletView  ? window.NostrWalletView.getHTML()      : '';
 
         overlay.innerHTML = `
             <div id="nl-dialog">
@@ -634,8 +635,8 @@
                 <!-- Wallet settings view (from NostrWalletView.js) -->
                 ${walletHtml}
 
-                <!-- Sign-up wizard view (from NostrSignupView.js) -->
-                ${signupHtml}
+                <!-- Sign-up wizard steps (from NostrSignupView.js) -->
+                ${signupStepsHtml}
 
                 <!-- Login / sign-up body -->
                 <div id="nl-dialog-body">
@@ -692,6 +693,8 @@
                         </div>
                     </div>
 
+                    <!-- Sign-up footer link (from NostrSignupView.js) -->
+                    ${signupCardHtml}
                 </div>
             </div>
         `;
@@ -1022,9 +1025,9 @@
 
             // Inject sub-view CSS from loaded modules
             const subStyles = [
-                window.NostrSignupView  && window.NostrSignupView.getCSS(),
                 window.NostrProfileView && window.NostrProfileView.getCSS(),
                 window.NostrWalletView  && window.NostrWalletView.getCSS(),
+                window.NostrSignupView  && window.NostrSignupView.getCSS(),
             ].filter(Boolean).join('\n');
             if (subStyles) {
                 const subStyle = document.createElement('style');

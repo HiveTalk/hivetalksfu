@@ -8,24 +8,17 @@
     'use strict';
 
     // ── HTML template ────────────────────────────────────────────────
-    const SIGNUP_HTML = `
-        <div id="nl-signup-card" class="nl-method-card nl-card-green">
-            <div class="nl-card-header">
-                <span class="nl-card-icon nl-icon-green">
-                    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                        <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/>
-                        <circle cx="9" cy="7" r="4"/>
-                        <line x1="19" y1="8" x2="19" y2="14"/>
-                        <line x1="22" y1="11" x2="16" y2="11"/>
-                    </svg>
-                </span>
-                <div>
-                    <div class="nl-card-title">Create New Account</div>
-                    <div class="nl-card-desc">Generate a new Nostr keypair to get started</div>
-                </div>
-            </div>
+    // Compact footer link shown at the bottom of the login dialog
+    const SIGNUP_CARD_HTML = `
+        <div class="nl-signup-footer">
+            <span class="nl-signup-footer-text">New to Nostr?</span>
+            <button id="nl-signup-card" class="nl-signup-link">Create a new account</button>
         </div>
+    `;
 
+    const SIGNUP_HTML = SIGNUP_CARD_HTML + `
+
+    ` + `
         <!-- Step 1: Generate & backup key -->
         <div id="nl-signup-step1" style="display:none;">
             <div class="nl-view-body">
@@ -115,6 +108,8 @@
         </div>
     `;
 
+    const SIGNUP_STEPS_HTML = SIGNUP_HTML.replace(SIGNUP_CARD_HTML, '');
+
     // ── CSS ──────────────────────────────────────────────────────────
     const SIGNUP_CSS = `
         .nl-card-green { border-color: #16a34a; }
@@ -192,11 +187,38 @@
             color: #d1d5db;
             margin-bottom: 6px;
         }
+        .nl-signup-footer {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 6px;
+            margin-top: 16px;
+            padding-top: 14px;
+            border-top: 1px solid rgba(255,255,255,0.08);
+        }
+        .nl-signup-footer-text {
+            font-size: 13px;
+            color: #6b7280;
+        }
+        .nl-signup-link {
+            background: none;
+            border: none;
+            padding: 0;
+            font-size: 13px;
+            font-weight: 600;
+            color: #4ade80;
+            cursor: pointer;
+            text-decoration: underline;
+            text-underline-offset: 2px;
+        }
+        .nl-signup-link:hover { color: #86efac; }
     `;
 
     // ── Register with NostrLogin ─────────────────────────────────────
     window.NostrSignupView = {
         getHTML() { return SIGNUP_HTML; },
+        getCardHTML() { return SIGNUP_CARD_HTML; },
+        getStepsHTML() { return SIGNUP_STEPS_HTML; },
         getCSS() { return SIGNUP_CSS; },
 
         /**
@@ -253,7 +275,7 @@
                 _currentPrivBytes = null;
             }
 
-            // ── Sign-up card click → Step 1 ──────────────────────────
+            // ── Sign-up link click → Step 1 ──────────────────────────
             overlay.querySelector('#nl-signup-card').addEventListener('click', () => {
                 showStep1();
             });
