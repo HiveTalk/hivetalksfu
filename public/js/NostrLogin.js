@@ -568,27 +568,20 @@
         return { uri, waitForConnect };
     }
 
-    // ─── UI: minimal QR code renderer ────────────────────────────────
-    function renderQrToCanvas(canvas, text) {
+    // ─── UI: QR code renderer (uses qrcodejs div API) ────────────────
+    function renderQrToCanvas(container, text) {
+        // Clear any previous render
+        container.innerHTML = '';
         if (window.QRCode) {
-            canvas.width = 240; canvas.height = 240;
-            new window.QRCode(canvas, { text, width: 240, height: 240, colorDark: '#000', colorLight: '#fff', correctLevel: window.QRCode.CorrectLevel.M });
+            new window.QRCode(container, { text, width: 240, height: 240, colorDark: '#000', colorLight: '#fff', correctLevel: window.QRCode.CorrectLevel.M });
             return;
         }
         // No QRCode library available — show the raw URI as a copyable fallback
         // (avoid sending the nostrconnect:// URI to any third-party service)
-        const container = canvas.parentElement;
-        if (container) {
-            canvas.style.display = 'none';
-            let fallback = container.querySelector('.nl-qr-fallback');
-            if (!fallback) {
-                fallback = document.createElement('div');
-                fallback.className = 'nl-qr-fallback';
-                fallback.style.cssText = 'font-size:11px;word-break:break-all;background:#1e293b;color:#94a3b8;padding:10px;border-radius:8px;margin-top:8px;';
-                container.appendChild(fallback);
-            }
-            fallback.textContent = text;
-        }
+        const fallback = document.createElement('div');
+        fallback.style.cssText = 'font-size:11px;word-break:break-all;background:#1e293b;color:#94a3b8;padding:10px;border-radius:8px;';
+        fallback.textContent = text;
+        container.appendChild(fallback);
     }
 
     // ─── UI: create the login dialog ─────────────────────────────
@@ -679,7 +672,7 @@
                                 <span class="nl-sub-icon nl-icon-blue"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="5" y="5" width="3" height="3" fill="currentColor" stroke="none"/><rect x="16" y="5" width="3" height="3" fill="currentColor" stroke="none"/><rect x="5" y="16" width="3" height="3" fill="currentColor" stroke="none"/></svg></span>
                                 <div class="nl-card-title">Scan with Primal or another app</div>
                             </div>
-                            <div class="nl-qr-container"><canvas id="nl-qr-canvas"></canvas><img class="nl-qr-img" src="" alt="QR Code" style="display:none;width:240px;height:240px;" /></div>
+                            <div class="nl-qr-container"><div id="nl-qr-canvas" style="display:flex;justify-content:center;"></div></div>
                             <div class="nl-uri-row">
                                 <input id="nl-qr-uri" class="nl-input nl-uri-input" readonly value="" />
                                 <button id="nl-qr-copy" class="nl-copy-btn" title="Copy"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg></button>
