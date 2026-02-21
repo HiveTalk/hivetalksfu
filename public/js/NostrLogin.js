@@ -243,11 +243,13 @@
             },
             async nip04_encrypt(pk, plaintext) {
                 const t = nt();
-                return t && t.nip04 ? t.nip04.encrypt(bytesToHex(_localPrivkeyBytes), pk, plaintext) : plaintext;
+                if (!t || !t.nip04) throw new Error('NIP-04 encryption not available');
+                return t.nip04.encrypt(bytesToHex(_localPrivkeyBytes), pk, plaintext);
             },
             async nip04_decrypt(pk, ciphertext) {
                 const t = nt();
-                return t && t.nip04 ? t.nip04.decrypt(bytesToHex(_localPrivkeyBytes), pk, ciphertext) : ciphertext;
+                if (!t || !t.nip04) throw new Error('NIP-04 decryption not available');
+                return t.nip04.decrypt(bytesToHex(_localPrivkeyBytes), pk, ciphertext);
             },
         };
         storeAccount(pubHex);
@@ -268,29 +270,37 @@
         // Publish to all profile relays
         const activeRelays = getActiveRelays();
         let published = 0;
+        const relayResults = [];
         const isPurplepages = (url) => url.includes('purplepag.es');
         await Promise.allSettled(activeRelays.map(url => new Promise((resolve) => {
             try {
                 const ws = new WebSocket(url);
                 // purplepag.es gets a short 3s timeout; primaries get 8s
-                const t = setTimeout(() => { try { ws.close(); } catch (e) { /* ignore */ } resolve(); }, isPurplepages(url) ? 3000 : 8000);
+                const t = setTimeout(() => { try { ws.close(); } catch (e) { /* ignore */ } relayResults.push({ url, ok: false, reason: 'timeout' }); resolve(); }, isPurplepages(url) ? 3000 : 8000);
                 ws.onopen = () => { ws.send(JSON.stringify(['EVENT', signed])); };
                 ws.onmessage = (msg) => {
                     try {
                         const data = JSON.parse(msg.data);
-                        if (data[0] === 'OK') { published++; clearTimeout(t); ws.close(); resolve(); }
+                        if (data[0] === 'OK') { published++; relayResults.push({ url, ok: true }); clearTimeout(t); ws.close(); resolve(); }
+                        else if (data[0] === 'NOTICE') { relayResults.push({ url, ok: false, reason: data[1] }); clearTimeout(t); ws.close(); resolve(); }
                     } catch (e) { /* ignore */ }
                 };
-                ws.onerror = () => { clearTimeout(t); resolve(); };
-            } catch (e) { resolve(); }
+                ws.onerror = () => { relayResults.push({ url, ok: false, reason: 'connection error' }); clearTimeout(t); resolve(); };
+            } catch (e) { relayResults.push({ url, ok: false, reason: e.message }); resolve(); }
         })));
-        if (published === 0) throw new Error('Could not publish to any relay');
-        // Update local account cache
+        if (published === 0) {
+            const failures = relayResults.map(r => `${r.url}: ${r.reason || 'unknown'}`).join('; ');
+            throw new Error(`Could not publish to any relay. Details: ${failures}`);
+        }
+        console.log('[NostrLogin] Profile published to', published, 'relay(s):', relayResults.filter(r => r.ok).map(r => r.url));
+        // Update local account cache — preserve existing name/picture if not in profileData
         const account = getCurrentAccount();
         if (account) {
-            storeAccount(account.pubkey, profileData.name, profileData.picture);
-            if (profileData.name) window.localStorage.peer_name = profileData.name;
-            if (profileData.picture) window.localStorage.peer_url = profileData.picture;
+            const newName    = profileData.name    || account.name    || window.localStorage.peer_name;
+            const newPicture = profileData.picture || account.picture || window.localStorage.peer_url;
+            storeAccount(account.pubkey, newName, newPicture);
+            if (newName)    window.localStorage.peer_name = newName;
+            if (newPicture) window.localStorage.peer_url  = newPicture;
             updateFloatingButton();
         }
         return published;
@@ -314,6 +324,7 @@
 
         if (!remotePubkey || remotePubkey.length < 60) throw new Error('Invalid pubkey in bunker URL');
         if (!relay) throw new Error('No relay specified in bunker URL');
+        if (!/^wss?:\/\//.test(relay)) throw new Error('Relay must be a wss:// or ws:// URL');
 
         return new Promise((resolve, reject) => {
             // Generate ephemeral keypair
@@ -325,7 +336,6 @@
 
             const ws = new WebSocket(relay);
             _nip46Ws = ws;
-            let reqId = null;
             let settled = false;
 
             const pendingRequests = {};
@@ -554,11 +564,19 @@
             new window.QRCode(canvas, { text, width: 240, height: 240, colorDark: '#000', colorLight: '#fff', correctLevel: window.QRCode.CorrectLevel.M });
             return;
         }
-        const img = canvas.parentElement && canvas.parentElement.querySelector('img.nl-qr-img');
-        if (img) {
-            img.src = `https://api.qrserver.com/v1/create-qr-code/?size=240x240&data=${encodeURIComponent(text)}`;
-            img.style.display = 'block';
+        // No QRCode library available — show the raw URI as a copyable fallback
+        // (avoid sending the nostrconnect:// URI to any third-party service)
+        const container = canvas.parentElement;
+        if (container) {
             canvas.style.display = 'none';
+            let fallback = container.querySelector('.nl-qr-fallback');
+            if (!fallback) {
+                fallback = document.createElement('div');
+                fallback.className = 'nl-qr-fallback';
+                fallback.style.cssText = 'font-size:11px;word-break:break-all;background:#1e293b;color:#94a3b8;padding:10px;border-radius:8px;margin-top:8px;';
+                container.appendChild(fallback);
+            }
+            fallback.textContent = text;
         }
     }
 
