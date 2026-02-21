@@ -459,12 +459,10 @@
         const tools = nt();
         if (!tools) throw new Error('nostr-tools not loaded');
 
-        // Use the first relay in the URI (what the remote signer will connect to),
-        // but open WebSockets to all relays so we catch the response on any of them.
+        // relay.nsec.app is purpose-built for NIP-46 and accepts browser WebSocket connections.
+        // Other general relays (relay.primal.net, nos.lol) block browser WSS connections.
         const primaryRelay = relayUrl || 'wss://relay.nsec.app';
-        const allRelays = relayUrl
-            ? [relayUrl]
-            : ['wss://relay.nsec.app', 'wss://relay.primal.net', 'wss://nos.lol'];
+        const allRelays = relayUrl ? [relayUrl] : [primaryRelay];
         const relay = primaryRelay;
 
         // Generate ephemeral keypair
