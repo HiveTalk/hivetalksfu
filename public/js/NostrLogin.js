@@ -459,7 +459,13 @@
         const tools = nt();
         if (!tools) throw new Error('nostr-tools not loaded');
 
-        const relay = relayUrl || 'wss://relay.nsec.app';
+        // Use the first relay in the URI (what the remote signer will connect to),
+        // but open WebSockets to all relays so we catch the response on any of them.
+        const primaryRelay = relayUrl || 'wss://relay.nsec.app';
+        const allRelays = relayUrl
+            ? [relayUrl]
+            : ['wss://relay.nsec.app', 'wss://relay.primal.net', 'wss://nos.lol'];
+        const relay = primaryRelay;
 
         // Generate ephemeral keypair
         const privBytes = crypto.getRandomValues(new Uint8Array(32));
@@ -471,10 +477,11 @@
         const uri = `nostrconnect://${pubHex}?relay=${encodeURIComponent(relay)}&metadata=${encodeURIComponent(JSON.stringify({ name: 'HiveTalk', url: window.location.origin }))}`;
 
         const waitForConnect = new Promise((resolve, reject) => {
-            const ws = new WebSocket(relay);
-            _nip46Ws = ws;
             let settled = false;
             const pendingRequests = {};
+            const openSockets = [];
+            let connectedCount = 0;
+            let errorCount = 0;
 
             function sendNip46Request(method, params, targetPubkey) {
                 return new Promise((res, rej) => {
@@ -482,15 +489,8 @@
                     pendingRequests[id] = { resolve: res, reject: rej };
                     const payload = JSON.stringify({ id, method, params });
                     const encryptTarget = targetPubkey || _nip46Pubkey;
-                    let encPromise;
-                    try {
-                        encPromise = tools.nip04
-                            ? Promise.resolve(tools.nip04.encrypt(privHex, encryptTarget, payload))
-                            : Promise.resolve(payload);
-                    } catch (e) {
-                        encPromise = Promise.resolve(payload);
-                    }
-                    encPromise.then(enc => {
+                    if (!tools.nip04) { rej(new Error('NIP-04 not available')); return; }
+                    Promise.resolve(tools.nip04.encrypt(privHex, encryptTarget, payload)).then(enc => {
                         const event = {
                             kind: 24133,
                             created_at: Math.floor(Date.now() / 1000),
@@ -500,36 +500,28 @@
                         };
                         if (tools.finalizeEvent) {
                             const signed = tools.finalizeEvent(event, privBytes);
-                            ws.send(JSON.stringify(['EVENT', signed]));
+                            // Broadcast to all open sockets
+                            openSockets.forEach(s => { try { if (s.readyState === 1) s.send(JSON.stringify(['EVENT', signed])); } catch (e) { /* ignore */ } });
                         }
-                    });
+                    }).catch(() => {});
                 });
             }
 
-            ws.onopen = () => {
-                const subId = 'nip46-qr-' + Math.random().toString(36).slice(2, 8);
-                ws.send(JSON.stringify(['REQ', subId, { kinds: [24133], '#p': [pubHex] }]));
-            };
-
-            ws.onmessage = (msg) => {
+            function handleMessage(data, wsInstance) {
                 try {
-                    const data = JSON.parse(msg.data);
-                    if (data[0] === 'EVENT' && data[2] && data[2].kind === 24133) {
-                        const event = data[2];
+                    const parsed_outer = JSON.parse(data);
+                    if (parsed_outer[0] === 'EVENT' && parsed_outer[2] && parsed_outer[2].kind === 24133) {
+                        const event = parsed_outer[2];
                         const senderPubkey = event.pubkey;
                         let content = event.content;
                         try {
-                            if (tools.nip04) {
-                                content = tools.nip04.decrypt(privHex, senderPubkey, content);
-                            }
+                            if (tools.nip04) content = tools.nip04.decrypt(privHex, senderPubkey, content);
                         } catch (e) { /* ignore */ }
                         try {
                             const parsed = JSON.parse(content);
-                            // Handle incoming connect request from remote signer
                             if (parsed.method === 'connect' && !settled) {
                                 settled = true;
                                 const remotePubkey = parsed.params && parsed.params[0] ? parsed.params[0] : senderPubkey;
-                                // Send ack
                                 sendNip46Request('connect', ['ack'], senderPubkey).catch(() => {});
                                 _pubkeyHex = remotePubkey;
                                 _loginMethod = 'nip46';
@@ -540,7 +532,6 @@
                                 resolve(remotePubkey);
                                 return;
                             }
-                            // Handle response to our requests
                             const pending = pendingRequests[parsed.id];
                             if (pending) {
                                 delete pendingRequests[parsed.id];
@@ -550,18 +541,47 @@
                         } catch (e) { /* ignore */ }
                     }
                 } catch (e) { /* ignore */ }
-            };
+            }
 
-            ws.onerror = () => {
-                if (!settled) { settled = true; reject(new Error('Relay connection error')); }
-            };
-            ws.onclose = () => {
-                if (!settled) { settled = true; reject(new Error('Relay connection closed')); }
-            };
+            allRelays.forEach(relayWss => {
+                try {
+                    const ws = new WebSocket(relayWss);
+                    openSockets.push(ws);
+                    ws.onopen = () => {
+                        connectedCount++;
+                        const subId = 'nip46-qr-' + Math.random().toString(36).slice(2, 8);
+                        ws.send(JSON.stringify(['REQ', subId, { kinds: [24133], '#p': [pubHex] }]));
+                    };
+                    ws.onmessage = (msg) => handleMessage(msg.data, ws);
+                    ws.onerror = () => {
+                        errorCount++;
+                        console.warn('[NostrLogin] NIP-46 relay error:', relayWss);
+                        if (!settled && errorCount === allRelays.length) {
+                            settled = true;
+                            reject(new Error('Could not connect to any relay. Please try the bunker URL option.'));
+                        }
+                    };
+                    ws.onclose = () => {
+                        if (!settled && connectedCount === 0 && errorCount === allRelays.length) {
+                            settled = true;
+                            reject(new Error('All relay connections closed'));
+                        }
+                    };
+                } catch (e) {
+                    errorCount++;
+                }
+            });
+
+            // Store first socket as primary for cleanup
+            _nip46Ws = openSockets[0] || null;
 
             // Timeout after 3 minutes
             _nip46Timeout = setTimeout(() => {
-                if (!settled) { settled = true; ws.close(); reject(new Error('QR session timed out')); }
+                if (!settled) {
+                    settled = true;
+                    openSockets.forEach(s => { try { s.close(); } catch (e) { /* ignore */ } });
+                    reject(new Error('QR session timed out'));
+                }
             }, 180000);
         });
 
