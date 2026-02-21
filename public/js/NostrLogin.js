@@ -1191,6 +1191,9 @@
 
         // ── Logged-in menu: Logout ─────────────────────────────────────
         overlay.querySelector('#nl-logout-btn').addEventListener('click', () => {
+            const acct = getCurrentAccount();
+            if (acct?.pubkey) window.localStorage.removeItem(`nl_profile_cache_${acct.pubkey}`);
+            window.localStorage.removeItem('nl_profile_cache');
             clearAccount();
             fireNlAuth('logout');
             updateFloatingButton();
@@ -1321,6 +1324,9 @@
 
     // nlLogout: clear account state
     document.addEventListener('nlLogout', () => {
+        const acct = getCurrentAccount();
+        if (acct?.pubkey) window.localStorage.removeItem(`nl_profile_cache_${acct.pubkey}`);
+        window.localStorage.removeItem('nl_profile_cache');
         clearAccount();
         fireNlAuth('logout');
         updateFloatingButton();

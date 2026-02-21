@@ -124,9 +124,10 @@
                 overlay.querySelector('#nl-dialog-title').textContent = 'Profile Settings';
 
                 // Pre-fill from cached profile data, falling back to account info
-                let cached = {};
-                try { cached = JSON.parse(window.localStorage.getItem('nl_profile_cache') || '{}'); } catch (e) {}
                 const account = api.getCurrentAccount();
+                const cacheKey = account?.pubkey ? `nl_profile_cache_${account.pubkey}` : 'nl_profile_cache';
+                let cached = {};
+                try { cached = JSON.parse(window.localStorage.getItem(cacheKey) || '{}'); } catch (e) {}
                 overlay.querySelector('#nl-pf-name').value    = cached.name    || account?.name    || window.localStorage.peer_name || '';
                 overlay.querySelector('#nl-pf-picture').value = cached.picture || account?.picture || window.localStorage.peer_url  || '';
                 overlay.querySelector('#nl-pf-bio').value     = cached.about   || '';
@@ -184,8 +185,10 @@
                     if (nip05) profileData.nip05 = nip05;
 
                     await api.publishProfile(profileData);
-                    // Cache the saved values so they persist on re-open
-                    window.localStorage.setItem('nl_profile_cache', JSON.stringify(profileData));
+                    // Cache the saved values so they persist on re-open (keyed by pubkey)
+                    const saveAccount = api.getCurrentAccount();
+                    const saveCacheKey = saveAccount?.pubkey ? `nl_profile_cache_${saveAccount.pubkey}` : 'nl_profile_cache';
+                    window.localStorage.setItem(saveCacheKey, JSON.stringify(profileData));
                     successEl.style.display = 'block';
                     setTimeout(() => { successEl.style.display = 'none'; }, 3000);
                 } catch (err) {
