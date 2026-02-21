@@ -260,6 +260,9 @@
     // ─── Core: publish kind:0 profile metadata to relays ─────────────
     async function publishProfile(profileData) {
         if (!window.nostr) throw new Error('Not logged in');
+        const auditPubkey = _pubkeyHex ? _pubkeyHex.slice(0, 8) + '…' : 'unknown';
+        const auditTs = new Date().toISOString();
+        console.log(`[NostrLogin] publishProfile start pubkey=${auditPubkey} ts=${auditTs} fields=${Object.keys(profileData).join(',')}`);
         const event = {
             kind: 0,
             created_at: Math.floor(Date.now() / 1000),
@@ -290,9 +293,11 @@
         })));
         if (published === 0) {
             const failures = relayResults.map(r => `${r.url}: ${r.reason || 'unknown'}`).join('; ');
+            console.warn(`[NostrLogin] publishProfile FAILED pubkey=${auditPubkey} ts=${auditTs} failures=${failures}`);
             throw new Error(`Could not publish to any relay. Details: ${failures}`);
         }
-        console.log('[NostrLogin] Profile published to', published, 'relay(s):', relayResults.filter(r => r.ok).map(r => r.url));
+        const successRelays = relayResults.filter(r => r.ok).map(r => r.url);
+        console.log(`[NostrLogin] publishProfile OK pubkey=${auditPubkey} ts=${auditTs} published=${published} relays=${successRelays.join(',')}`);
         // Update local account cache — preserve existing name/picture if not in profileData
         const account = getCurrentAccount();
         if (account) {
@@ -587,8 +592,9 @@
         const overlay = document.createElement('div');
         overlay.id = 'nl-dialog-overlay';
         // Inject HTML from sub-view modules (if loaded)
+        const signupHtml  = window.NostrSignupView  ? window.NostrSignupView.getHTML()  : '';
         const profileHtml = window.NostrProfileView ? window.NostrProfileView.getHTML() : '';
-        const walletHtml = window.NostrWalletView ? window.NostrWalletView.getHTML() : '';
+        const walletHtml  = window.NostrWalletView  ? window.NostrWalletView.getHTML()  : '';
 
         overlay.innerHTML = `
             <div id="nl-dialog">
@@ -627,6 +633,9 @@
 
                 <!-- Wallet settings view (from NostrWalletView.js) -->
                 ${walletHtml}
+
+                <!-- Sign-up wizard view (from NostrSignupView.js) -->
+                ${signupHtml}
 
                 <!-- Login / sign-up body -->
                 <div id="nl-dialog-body">
@@ -1013,8 +1022,9 @@
 
             // Inject sub-view CSS from loaded modules
             const subStyles = [
+                window.NostrSignupView  && window.NostrSignupView.getCSS(),
                 window.NostrProfileView && window.NostrProfileView.getCSS(),
-                window.NostrWalletView && window.NostrWalletView.getCSS(),
+                window.NostrWalletView  && window.NostrWalletView.getCSS(),
             ].filter(Boolean).join('\n');
             if (subStyles) {
                 const subStyle = document.createElement('style');
@@ -1202,6 +1212,11 @@
         let _walletViewCtrl = null;
         if (window.NostrWalletView && overlay.querySelector('#nl-wallet-view')) {
             _walletViewCtrl = window.NostrWalletView.wire(overlay, subViewApi);
+        }
+
+        // ── Wire Signup view (NostrSignupView.js) ──────────────────────
+        if (window.NostrSignupView && overlay.querySelector('#nl-signup-card')) {
+            window.NostrSignupView.wire(overlay, subViewApi);
         }
 
         // ── Logged-in menu: Profile button ─────────────────────────────
