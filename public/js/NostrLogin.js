@@ -34,10 +34,11 @@
     let _pubkeyHex = null;
     let _loginMethod = null; // 'extension' | 'nip46' | 'local'
     let _dialogEl = null;
-    let _nip46Ws = null;       // active NIP-46 WebSocket
-    let _nip46Privkey = null;  // ephemeral privkey for NIP-46 session
-    let _nip46Pubkey = null;   // ephemeral pubkey for NIP-46 session
-    let _nip46Timeout = null;  // timeout handle for QR waiting
+    let _nip46Ws = null;           // active NIP-46 WebSocket
+    let _nip46Privkey = null;      // ephemeral privkey for NIP-46 session
+    let _nip46Pubkey = null;       // ephemeral pubkey for NIP-46 session
+    let _nip46Timeout = null;      // timeout handle for QR waiting
+    let _nip46RemotePubkey = null; // remote signer pubkey (learned from first event)
     let _localPrivkeyBytes = null; // local keypair privkey bytes (sign-up flow)
     let _profileViewCtrl = null;   // profile view controller (set by createDialog)
 
@@ -90,6 +91,7 @@
         if (_nip46Ws) { try { _nip46Ws.close(); } catch (e) { /* ignore */ } _nip46Ws = null; }
         _nip46Privkey = null;
         _nip46Pubkey = null;
+        _nip46RemotePubkey = null;
         window.localStorage.removeItem('__nostrlogin_accounts');
         // Clear peer_* keys so Room.js doesn't restore stale session
         ['peer_name', 'peer_pubkey', 'peer_npub', 'peer_url', 'peer_lnaddress', 'peer_uuid'].forEach(k => {
@@ -511,25 +513,15 @@
                     if (parsed_outer[0] === 'EVENT' && parsed_outer[2] && parsed_outer[2].kind === 24133) {
                         const event = parsed_outer[2];
                         const senderPubkey = event.pubkey;
+                        // Track the remote signer's pubkey from the first event we receive
+                        if (!_nip46RemotePubkey) _nip46RemotePubkey = senderPubkey;
                         let content = event.content;
                         try {
                             if (tools.nip04) content = tools.nip04.decrypt(privHex, senderPubkey, content);
                         } catch (e) { /* ignore */ }
+                        console.log('[NostrLogin] NIP-46 message from', senderPubkey.slice(0,8), ':', content.slice(0, 120));
                         try {
                             const parsed = JSON.parse(content);
-                            if (parsed.method === 'connect' && !settled) {
-                                settled = true;
-                                const remotePubkey = parsed.params && parsed.params[0] ? parsed.params[0] : senderPubkey;
-                                sendNip46Request('connect', ['ack'], senderPubkey).catch(() => {});
-                                _pubkeyHex = remotePubkey;
-                                _loginMethod = 'nip46';
-                                setWindowNostrFromNip46(remotePubkey, (method, params) => sendNip46Request(method, params, senderPubkey));
-                                storeAccount(remotePubkey);
-                                fireNlAuth('login');
-                                fetchProfileFromRelays(remotePubkey);
-                                resolve(remotePubkey);
-                                return;
-                            }
                             const pending = pendingRequests[parsed.id];
                             if (pending) {
                                 delete pendingRequests[parsed.id];
@@ -549,6 +541,24 @@
                         connectedCount++;
                         const subId = 'nip46-qr-' + Math.random().toString(36).slice(2, 8);
                         ws.send(JSON.stringify(['REQ', subId, { kinds: [24133], '#p': [pubHex] }]));
+                        // Send connect request — remote signer responds with { id, result: 'ack' }
+                        sendNip46Request('connect', [pubHex], pubHex)
+                            .then(result => {
+                                if (settled) return;
+                                settled = true;
+                                // Remote signer's pubkey comes from the event sender
+                                const remotePubkey = _nip46RemotePubkey || pubHex;
+                                _pubkeyHex = remotePubkey;
+                                _loginMethod = 'nip46';
+                                setWindowNostrFromNip46(remotePubkey, (method, params) => sendNip46Request(method, params, remotePubkey));
+                                storeAccount(remotePubkey);
+                                fireNlAuth('login');
+                                fetchProfileFromRelays(remotePubkey);
+                                resolve(remotePubkey);
+                            })
+                            .catch(err => {
+                                if (!settled) console.warn('[NostrLogin] NIP-46 connect request failed:', err);
+                            });
                     };
                     ws.onmessage = (msg) => handleMessage(msg.data, ws);
                     ws.onerror = (e) => {
