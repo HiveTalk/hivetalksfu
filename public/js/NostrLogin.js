@@ -553,15 +553,16 @@
                         ws.send(JSON.stringify(['REQ', subId, { kinds: [24133], '#p': [pubHex] }]));
                     };
                     ws.onmessage = (msg) => handleMessage(msg.data, ws);
-                    ws.onerror = () => {
+                    ws.onerror = (e) => {
                         errorCount++;
-                        console.warn('[NostrLogin] NIP-46 relay error:', relayWss);
+                        console.warn('[NostrLogin] NIP-46 relay error:', relayWss, e);
                         if (!settled && errorCount === allRelays.length) {
                             settled = true;
-                            reject(new Error('Could not connect to any relay. Please try the bunker URL option.'));
+                            reject(new Error(`Could not connect to any relay (tried: ${allRelays.join(', ')}). Check browser console for details.`));
                         }
                     };
-                    ws.onclose = () => {
+                    ws.onclose = (e) => {
+                        console.warn('[NostrLogin] NIP-46 relay closed:', relayWss, e?.code, e?.reason);
                         if (!settled && connectedCount === 0 && errorCount === allRelays.length) {
                             settled = true;
                             reject(new Error('All relay connections closed'));
