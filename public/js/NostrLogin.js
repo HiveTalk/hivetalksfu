@@ -51,10 +51,12 @@
     function setWindowNostrFromNip46(remotePubkey, sendNip46Request) {
         window.nostr = {
             async getPublicKey() {
-                return remotePubkey;
+                // Ask the remote signer for the user pubkey (may differ from signer pubkey)
+                return sendNip46Request('get_public_key', []);
             },
             async signEvent(event) {
-                return sendNip46Request('sign_event', [JSON.stringify(event)]);
+                // NIP-46: sign_event params must be [event] (object), not [JSON.stringify(event)]
+                return sendNip46Request('sign_event', [event]);
             },
             async nip04_encrypt(pubkey, plaintext) {
                 return sendNip46Request('nip04_encrypt', [pubkey, plaintext]);
@@ -351,18 +353,36 @@
 
             const pendingRequests = {};
 
+            // NIP-44 encrypt helper for bunker flow — spec requires NIP-44; fall back to NIP-04
+            // nostr-tools 2.x nip44 API: getConversationKey(privBytes, pubBytes) -> key
+            //                            encrypt(plaintext, conversationKey) -> ciphertext
+            //                            decrypt(ciphertext, conversationKey) -> plaintext
+            function bunkerEncrypt(plaintext) {
+                if (tools.nip44 && tools.nip44.encrypt && tools.nip44.getConversationKey) {
+                    const convKey = tools.nip44.getConversationKey(privBytes, hexToBytes(remotePubkey));
+                    return Promise.resolve(tools.nip44.encrypt(plaintext, convKey));
+                }
+                if (!tools.nip04) throw new Error('No NIP-44 or NIP-04 encryption available');
+                return Promise.resolve(tools.nip04.encrypt(privHex, remotePubkey, plaintext));
+            }
+
+            // NIP-44 decrypt helper for bunker flow
+            function bunkerDecrypt(senderPubkey, ciphertext) {
+                if (tools.nip44 && tools.nip44.decrypt && tools.nip44.getConversationKey) {
+                    try {
+                        const convKey = tools.nip44.getConversationKey(privBytes, hexToBytes(senderPubkey));
+                        return tools.nip44.decrypt(ciphertext, convKey);
+                    } catch (e) { /* fall through to nip04 */ }
+                }
+                return tools.nip04.decrypt(privHex, senderPubkey, ciphertext);
+            }
+
             function sendNip46Request(method, params) {
                 return new Promise((res, rej) => {
                     const id = Math.random().toString(36).slice(2, 10);
                     pendingRequests[id] = { resolve: res, reject: rej };
                     const payload = JSON.stringify({ id, method, params });
-                    // Encrypt with NIP-04 — fail closed if unavailable
-                    if (!tools.nip04) {
-                        rej(new Error('NIP-04 encryption not available; cannot send NIP-46 request'));
-                        return;
-                    }
-                    const encrypted = tools.nip04.encrypt(privHex, remotePubkey, payload);
-                    Promise.resolve(encrypted).then(enc => {
+                    Promise.resolve(bunkerEncrypt(payload)).then(enc => {
                         const event = {
                             kind: 24133,
                             created_at: Math.floor(Date.now() / 1000),
@@ -381,20 +401,28 @@
             ws.onopen = () => {
                 // Subscribe to responses
                 const subId = 'nip46-' + Math.random().toString(36).slice(2, 8);
-                ws.send(JSON.stringify(['REQ', subId, { kinds: [24133], '#p': [pubHex], limit: 1 }]));
+                // No limit — we need to receive all future responses (sign_event, etc.)
+                ws.send(JSON.stringify(['REQ', subId, { kinds: [24133], '#p': [pubHex] }]));
 
-                // Send connect request
-                const connectParams = secret ? [remotePubkey, secret] : [remotePubkey];
-                sendNip46Request('connect', connectParams).then(result => {
+                // NIP-46 connect: params are [clientPubkey, secret?, permissions?]
+                // The client sends its OWN pubkey, not the remote signer's pubkey
+                const connectParams = secret ? [pubHex, secret] : [pubHex];
+                sendNip46Request('connect', connectParams).then(() => {
+                    // After connect, ask the signer for the actual user pubkey.
+                    // In multi-account signers the user pubkey may differ from the
+                    // signer daemon pubkey embedded in the bunker:// URL.
+                    return sendNip46Request('get_public_key', []);
+                }).then(userPubkey => {
                     if (settled) return;
                     settled = true;
-                    _pubkeyHex = remotePubkey;
+                    const resolvedPubkey = userPubkey || remotePubkey;
+                    _pubkeyHex = resolvedPubkey;
                     _loginMethod = 'nip46';
-                    setWindowNostrFromNip46(remotePubkey, sendNip46Request);
-                    storeAccount(remotePubkey);
+                    setWindowNostrFromNip46(resolvedPubkey, sendNip46Request);
+                    storeAccount(resolvedPubkey);
                     fireNlAuth('login');
-                    fetchProfileFromRelays(remotePubkey);
-                    resolve(remotePubkey);
+                    fetchProfileFromRelays(resolvedPubkey);
+                    resolve(resolvedPubkey);
                 }).catch(err => {
                     if (settled) return;
                     settled = true;
@@ -410,9 +438,7 @@
                         const event = data[2];
                         let content = event.content;
                         try {
-                            if (tools.nip04) {
-                                content = tools.nip04.decrypt(privHex, remotePubkey, content);
-                            }
+                            content = bunkerDecrypt(event.pubkey, content);
                         } catch (e) { /* ignore decrypt errors */ }
                         try {
                             const parsed = JSON.parse(content);
@@ -461,11 +487,17 @@
         const tools = nt();
         if (!tools) throw new Error('nostr-tools not loaded');
 
-        // relay.nsec.app is purpose-built for NIP-46 and accepts browser WebSocket connections.
-        // Other general relays (relay.primal.net, nos.lol) block browser WSS connections.
-        const primaryRelay = relayUrl || 'wss://relay.nsec.app';
-        const allRelays = relayUrl ? [relayUrl] : [primaryRelay];
-        const relay = primaryRelay;
+        // Match mutable's relay list for broad signer compatibility.
+        // relay.nsec.app is added as a NIP-46 dedicated relay that accepts browser WSS.
+        // Note: relay.primal.net blocks browser WebSocket connections but is included so
+        // Primal and other signers that prefer it can still publish there.
+        const defaultRelays = [
+            'wss://relay.nsec.app',
+            'wss://relay.damus.io',
+            'wss://relay.primal.net',
+            'wss://nos.lol',
+        ];
+        const allRelays = relayUrl ? [relayUrl] : defaultRelays;
 
         // Generate ephemeral keypair
         const privBytes = crypto.getRandomValues(new Uint8Array(32));
@@ -474,7 +506,46 @@
         _nip46Privkey = privHex;
         _nip46Pubkey = pubHex;
 
-        const uri = `nostrconnect://${pubHex}?relay=${encodeURIComponent(relay)}&metadata=${encodeURIComponent(JSON.stringify({ name: 'HiveTalk', url: window.location.origin }))}`;
+        // Generate a random secret — required by NIP-46 spec to prevent connection spoofing.
+        // The remote signer MUST return this exact value as the `result` of its connect response.
+        const sessionSecret = bytesToHex(crypto.getRandomValues(new Uint8Array(8)));
+
+        // NIP-46 spec: name, url, image are flat query params, NOT a JSON metadata blob.
+        // Multiple relay= params — one per relay, matching how mutable formats the URI.
+        const appName = 'HiveTalk';
+        // Use the real production URL when running on localhost (for display in signers like Primal)
+        const appUrl = (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1')
+            ? 'https://vanilla.hivetalk.org'
+            : window.location.origin;
+        const relayParams = allRelays.map(r => `relay=${encodeURIComponent(r)}`).join('&');
+        const uri = `nostrconnect://${pubHex}` +
+            `?${relayParams}` +
+            `&secret=${encodeURIComponent(sessionSecret)}` +
+            `&name=${encodeURIComponent(appName)}` +
+            `&url=${encodeURIComponent(appUrl)}`;
+
+        // NIP-44 encrypt helper — spec requires NIP-44; fall back to NIP-04 for older signers
+        // nostr-tools 2.x nip44 API: getConversationKey(privBytes, pubBytes) -> key
+        //                            encrypt(plaintext, conversationKey) -> ciphertext
+        //                            decrypt(ciphertext, conversationKey) -> plaintext
+        function nip46Encrypt(recipientPubkey, plaintext) {
+            if (tools.nip44 && tools.nip44.encrypt && tools.nip44.getConversationKey) {
+                const convKey = tools.nip44.getConversationKey(privBytes, hexToBytes(recipientPubkey));
+                return Promise.resolve(tools.nip44.encrypt(plaintext, convKey));
+            }
+            return Promise.resolve(tools.nip04.encrypt(privHex, recipientPubkey, plaintext));
+        }
+
+        // NIP-44 decrypt helper
+        function nip46Decrypt(senderPubkey, ciphertext) {
+            if (tools.nip44 && tools.nip44.decrypt && tools.nip44.getConversationKey) {
+                try {
+                    const convKey = tools.nip44.getConversationKey(privBytes, hexToBytes(senderPubkey));
+                    return tools.nip44.decrypt(ciphertext, convKey);
+                } catch (e) { /* fall through to nip04 */ }
+            }
+            return tools.nip04.decrypt(privHex, senderPubkey, ciphertext);
+        }
 
         const waitForConnect = new Promise((resolve, reject) => {
             let settled = false;
@@ -489,8 +560,7 @@
                     pendingRequests[id] = { resolve: res, reject: rej };
                     const payload = JSON.stringify({ id, method, params });
                     const encryptTarget = targetPubkey || _nip46Pubkey;
-                    if (!tools.nip04) { rej(new Error('NIP-04 not available')); return; }
-                    Promise.resolve(tools.nip04.encrypt(privHex, encryptTarget, payload)).then(enc => {
+                    Promise.resolve(nip46Encrypt(encryptTarget, payload)).then(enc => {
                         const event = {
                             kind: 24133,
                             created_at: Math.floor(Date.now() / 1000),
@@ -507,21 +577,61 @@
                 });
             }
 
+            // In the nostrconnect:// flow the signer sends a RESPONSE (not a request):
+            //   { id: <connectId>, result: <sessionSecret>, error: '' }
+            // We register a pending entry keyed on connectId so handleMessage resolves it.
+            const connectId = Math.random().toString(36).slice(2, 10);
+            let connectResolve, connectReject;
+            const connectPromise = new Promise((res, rej) => { connectResolve = res; connectReject = rej; });
+            pendingRequests[connectId] = { resolve: connectResolve, reject: connectReject };
+
             function handleMessage(data, wsInstance) {
                 try {
                     const parsed_outer = JSON.parse(data);
                     if (parsed_outer[0] === 'EVENT' && parsed_outer[2] && parsed_outer[2].kind === 24133) {
                         const event = parsed_outer[2];
                         const senderPubkey = event.pubkey;
-                        // Track the remote signer's pubkey from the first event we receive
-                        if (!_nip46RemotePubkey) _nip46RemotePubkey = senderPubkey;
                         let content = event.content;
                         try {
-                            if (tools.nip04) content = tools.nip04.decrypt(privHex, senderPubkey, content);
-                        } catch (e) { /* ignore */ }
+                            content = nip46Decrypt(senderPubkey, content);
+                        } catch (e) { return; } // can't decrypt — not for us
                         console.log('[NostrLogin] NIP-46 message from', senderPubkey.slice(0,8), ':', content.slice(0, 120));
                         try {
                             const parsed = JSON.parse(content);
+                            // nostrconnect:// flow: signer sends a response whose result is our sessionSecret.
+                            // It may arrive with id=connectId (if signer echoes our id) OR as a fresh
+                            // response we identify by result === sessionSecret.
+                            const isConnectResponse =
+                                parsed.result === sessionSecret ||
+                                (parsed.id === connectId && parsed.result !== undefined);
+                            if (isConnectResponse && !settled) {
+                                settled = true;
+                                const remotePubkey = senderPubkey;
+                                _nip46RemotePubkey = remotePubkey;
+                                delete pendingRequests[connectId];
+                                // Ask the signer for the actual user pubkey
+                                sendNip46Request('get_public_key', [], remotePubkey).then(userPubkey => {
+                                    const resolvedPubkey = userPubkey || remotePubkey;
+                                    _pubkeyHex = resolvedPubkey;
+                                    _loginMethod = 'nip46';
+                                    setWindowNostrFromNip46(resolvedPubkey, (method, params) => sendNip46Request(method, params, remotePubkey));
+                                    storeAccount(resolvedPubkey);
+                                    fireNlAuth('login');
+                                    fetchProfileFromRelays(resolvedPubkey);
+                                    resolve(resolvedPubkey);
+                                }).catch(() => {
+                                    // Fallback: use signer pubkey if get_public_key fails
+                                    _pubkeyHex = remotePubkey;
+                                    _loginMethod = 'nip46';
+                                    setWindowNostrFromNip46(remotePubkey, (method, params) => sendNip46Request(method, params, remotePubkey));
+                                    storeAccount(remotePubkey);
+                                    fireNlAuth('login');
+                                    fetchProfileFromRelays(remotePubkey);
+                                    resolve(remotePubkey);
+                                });
+                                return;
+                            }
+                            // Response to a pending request (get_public_key, sign_event, etc.)
                             const pending = pendingRequests[parsed.id];
                             if (pending) {
                                 delete pendingRequests[parsed.id];
@@ -533,34 +643,23 @@
                 } catch (e) { /* ignore */ }
             }
 
+            console.log('[NostrLogin] NIP-46 QR session started, pubkey:', pubHex.slice(0,8), 'secret:', sessionSecret);
+            console.log('[NostrLogin] Connecting to relays:', allRelays);
             allRelays.forEach(relayWss => {
                 try {
                     const ws = new WebSocket(relayWss);
                     openSockets.push(ws);
                     ws.onopen = () => {
                         connectedCount++;
+                        console.log('[NostrLogin] Relay connected:', relayWss, '(', connectedCount, '/', allRelays.length, ')');
                         const subId = 'nip46-qr-' + Math.random().toString(36).slice(2, 8);
                         ws.send(JSON.stringify(['REQ', subId, { kinds: [24133], '#p': [pubHex] }]));
-                        // Send connect request — remote signer responds with { id, result: 'ack' }
-                        sendNip46Request('connect', [pubHex], pubHex)
-                            .then(result => {
-                                if (settled) return;
-                                settled = true;
-                                // Remote signer's pubkey comes from the event sender
-                                const remotePubkey = _nip46RemotePubkey || pubHex;
-                                _pubkeyHex = remotePubkey;
-                                _loginMethod = 'nip46';
-                                setWindowNostrFromNip46(remotePubkey, (method, params) => sendNip46Request(method, params, remotePubkey));
-                                storeAccount(remotePubkey);
-                                fireNlAuth('login');
-                                fetchProfileFromRelays(remotePubkey);
-                                resolve(remotePubkey);
-                            })
-                            .catch(err => {
-                                if (!settled) console.warn('[NostrLogin] NIP-46 connect request failed:', err);
-                            });
+                        console.log('[NostrLogin] Subscribed on', relayWss, 'subId:', subId);
                     };
-                    ws.onmessage = (msg) => handleMessage(msg.data, ws);
+                    ws.onmessage = (msg) => {
+                        console.log('[NostrLogin] Raw message from', relayWss, ':', msg.data.slice(0, 80));
+                        handleMessage(msg.data, ws);
+                    };
                     ws.onerror = (e) => {
                         errorCount++;
                         console.warn('[NostrLogin] NIP-46 relay error:', relayWss, e);
@@ -578,6 +677,7 @@
                     };
                 } catch (e) {
                     errorCount++;
+                    console.error('[NostrLogin] Failed to open WebSocket to', relayWss, e);
                 }
             });
 
@@ -690,10 +790,12 @@
                                 <span class="nl-sub-icon nl-icon-blue"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="5" y="5" width="3" height="3" fill="currentColor" stroke="none"/><rect x="16" y="5" width="3" height="3" fill="currentColor" stroke="none"/><rect x="5" y="16" width="3" height="3" fill="currentColor" stroke="none"/></svg></span>
                                 <div><div class="nl-sub-title">Scan QR Code</div><div class="nl-sub-desc">For Primal mobile and other apps</div></div>
                             </div>
+                            <!-- Paste Bunker URL hidden until bunker flow is fully tested
                             <div id="nl-bunker-option" class="nl-sub-option">
                                 <span class="nl-sub-icon nl-icon-blue"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="8" cy="15" r="4"/><line x1="11" y1="12" x2="20" y2="3"/><line x1="17" y1="5" x2="19" y2="7"/></svg></span>
                                 <div><div class="nl-sub-title">Paste Bunker URL</div><div class="nl-sub-desc">For Amber and other signers</div></div>
                             </div>
+                            -->
                             <button id="nl-nip46-cancel" class="nl-btn nl-btn-ghost" style="margin-top:8px;">Cancel</button>
                         </div>
                         <div id="nl-qr-view" style="display:none;margin-top:12px;">
@@ -932,9 +1034,12 @@
                     display: flex;
                     justify-content: center;
                     margin: 8px 0 12px;
+                }
+                .nl-qr-container > div {
                     background: #fff;
                     border-radius: 10px;
                     padding: 12px;
+                    line-height: 0;
                 }
                 .nl-uri-row {
                     display: flex;
@@ -1161,8 +1266,9 @@
             resetNip46Card();
         });
 
-        // ── Paste Bunker URL option ────────────────────────────────────
-        overlay.querySelector('#nl-bunker-option').addEventListener('click', (e) => {
+        // ── Paste Bunker URL option (hidden until tested — see HTML comment) ──────
+        const bunkerOptionEl = overlay.querySelector('#nl-bunker-option');
+        if (bunkerOptionEl) bunkerOptionEl.addEventListener('click', (e) => {
             e.stopPropagation();
             overlay.querySelector('#nl-nip46-options').style.display = 'none';
             overlay.querySelector('#nl-bunker-view').style.display = 'block';
@@ -1170,7 +1276,8 @@
         });
 
         // ── Back from bunker view ──────────────────────────────────────
-        overlay.querySelector('#nl-bunker-back').addEventListener('click', (e) => {
+        const bunkerBackEl = overlay.querySelector('#nl-bunker-back');
+        if (bunkerBackEl) bunkerBackEl.addEventListener('click', (e) => {
             e.stopPropagation();
             overlay.querySelector('#nl-bunker-view').style.display = 'none';
             overlay.querySelector('#nl-bunker-error').style.display = 'none';
@@ -1178,7 +1285,8 @@
         });
 
         // ── Connect bunker URL ─────────────────────────────────────────
-        overlay.querySelector('#nl-bunker-connect').addEventListener('click', async (e) => {
+        const bunkerConnectEl = overlay.querySelector('#nl-bunker-connect');
+        if (bunkerConnectEl) bunkerConnectEl.addEventListener('click', async (e) => {
             e.stopPropagation();
             const input = overlay.querySelector('#nl-bunker-input');
             const errEl = overlay.querySelector('#nl-bunker-error');
@@ -1213,7 +1321,8 @@
         });
 
         // Enter key on bunker input
-        overlay.querySelector('#nl-bunker-input').addEventListener('keydown', (e) => {
+        const bunkerInputEl = overlay.querySelector('#nl-bunker-input');
+        if (bunkerInputEl) bunkerInputEl.addEventListener('keydown', (e) => {
             if (e.key === 'Enter') overlay.querySelector('#nl-bunker-connect').click();
         });
 
