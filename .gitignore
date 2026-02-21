@@ -22,3 +22,6 @@ rec
 rtmp
 .aider*
 .env
+
+# room lock persistence (auto-generated at runtime)
+app/data/

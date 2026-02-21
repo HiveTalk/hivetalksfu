@@ -7342,6 +7342,19 @@ class RoomClient {
                 this.event(_EVENTS.roomLock);
                 this.userLog('info', `${icons.lock} Room LOCKED and is invisible on Frontpage and API`, 'top-end');
                 break;
+            // Server sends this when the lock action is attempted without a verified payment
+            case 'lockRejected':
+                Swal.fire({
+                    allowOutsideClick: false,
+                    background: swalBackground,
+                    imageUrl: image.locked,
+                    title: 'Lock Room Payment Required',
+                    text: 'Payment not verified. Please complete the payment before locking the room.',
+                    confirmButtonText: 'OK',
+                    showClass: { popup: 'animate__animated animate__fadeInDown' },
+                    hideClass: { popup: 'animate__animated animate__fadeOutUp' },
+                });
+                break;
             case 'unlock':
                 this.event(_EVENTS.roomUnlock);
                 this.userLog('info', `${icons.unlock} UNLOCKED the room`, 'top-end');

@@ -95,6 +95,7 @@ const Sentry = require('@sentry/node');
 // const Mattermost = require('./Mattermost.js');
 const restrictAccessByIP = require('./middleware/IpWhitelist.js');
 const packageJson = require('../../package.json');
+const LockStore = require('./LockStore');
 //const { invokeCheckRoomOwner } = require('./checkRoomOwner');
 //const { initSupabase } = require('./lib/supabase');
 //const { getRoomInfo, injectOGTags } = require('./lib/roomUtils');
@@ -278,7 +279,13 @@ const authHost = new Host(); // Authenticated IP by Login
 
 const roomList = new Map(); // All Rooms
 
-const pendingLockCharges = new Map(); // Track lock charges: socket.id -> { chargeId, roomId, expectedMsats, expiresAt }
+// pendingLockCharges: chargeId -> { roomId, peer_uuid, expectedMsats, internalId, expiresAt }
+// Keyed by the stable ZBD chargeId so reconnects don't lose the pending payment state
+const pendingLockCharges = new Map();
+
+// verifiedLockPayments: roomId -> { chargeId, peer_uuid, verifiedAt }
+// Stored at room level — survives socket reconnects so the presenter can still lock
+const verifiedLockPayments = new Map();
 
 const presenters = {}; // Collect presenters grp by roomId
 
@@ -1636,6 +1643,33 @@ function startServer() {
             return ngrokStart();
         }
         log.info('Server config', getServerConfig());
+
+        // Remove any lock records older than 24 hours left over from a previous run
+        LockStore.cleanup();
+
+        // Periodically remove stale entries from in-memory Maps:
+        //   - pendingLockCharges older than their 5-min expiry (expiresAt)
+        //   - verifiedLockPayments older than 1 hour (in case lock was never completed)
+        setInterval(() => {
+            const now = Date.now();
+            const ONE_HOUR_MS = 60 * 60 * 1000;
+
+            // Clean up expired pending charges
+            for (const [chargeId, charge] of pendingLockCharges) {
+                if (now > charge.expiresAt) {
+                    pendingLockCharges.delete(chargeId);
+                    log.debug('Cleanup: removed expired pending charge', { chargeId });
+                }
+            }
+
+            // Clean up verified payments that were never used to lock (> 1 hour old)
+            for (const [roomId, payment] of verifiedLockPayments) {
+                if (now - payment.verifiedAt > ONE_HOUR_MS) {
+                    verifiedLockPayments.delete(roomId);
+                    log.debug('Cleanup: removed stale verified payment', { roomId });
+                }
+            }
+        }, 10 * 60 * 1000); // Run every 10 minutes
     });
 
     // ####################################################
@@ -1742,7 +1776,18 @@ function startServer() {
             } else {
                 log.debug('Created room', { room_id: socket.room_id });
                 const worker = await getMediasoupWorker();
-                roomList.set(socket.room_id, new Room(socket.room_id, worker, io));
+                const room = new Room(socket.room_id, worker, io);
+
+                // Restore lock state if a record exists from a previous session.
+                // This ensures the room stays locked even after all peers left and
+                // the presenter rejoins (e.g. browser close/reopen scenario).
+                const lockRecord = LockStore.load(socket.room_id);
+                if (lockRecord) {
+                    room.setLocked(true, lockRecord.password);
+                    log.info('createRoom: restored lock state from store', { room_id: socket.room_id });
+                }
+
+                roomList.set(socket.room_id, room);
                 callback({ room_id: socket.room_id });
             }
         });
@@ -2341,9 +2386,16 @@ function startServer() {
                     return callback({ error: 'Failed to generate invoice' });
                 }
 
-                pendingLockCharges.set(socket.id, {
-                    chargeId: id,
+                // Get the peer's stable uuid (from localStorage on client) so we can
+                // verify ownership even after a socket reconnect
+                const peer = getPeer(socket);
+                const peer_uuid = peer ? peer.peer_uuid : null;
+
+                // Key by chargeId (stable ZBD ID) instead of socket.id so a brief
+                // disconnect during the payment modal doesn't lose the pending charge
+                pendingLockCharges.set(id, {
                     roomId: socket.room_id,
+                    peer_uuid,
                     expectedMsats,
                     internalId: payload.internalId,
                     expiresAt: Date.now() + 300_000,
@@ -2366,9 +2418,10 @@ function startServer() {
                 return callback({ paid: false });
             }
 
-            const pending = pendingLockCharges.get(socket.id);
-            if (!pending || pending.chargeId !== paymentHash || pending.roomId !== socket.room_id) {
-                log.warn('checkLockPayment: paymentHash mismatch or no pending charge', { socket_id: socket.id, room_id: socket.room_id });
+            // Look up by chargeId (the key) — works even after a socket reconnect
+            const pending = pendingLockCharges.get(paymentHash);
+            if (!pending || pending.roomId !== socket.room_id) {
+                log.warn('checkLockPayment: no pending charge found for this room', { socket_id: socket.id, room_id: socket.room_id });
                 return callback({ paid: false });
             }
 
@@ -2384,9 +2437,15 @@ function startServer() {
                     amount === pending.expectedMsats &&
                     internalId === pending.internalId
                 ) {
-                    const peer = getPeer(socket);
-                    if (peer) peer.hasPaidLock = true;
-                    pendingLockCharges.delete(socket.id);
+                    // Store verified payment at room level, not on the Peer object.
+                    // This survives socket reconnects so the presenter can still lock
+                    // the room even if their connection briefly dropped after payment.
+                    verifiedLockPayments.set(socket.room_id, {
+                        chargeId: paymentHash,
+                        peer_uuid: pending.peer_uuid,
+                        verifiedAt: Date.now(),
+                    });
+                    pendingLockCharges.delete(paymentHash);
                     log.debug('checkLockPayment: verified', { socket_id: socket.id, room_id: socket.room_id, chargeId: paymentHash });
                     callback({ paid: true });
                 } else {
@@ -2422,17 +2481,34 @@ function startServer() {
                 case 'lock':
                     if (!isPresenter) return;
 
-                    // Payment Check
-                    const peer = getPeer(socket);
+                    // Payment check — verify against the room-level verifiedLockPayments Map.
+                    // This is keyed by roomId and stores peer_uuid so it survives reconnects.
                     const zbdApiKey = process.env.ZBD_API_KEY;
-                    if (zbdApiKey && !peer.hasPaidLock) {
-                        log.warn('roomAction lock rejected: payment not verified', { socket_id: socket.id, room_id: socket.room_id });
-                        room.sendTo(socket.id, 'roomAction', 'lockRejected');
-                        return;
+                    if (zbdApiKey) {
+                        const verified = verifiedLockPayments.get(socket.room_id);
+                        const payingPeerUuid = verified?.peer_uuid;
+                        if (!verified || payingPeerUuid !== data.peer_uuid) {
+                            log.warn('roomAction lock rejected: payment not verified', {
+                                socket_id: socket.id,
+                                room_id: socket.room_id,
+                                peer_uuid: data.peer_uuid,
+                            });
+                            room.sendTo(socket.id, 'roomAction', 'lockRejected');
+                            return;
+                        }
                     }
 
                     if (!room.isLocked()) {
                         room.setLocked(true, data.password);
+
+                        // Persist the lock so it survives server/browser restarts
+                        const lockVerified = verifiedLockPayments.get(socket.room_id);
+                        LockStore.save(socket.room_id, {
+                            password: data.password,
+                            lockedByUuid: data.peer_uuid || null,
+                            chargeId: lockVerified?.chargeId || null,
+                        });
+
                         room.broadCast(socket.id, 'roomAction', data.action);
                     }
                     break;
@@ -2449,10 +2525,12 @@ function startServer() {
                     break;
                 case 'unlock':
                     if (!isPresenter) return;
-                    
-                    // Reset payment verification on unlock so they must pay again to lock
-                    const peerUnlock = getPeer(socket);
-                    if (peerUnlock) peerUnlock.hasPaidLock = false;
+
+                    // Clear the room-level payment record so they must pay again to re-lock
+                    verifiedLockPayments.delete(socket.room_id);
+
+                    // Remove persisted lock so the room starts unlocked on next creation
+                    LockStore.remove(socket.room_id);
 
                     room.setLocked(false);
                     room.broadCast(socket.id, 'roomAction', data.action);
@@ -3332,7 +3410,8 @@ function startServer() {
         });
 
         socket.on('disconnect', async () => {
-            pendingLockCharges.delete(socket.id);
+            // Note: pendingLockCharges is now keyed by chargeId (not socket.id),
+            // so no cleanup needed here — the periodic job handles stale entries.
 
             if (!roomExists(socket)) return;
 
