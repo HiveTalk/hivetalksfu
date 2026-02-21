@@ -1157,7 +1157,7 @@ button {
     border: none;
 }
 
-button:hover {
+button:hover:not(.zap-image-button):not(.nostr-image-button) {
     background: var(--body-bg);
     border-radius: 5px;
 }

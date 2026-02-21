@@ -17,3 +17,23 @@
     transform: scale(1.05);
     box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
 }
+
+/* Fix bc-button hover black square in the room profile panel */
+bc-button {
+    display: inline-block;
+    border-radius: 8px;
+    overflow: hidden;
+    max-width: 180px;
+}
+
+/* Override the dark hover background that bc-button renders */
+bc-button::part(button) {
+    background: #3b82f6 !important;
+    border-radius: 8px !important;
+    transition: background 0.2s, opacity 0.2s !important;
+}
+
+bc-button::part(button):hover {
+    background: #2563eb !important;
+    opacity: 1 !important;
+}

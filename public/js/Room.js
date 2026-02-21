@@ -289,7 +289,7 @@ let quill = null;
 document.addEventListener('DOMContentLoaded', function () {
     // show nostr dialog on click in profile settings, only show if logged in
     document.getElementById('nostrButton').addEventListener('click', function () {
-        document.dispatchEvent(new CustomEvent('nlLaunch', { detail: 'switch-account' }));
+        document.dispatchEvent(new CustomEvent('nlLaunch', { detail: 'edit-profile' }));
     });
     console.log('00 ----> init Nostr Login');
     hide(loadingDiv);
@@ -1841,7 +1841,7 @@ async function signSampleEvent(publicKey) {
 
 async function sendEvent(textNote, publicKey) {
     try {
-        //let hiveRelays = ['wss://hivetalk.nostr1.com'];
+        //let hiveRelays = ['wss://beeswax.hivetalk.org'];
         // const relays = [...hiveRelays, ...defaultRelays];
         const relays = [...defaultRelays]
 
