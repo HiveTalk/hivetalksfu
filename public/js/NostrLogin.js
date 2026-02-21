@@ -64,9 +64,13 @@
         };
     }
 
-    // ─── Core: store account in __nostrlogin_accounts ────────────────
+    // ─── Core: store account in __nostrlogin_accounts ──────────────────
     function storeAccount(pubkey, name, picture) {
-        const accounts = [{ pubkey, name: name || undefined, picture: picture || undefined }];
+        // Preserve existing name/picture if not explicitly supplied
+        const existing = getCurrentAccount();
+        const resolvedName    = name    || (existing?.pubkey === pubkey ? existing.name    : undefined);
+        const resolvedPicture = picture || (existing?.pubkey === pubkey ? existing.picture : undefined);
+        const accounts = [{ pubkey, name: resolvedName || undefined, picture: resolvedPicture || undefined }];
         window.localStorage.setItem('__nostrlogin_accounts', JSON.stringify(accounts));
     }
 
@@ -350,10 +354,12 @@
                     const id = Math.random().toString(36).slice(2, 10);
                     pendingRequests[id] = { resolve: res, reject: rej };
                     const payload = JSON.stringify({ id, method, params });
-                    // Encrypt with NIP-04
-                    const encrypted = tools.nip04
-                        ? tools.nip04.encrypt(privHex, remotePubkey, payload)
-                        : Promise.resolve(payload);
+                    // Encrypt with NIP-04 — fail closed if unavailable
+                    if (!tools.nip04) {
+                        rej(new Error('NIP-04 encryption not available; cannot send NIP-46 request'));
+                        return;
+                    }
+                    const encrypted = tools.nip04.encrypt(privHex, remotePubkey, payload);
                     Promise.resolve(encrypted).then(enc => {
                         const event = {
                             kind: 24133,
