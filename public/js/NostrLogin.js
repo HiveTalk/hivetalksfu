@@ -431,14 +431,14 @@
                 });
             };
 
-            ws.onmessage = (msg) => {
+            ws.onmessage = async (msg) => {
                 try {
                     const data = JSON.parse(msg.data);
                     if (data[0] === 'EVENT' && data[2] && data[2].kind === 24133) {
                         const event = data[2];
                         let content = event.content;
                         try {
-                            content = bunkerDecrypt(event.pubkey, content);
+                            content = await bunkerDecrypt(event.pubkey, content);
                         } catch (e) { /* ignore decrypt errors */ }
                         try {
                             const parsed = JSON.parse(content);
@@ -587,7 +587,7 @@
             const connectPromise = new Promise((res, rej) => { connectResolve = res; connectReject = rej; });
             pendingRequests[connectId] = { resolve: connectResolve, reject: connectReject };
 
-            function handleMessage(data, wsInstance) {
+            async function handleMessage(data, wsInstance) {
                 try {
                     const parsed_outer = JSON.parse(data);
                     if (parsed_outer[0] === 'EVENT' && parsed_outer[2] && parsed_outer[2].kind === 24133) {
@@ -595,7 +595,7 @@
                         const senderPubkey = event.pubkey;
                         let content = event.content;
                         try {
-                            content = nip46Decrypt(senderPubkey, content);
+                            content = await nip46Decrypt(senderPubkey, content);
                         } catch (e) { return; } // can't decrypt — not for us
                         console.log('[NostrLogin] NIP-46 message from', senderPubkey.slice(0,8), ':', content.slice(0, 120));
                         try {
