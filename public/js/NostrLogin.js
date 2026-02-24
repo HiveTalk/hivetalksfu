@@ -577,7 +577,7 @@
                             rej(new Error('nostr-tools finalizeEvent not available'));
                         }
                 });
-            }
+            })
 
             // In the nostrconnect:// flow the signer sends a RESPONSE (not a request):
             //   { id: <connectId>, result: <sessionSecret>, error: '' }
