@@ -1593,9 +1593,25 @@
             btn.title = displayName;
 
             if (avatarUrl) {
-                btn.innerHTML = `<img class="nl-fab-avatar" src="${avatarUrl}" alt="${displayName}" onerror="this.style.display='none';this.nextElementSibling.style.display='block'" /><span style="display:none">${NOSTR_SVG_ICON}</span><span class="nl-fab-dot"></span>`;
+                btn.innerHTML = '';
+                const img = document.createElement('img');
+                img.className = 'nl-fab-avatar';
+                img.src = avatarUrl;
+                img.alt = displayName;
+                img.onerror = function() { this.style.display = 'none'; this.nextElementSibling.style.display = 'block'; };
+                const fallback = document.createElement('span');
+                fallback.style.display = 'none';
+                fallback.innerHTML = NOSTR_SVG_ICON; // trusted constant
+                const dot = document.createElement('span');
+                dot.className = 'nl-fab-dot';
+                btn.appendChild(img);
+                btn.appendChild(fallback);
+                btn.appendChild(dot);
             } else {
-                btn.innerHTML = NOSTR_SVG_ICON + '<span class="nl-fab-dot"></span>';
+                btn.innerHTML = NOSTR_SVG_ICON; // trusted constant
+                const dot = document.createElement('span');
+                dot.className = 'nl-fab-dot';
+                btn.appendChild(dot);
             }
         } else {
             btn.title = 'Login with Nostr';
