@@ -396,7 +396,7 @@
                         }
                     });
                 });
-            }
+            })
 
             ws.onopen = () => {
                 // Subscribe to responses
