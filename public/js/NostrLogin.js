@@ -572,8 +572,10 @@
                             const signed = tools.finalizeEvent(event, privBytes);
                             // Broadcast to all open sockets
                             openSockets.forEach(s => { try { if (s.readyState === 1) s.send(JSON.stringify(['EVENT', signed])); } catch (e) { /* ignore */ } });
+                        } else {
+                            delete pendingRequests[id];
+                            rej(new Error('nostr-tools finalizeEvent not available'));
                         }
-                    }).catch(() => {});
                 });
             }
 
