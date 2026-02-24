@@ -34,7 +34,7 @@
     let _pubkeyHex = null;
     let _loginMethod = null; // 'extension' | 'nip46' | 'local'
     let _dialogEl = null;
-    let _nip46Ws = null;           // active NIP-46 WebSocket
+    let _nip46Ws = [];             // active NIP-46 WebSocket(s)
     let _nip46Privkey = null;      // ephemeral privkey for NIP-46 session
     let _nip46Pubkey = null;       // ephemeral pubkey for NIP-46 session
     let _nip46Timeout = null;      // timeout handle for QR waiting
@@ -90,7 +90,7 @@
     function clearAccount() {
         _pubkeyHex = null;
         _loginMethod = null;
-        if (_nip46Ws) { try { _nip46Ws.close(); } catch (e) { /* ignore */ } _nip46Ws = null; }
+        _nip46Ws.forEach(s => { try { s.close(); } catch (e) { /* ignore */ } }); _nip46Ws = [];
         _nip46Privkey = null;
         _nip46Pubkey = null;
         _nip46RemotePubkey = null;
@@ -348,7 +348,7 @@
             _nip46Pubkey = pubHex;
 
             const ws = new WebSocket(relay);
-            _nip46Ws = ws;
+            _nip46Ws = [ws];
             let settled = false;
 
             const pendingRequests = {};
@@ -683,8 +683,8 @@
                 }
             });
 
-            // Store first socket as primary for cleanup
-            _nip46Ws = openSockets[0] || null;
+            // Store all sockets for cleanup on cancel/logout
+            _nip46Ws = openSockets.slice();
 
             // Timeout after 3 minutes
             _nip46Timeout = setTimeout(() => {
@@ -1182,7 +1182,7 @@
             overlay.querySelector('#nl-qr-error').style.display = 'none';
             // Cancel any active NIP-46 session
             if (_nip46Timeout) { clearTimeout(_nip46Timeout); _nip46Timeout = null; }
-            if (_nip46Ws) { try { _nip46Ws.close(); } catch (e) { /* ignore */ } _nip46Ws = null; }
+            _nip46Ws.forEach(s => { try { s.close(); } catch (e) { /* ignore */ } }); _nip46Ws = [];
         }
 
         // Wire up events
