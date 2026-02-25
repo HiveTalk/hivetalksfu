@@ -123,23 +123,50 @@
 }
 
 .zap-image-button {
+    -webkit-appearance: none;
+    -moz-appearance: none;
+    appearance: none;
     background-image: url('../images/lngradient.png');
+    background-color: transparent;
+    border: none;
+    outline: none;
+    box-shadow: none;
+    -webkit-tap-highlight-color: transparent;
     z-index: 1;
     position: absolute;
     right: 10px;
     bottom: 25px;
     display: flex;
     align-items: center;
-    padding: 5px;
+    padding: 0;
     margin: 5px;
-    width: clamp(20px, 8%, 40px); /* Responsive width */
-    height: clamp(20px, 8%, 40px); /* Responsive height */
-    min-width: 40px; /* Explicit minimum width */
-    min-height: 40px; /* Explicit minimum height */
-    border-radius: 5px;
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
     background-size: cover;
     background-position: center;
     cursor: pointer;
+    transition: transform 0.2s, opacity 0.2s;
+}
+
+.zap-image-button:hover,
+.zap-image-button:focus,
+.zap-image-button:focus-visible {
+    background-image: url('../images/lngradient.png') !important;
+    background-color: transparent !important;
+    background: url('../images/lngradient.png') center/cover no-repeat !important;
+    border: none;
+    outline: none;
+    box-shadow: none;
+    border-radius: 50%;
+    transform: scale(1.15);
+    opacity: 0.85;
+}
+
+.zap-image-button:active {
+    background: url('../images/lngradient.png') center/cover no-repeat !important;
+    transform: scale(1.05);
+    opacity: 1;
 }
 
 .username {

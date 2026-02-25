@@ -1,7 +1,7 @@
 /**
  * NostrLogin.js - Lightweight Nostr login replacement
  * Replaces nostr-login CDN module with an instant, local-first login dialog.
- * Supports NIP-07 extension login and nsec (secret key) login.
+ * Supports NIP-07 extension login and NIP-46 remote signer (QR + bunker URL).
  * Maintains full compatibility with existing nlAuth/nlLaunch/nlLogout event API
  * and __nostrlogin_accounts localStorage format.
  */
@@ -31,74 +31,49 @@
     }
 
     // ─── State ───────────────────────────────────────────────────────
-    let _privkeyHex = null; // only set for nsec login
     let _pubkeyHex = null;
-    let _loginMethod = null; // 'extension' | 'nsec'
+    let _loginMethod = null; // 'extension' | 'nip46' | 'local'
     let _dialogEl = null;
+    let _nip46Ws = [];             // active NIP-46 WebSocket(s)
+    let _nip46Privkey = null;      // ephemeral privkey for NIP-46 session
+    let _nip46Pubkey = null;       // ephemeral pubkey for NIP-46 session
+    let _nip46Timeout = null;      // timeout handle for QR waiting
+    let _nip46RemotePubkey = null; // remote signer pubkey (learned from first event)
+    let _localPrivkeyBytes = null; // local keypair privkey bytes (sign-up flow)
+    let _profileViewCtrl = null;   // profile view controller (set by createDialog)
 
     // ─── nostr-tools availability check ──────────────────────────────
     function nt() {
         return window.NostrTools;
     }
 
-    // ─── Core: set window.nostr for nsec-based login ─────────────────
-    function setWindowNostrFromNsec(privkeyHex, pubkeyHex) {
+    // ─── Core: set window.nostr for NIP-46 remote signer ────────────
+    function setWindowNostrFromNip46(remotePubkey, sendNip46Request) {
         window.nostr = {
             async getPublicKey() {
-                return pubkeyHex;
+                // Ask the remote signer for the user pubkey (may differ from signer pubkey)
+                return sendNip46Request('get_public_key', []);
             },
             async signEvent(event) {
-                const tools = nt();
-                if (!tools) throw new Error('nostr-tools not loaded');
-                // Build unsigned event
-                const unsigned = {
-                    kind: event.kind,
-                    created_at: event.created_at || Math.floor(Date.now() / 1000),
-                    tags: event.tags || [],
-                    content: event.content || '',
-                    pubkey: pubkeyHex,
-                };
-                // Use nostr-tools finalizeEvent if available (v2), else fall back
-                if (tools.finalizeEvent) {
-                    const privBytes = hexToBytes(privkeyHex);
-                    const signed = tools.finalizeEvent(unsigned, privBytes);
-                    return signed;
-                }
-                // Fallback: compute id + sign manually with schnorr
-                const serialized = JSON.stringify([
-                    0,
-                    unsigned.pubkey,
-                    unsigned.created_at,
-                    unsigned.kind,
-                    unsigned.tags,
-                    unsigned.content,
-                ]);
-                const id = await sha256Hex(serialized);
-                unsigned.id = id;
-                // Use noble-secp256k1 if available through nostr-tools
-                if (tools.getSignature) {
-                    unsigned.sig = tools.getSignature(id, privkeyHex);
-                } else if (tools.schnorr && tools.schnorr.sign) {
-                    const sigBytes = await tools.schnorr.sign(id, privkeyHex);
-                    unsigned.sig = bytesToHex(sigBytes);
-                } else {
-                    throw new Error('Cannot sign event: no signing function available in nostr-tools');
-                }
-                return unsigned;
+                // NIP-46: sign_event params must be [event] (object), not [JSON.stringify(event)]
+                return sendNip46Request('sign_event', [event]);
             },
-            // NIP-04 stubs (not commonly needed for HiveTalk flow)
             async nip04_encrypt(pubkey, plaintext) {
-                throw new Error('NIP-04 encrypt not supported with nsec login');
+                return sendNip46Request('nip04_encrypt', [pubkey, plaintext]);
             },
             async nip04_decrypt(pubkey, ciphertext) {
-                throw new Error('NIP-04 decrypt not supported with nsec login');
+                return sendNip46Request('nip04_decrypt', [pubkey, ciphertext]);
             },
         };
     }
 
-    // ─── Core: store account in __nostrlogin_accounts ────────────────
+    // ─── Core: store account in __nostrlogin_accounts ──────────────────
     function storeAccount(pubkey, name, picture) {
-        const accounts = [{ pubkey, name: name || undefined, picture: picture || undefined }];
+        // Preserve existing name/picture if not explicitly supplied
+        const existing = getCurrentAccount();
+        const resolvedName    = name    || (existing?.pubkey === pubkey ? existing.name    : undefined);
+        const resolvedPicture = picture || (existing?.pubkey === pubkey ? existing.picture : undefined);
+        const accounts = [{ pubkey, name: resolvedName || undefined, picture: resolvedPicture || undefined }];
         window.localStorage.setItem('__nostrlogin_accounts', JSON.stringify(accounts));
     }
 
@@ -113,9 +88,12 @@
 
     // ─── Core: clear account ─────────────────────────────────────
     function clearAccount() {
-        _privkeyHex = null;
         _pubkeyHex = null;
         _loginMethod = null;
+        _nip46Ws.forEach(s => { try { s.close(); } catch (e) { /* ignore */ } }); _nip46Ws = [];
+        _nip46Privkey = null;
+        _nip46Pubkey = null;
+        _nip46RemotePubkey = null;
         window.localStorage.removeItem('__nostrlogin_accounts');
         // Clear peer_* keys so Room.js doesn't restore stale session
         ['peer_name', 'peer_pubkey', 'peer_npub', 'peer_url', 'peer_lnaddress', 'peer_uuid'].forEach(k => {
@@ -136,7 +114,7 @@
         'wss://relay.primal.net',
         'wss://relay.damus.io',
         'wss://nos.lol',
-        'wss://purplepag.es',
+        'wss://purplepag.es',  // low-priority fallback, unstable
     ];
 
     // Temporarily dropped relays: { url: timestamp_when_dropped }
@@ -172,10 +150,20 @@
         const subId = 'nl-profile-' + Math.random().toString(36).slice(2, 8);
         const sockets = [];
 
+        const isPurplepages = (url) => url.includes('purplepag.es');
+
         activeRelays.forEach(url => {
             try {
                 const ws = new WebSocket(url);
                 sockets.push({ ws, url });
+
+                // purplepag.es gets a short 3s per-relay timeout; primaries get 8s
+                const relayTimeout = setTimeout(() => {
+                    if (ws.readyState === WebSocket.CONNECTING || ws.readyState === WebSocket.OPEN) {
+                        if (isPurplepages(url)) dropRelay(url);
+                        try { ws.close(); } catch (e) { /* ignore */ }
+                    }
+                }, isPurplepages(url) ? 3000 : 8000);
 
                 ws.onopen = () => {
                     // Send NIP-01 REQ for kind:0 (profile metadata)
@@ -184,12 +172,13 @@
                 };
 
                 ws.onmessage = (msg) => {
-                    if (resolved) { ws.close(); return; }
+                    if (resolved) { clearTimeout(relayTimeout); ws.close(); return; }
                     try {
                         const data = JSON.parse(msg.data);
                         // NIP-01: ["EVENT", subId, event]
                         if (data[0] === 'EVENT' && data[2] && data[2].kind === 0 && data[2].pubkey === pubkey) {
                             resolved = true;
+                            clearTimeout(relayTimeout);
                             const content = JSON.parse(data[2].content);
                             const name = content.name || content.display_name;
                             const picture = content.picture || content.image;
@@ -206,7 +195,7 @@
                     } catch (e) { /* ignore parse errors */ }
                 };
 
-                ws.onerror = () => { /* ignore */ };
+                ws.onerror = () => { clearTimeout(relayTimeout); };
             } catch (e) {
                 console.log('[NostrLogin] Failed to connect to relay:', url, e);
             }
@@ -244,26 +233,486 @@
         return pubkey;
     }
 
-    // ─── Core: nsec login ────────────────────────────────────────────
-    function loginWithNsec(nsec) {
+    // ─── Core: local keypair login (sign-up flow) ────────────────────
+    function loginWithLocalKey(privBytes) {
         const tools = nt();
         if (!tools) throw new Error('nostr-tools not loaded');
-        // Decode nsec
-        const decoded = tools.nip19.decode(nsec);
-        if (decoded.type !== 'nsec') throw new Error('Invalid nsec key');
-        const privkeyBytes = decoded.data;
-        const privkeyHex = bytesToHex(privkeyBytes);
-        const pubkeyHex = tools.getPublicKey(privkeyBytes);
-        _privkeyHex = privkeyHex;
-        _pubkeyHex = pubkeyHex;
-        _loginMethod = 'nsec';
-        // Set window.nostr so existing code works seamlessly
-        setWindowNostrFromNsec(privkeyHex, pubkeyHex);
-        storeAccount(pubkeyHex);
+        const pubHex = tools.getPublicKey(privBytes);
+        _localPrivkeyBytes = privBytes;
+        _pubkeyHex = pubHex;
+        _loginMethod = 'local';
+        // Set window.nostr shim for local signing
+        window.nostr = {
+            async getPublicKey() { return pubHex; },
+            async signEvent(event) {
+                const t = nt();
+                if (!t || !t.finalizeEvent) throw new Error('nostr-tools not available');
+                return t.finalizeEvent({ ...event }, _localPrivkeyBytes);
+            },
+            async nip04_encrypt(pk, plaintext) {
+                const t = nt();
+                if (!t || !t.nip04) throw new Error('NIP-04 encryption not available');
+                return t.nip04.encrypt(bytesToHex(_localPrivkeyBytes), pk, plaintext);
+            },
+            async nip04_decrypt(pk, ciphertext) {
+                const t = nt();
+                if (!t || !t.nip04) throw new Error('NIP-04 decryption not available');
+                return t.nip04.decrypt(bytesToHex(_localPrivkeyBytes), pk, ciphertext);
+            },
+        };
+        storeAccount(pubHex);
         fireNlAuth('login');
-        // Fetch profile in background so name+picture are ready for Room.js
-        fetchProfileFromRelays(pubkeyHex);
-        return pubkeyHex;
+        return pubHex;
+    }
+
+    // ─── Core: publish kind:0 profile metadata to relays ─────────────
+    async function publishProfile(profileData) {
+        if (!window.nostr) throw new Error('Not logged in');
+        const auditPubkey = _pubkeyHex ? _pubkeyHex.slice(0, 8) + '…' : 'unknown';
+        const auditTs = new Date().toISOString();
+        console.log(`[NostrLogin] publishProfile start pubkey=${auditPubkey} ts=${auditTs} fields=${Object.keys(profileData).join(',')}`);
+        const event = {
+            kind: 0,
+            created_at: Math.floor(Date.now() / 1000),
+            tags: [],
+            content: JSON.stringify(profileData),
+        };
+        const signed = await window.nostr.signEvent(event);
+        // Publish to all profile relays
+        const activeRelays = getActiveRelays();
+        let published = 0;
+        const relayResults = [];
+        const isPurplepages = (url) => url.includes('purplepag.es');
+        await Promise.allSettled(activeRelays.map(url => new Promise((resolve) => {
+            try {
+                const ws = new WebSocket(url);
+                // purplepag.es gets a short 3s timeout; primaries get 8s
+                const t = setTimeout(() => { try { ws.close(); } catch (e) { /* ignore */ } relayResults.push({ url, ok: false, reason: 'timeout' }); resolve(); }, isPurplepages(url) ? 3000 : 8000);
+                ws.onopen = () => { ws.send(JSON.stringify(['EVENT', signed])); };
+                ws.onmessage = (msg) => {
+                    try {
+                        const data = JSON.parse(msg.data);
+                        if (data[0] === 'OK') { published++; relayResults.push({ url, ok: true }); clearTimeout(t); ws.close(); resolve(); }
+                        else if (data[0] === 'NOTICE') { relayResults.push({ url, ok: false, reason: data[1] }); clearTimeout(t); ws.close(); resolve(); }
+                    } catch (e) { /* ignore */ }
+                };
+                ws.onerror = () => { relayResults.push({ url, ok: false, reason: 'connection error' }); clearTimeout(t); resolve(); };
+            } catch (e) { relayResults.push({ url, ok: false, reason: e.message }); resolve(); }
+        })));
+        if (published === 0) {
+            const failures = relayResults.map(r => `${r.url}: ${r.reason || 'unknown'}`).join('; ');
+            console.warn(`[NostrLogin] publishProfile FAILED pubkey=${auditPubkey} ts=${auditTs} failures=${failures}`);
+            throw new Error(`Could not publish to any relay. Details: ${failures}`);
+        }
+        const successRelays = relayResults.filter(r => r.ok).map(r => r.url);
+        console.log(`[NostrLogin] publishProfile OK pubkey=${auditPubkey} ts=${auditTs} published=${published} relays=${successRelays.join(',')}`);
+        // Update local account cache — preserve existing name/picture if not in profileData
+        const account = getCurrentAccount();
+        if (account) {
+            const newName    = profileData.name    || account.name    || window.localStorage.peer_name;
+            const newPicture = profileData.picture || account.picture || window.localStorage.peer_url;
+            storeAccount(account.pubkey, newName, newPicture);
+            if (newName)    window.localStorage.peer_name = newName;
+            if (newPicture) window.localStorage.peer_url  = newPicture;
+            updateFloatingButton();
+        }
+        return published;
+    }
+
+    // ─── Core: NIP-46 login via bunker URL ──────────────────────────
+    async function loginWithBunkerUrl(bunkerUrl) {
+        const tools = nt();
+        if (!tools) throw new Error('nostr-tools not loaded');
+
+        // Parse bunker://pubkey?relay=...
+        let url;
+        try {
+            url = new URL(bunkerUrl.replace(/^bunker:\/\//, 'https://'));
+        } catch (e) {
+            throw new Error('Invalid bunker URL format');
+        }
+        const remotePubkey = url.hostname || url.pathname.replace(/^\/\//, '').split('?')[0];
+        const relay = url.searchParams.get('relay');
+        const secret = url.searchParams.get('secret');
+
+        if (!remotePubkey || remotePubkey.length < 60) throw new Error('Invalid pubkey in bunker URL');
+        if (!relay) throw new Error('No relay specified in bunker URL');
+        if (!/^wss?:\/\//.test(relay)) throw new Error('Relay must be a wss:// or ws:// URL');
+
+        return new Promise((resolve, reject) => {
+            // Generate ephemeral keypair
+            const privBytes = crypto.getRandomValues(new Uint8Array(32));
+            const privHex = bytesToHex(privBytes);
+            const pubHex = tools.getPublicKey(privBytes);
+            _nip46Privkey = privHex;
+            _nip46Pubkey = pubHex;
+
+            const ws = new WebSocket(relay);
+            _nip46Ws = [ws];
+            let settled = false;
+
+            const pendingRequests = {};
+
+            // NIP-44 encrypt helper for bunker flow — spec requires NIP-44; fall back to NIP-04
+            // nostr-tools 2.x nip44 API: getConversationKey(privBytes, pubBytes) -> key
+            //                            encrypt(plaintext, conversationKey) -> ciphertext
+            //                            decrypt(ciphertext, conversationKey) -> plaintext
+            function bunkerEncrypt(plaintext) {
+                if (tools.nip44 && tools.nip44.encrypt && tools.nip44.getConversationKey) {
+                    const convKey = tools.nip44.getConversationKey(privBytes, hexToBytes(remotePubkey));
+                    return Promise.resolve(tools.nip44.encrypt(plaintext, convKey));
+                }
+                if (!tools.nip04) throw new Error('No NIP-44 or NIP-04 encryption available');
+                return Promise.resolve(tools.nip04.encrypt(privHex, remotePubkey, plaintext));
+            }
+
+            // NIP-44 decrypt helper for bunker flow
+            function bunkerDecrypt(senderPubkey, ciphertext) {
+                if (tools.nip44 && tools.nip44.decrypt && tools.nip44.getConversationKey) {
+                    try {
+                        const convKey = tools.nip44.getConversationKey(privBytes, hexToBytes(senderPubkey));
+                        return tools.nip44.decrypt(ciphertext, convKey);
+                    } catch (e) { /* fall through to nip04 */ }
+                }
+                return tools.nip04.decrypt(privHex, senderPubkey, ciphertext);
+            }
+
+            function sendNip46Request(method, params) {
+                return new Promise((res, rej) => {
+                    const id = Math.random().toString(36).slice(2, 10);
+                    pendingRequests[id] = { resolve: res, reject: rej };
+                    const payload = JSON.stringify({ id, method, params });
+                    Promise.resolve(bunkerEncrypt(payload)).then(enc => {
+                        const event = {
+                            kind: 24133,
+                            created_at: Math.floor(Date.now() / 1000),
+                            tags: [['p', remotePubkey]],
+                            content: enc,
+                            pubkey: pubHex,
+                        };
+                        if (tools.finalizeEvent) {
+                            const signed = tools.finalizeEvent(event, privBytes);
+                            ws.send(JSON.stringify(['EVENT', signed]));
+                        }
+                    });
+                });
+            }
+
+            ws.onopen = () => {
+                // Subscribe to responses
+                const subId = 'nip46-' + Math.random().toString(36).slice(2, 8);
+                // No limit — we need to receive all future responses (sign_event, etc.)
+                ws.send(JSON.stringify(['REQ', subId, { kinds: [24133], '#p': [pubHex] }]));
+
+                // NIP-46 connect: params are [clientPubkey, secret?, permissions?]
+                // The client sends its OWN pubkey, not the remote signer's pubkey
+                const connectParams = secret ? [pubHex, secret] : [pubHex];
+                sendNip46Request('connect', connectParams).then(() => {
+                    // After connect, ask the signer for the actual user pubkey.
+                    // In multi-account signers the user pubkey may differ from the
+                    // signer daemon pubkey embedded in the bunker:// URL.
+                    return sendNip46Request('get_public_key', []);
+                }).then(userPubkey => {
+                    if (settled) return;
+                    settled = true;
+                    const resolvedPubkey = userPubkey || remotePubkey;
+                    _pubkeyHex = resolvedPubkey;
+                    _loginMethod = 'nip46';
+                    setWindowNostrFromNip46(resolvedPubkey, sendNip46Request);
+                    storeAccount(resolvedPubkey);
+                    fireNlAuth('login');
+                    fetchProfileFromRelays(resolvedPubkey);
+                    resolve(resolvedPubkey);
+                }).catch(err => {
+                    if (settled) return;
+                    settled = true;
+                    ws.close();
+                    reject(err);
+                });
+            };
+
+            ws.onmessage = async (msg) => {
+                try {
+                    const data = JSON.parse(msg.data);
+                    if (data[0] === 'EVENT' && data[2] && data[2].kind === 24133) {
+                        const event = data[2];
+                        let content = event.content;
+                        try {
+                            content = await bunkerDecrypt(event.pubkey, content);
+                        } catch (e) { /* ignore decrypt errors */ }
+                        try {
+                            const parsed = JSON.parse(content);
+                            const pending = pendingRequests[parsed.id];
+                            if (pending) {
+                                delete pendingRequests[parsed.id];
+                                if (parsed.error) {
+                                    pending.reject(new Error(parsed.error));
+                                } else {
+                                    pending.resolve(parsed.result);
+                                }
+                            }
+                        } catch (e) { /* ignore */ }
+                    }
+                } catch (e) { /* ignore */ }
+            };
+
+            ws.onerror = () => {
+                if (!settled) {
+                    settled = true;
+                    reject(new Error('WebSocket error connecting to relay'));
+                }
+            };
+
+            ws.onclose = () => {
+                if (!settled) {
+                    settled = true;
+                    reject(new Error('Connection to relay closed'));
+                }
+            };
+
+            // Timeout after 30s
+            setTimeout(() => {
+                if (!settled) {
+                    settled = true;
+                    ws.close();
+                    reject(new Error('Connection timed out'));
+                }
+            }, 30000);
+        });
+    }
+
+    // ─── Core: NIP-46 QR connect flow ───────────────────────────────
+    // Returns { uri, waitForConnect } where waitForConnect is a Promise
+    async function startNip46QrSession(relayUrl) {
+        const tools = nt();
+        if (!tools) throw new Error('nostr-tools not loaded');
+
+        // Match mutable's relay list for broad signer compatibility.
+        // relay.nsec.app is added as a NIP-46 dedicated relay that accepts browser WSS.
+        // Note: relay.primal.net blocks browser WebSocket connections but is included so
+        // Primal and other signers that prefer it can still publish there.
+        const defaultRelays = [
+            'wss://relay.nsec.app',
+            'wss://relay.damus.io',
+            'wss://relay.primal.net',
+            'wss://nos.lol',
+        ];
+        const allRelays = relayUrl ? [relayUrl] : defaultRelays;
+
+        // Generate ephemeral keypair
+        const privBytes = crypto.getRandomValues(new Uint8Array(32));
+        const privHex = bytesToHex(privBytes);
+        const pubHex = tools.getPublicKey(privBytes);
+        _nip46Privkey = privHex;
+        _nip46Pubkey = pubHex;
+
+        // Generate a random secret — required by NIP-46 spec to prevent connection spoofing.
+        // The remote signer MUST return this exact value as the `result` of its connect response.
+        const sessionSecret = bytesToHex(crypto.getRandomValues(new Uint8Array(8)));
+
+        // NIP-46 spec: name, url, image are flat query params, NOT a JSON metadata blob.
+        // Multiple relay= params — one per relay, matching how mutable formats the URI.
+        const appName = 'HiveTalk';
+        // Use the real production URL when running on localhost (for display in signers like Primal)
+        const appUrl = (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1')
+            ? 'https://vanilla.hivetalk.org'
+            : window.location.origin;
+        const relayParams = allRelays.map(r => `relay=${encodeURIComponent(r)}`).join('&');
+        const uri = `nostrconnect://${pubHex}` +
+            `?${relayParams}` +
+            `&secret=${encodeURIComponent(sessionSecret)}` +
+            `&name=${encodeURIComponent(appName)}` +
+            `&url=${encodeURIComponent(appUrl)}`;
+
+        // NIP-44 encrypt helper — spec requires NIP-44; fall back to NIP-04 for older signers
+        // nostr-tools 2.x nip44 API: getConversationKey(privBytes, pubBytes) -> key
+        //                            encrypt(plaintext, conversationKey) -> ciphertext
+        //                            decrypt(ciphertext, conversationKey) -> plaintext
+        function nip46Encrypt(recipientPubkey, plaintext) {
+            if (tools.nip44 && tools.nip44.encrypt && tools.nip44.getConversationKey) {
+                const convKey = tools.nip44.getConversationKey(privBytes, hexToBytes(recipientPubkey));
+                return Promise.resolve(tools.nip44.encrypt(plaintext, convKey));
+            }
+            return Promise.resolve(tools.nip04.encrypt(privHex, recipientPubkey, plaintext));
+        }
+
+        // NIP-44 decrypt helper
+        function nip46Decrypt(senderPubkey, ciphertext) {
+            if (tools.nip44 && tools.nip44.decrypt && tools.nip44.getConversationKey) {
+                try {
+                    const convKey = tools.nip44.getConversationKey(privBytes, hexToBytes(senderPubkey));
+                    return tools.nip44.decrypt(ciphertext, convKey);
+                } catch (e) { /* fall through to nip04 */ }
+            }
+            return tools.nip04.decrypt(privHex, senderPubkey, ciphertext);
+        }
+
+        const waitForConnect = new Promise((resolve, reject) => {
+            let settled = false;
+            const pendingRequests = {};
+            const openSockets = [];
+            let connectedCount = 0;
+            let errorCount = 0;
+
+            function sendNip46Request(method, params, targetPubkey) {
+                return new Promise((res, rej) => {
+                    const id = Math.random().toString(36).slice(2, 10);
+                    pendingRequests[id] = { resolve: res, reject: rej };
+                    const payload = JSON.stringify({ id, method, params });
+                    const encryptTarget = targetPubkey || _nip46Pubkey;
+                    Promise.resolve(nip46Encrypt(encryptTarget, payload)).then(enc => {
+                        const event = {
+                            kind: 24133,
+                            created_at: Math.floor(Date.now() / 1000),
+                            tags: [['p', encryptTarget]],
+                            content: enc,
+                            pubkey: pubHex,
+                        };
+                        if (tools.finalizeEvent) {
+                            const signed = tools.finalizeEvent(event, privBytes);
+                            // Broadcast to all open sockets
+                            openSockets.forEach(s => { try { if (s.readyState === 1) s.send(JSON.stringify(['EVENT', signed])); } catch (e) { /* ignore */ } });
+                        } else {
+                            delete pendingRequests[id];
+                            rej(new Error('nostr-tools finalizeEvent not available'));
+                        }
+                });
+            })
+
+            // In the nostrconnect:// flow the signer sends a RESPONSE (not a request):
+            //   { id: <connectId>, result: <sessionSecret>, error: '' }
+            // We register a pending entry keyed on connectId so handleMessage resolves it.
+            const connectId = Math.random().toString(36).slice(2, 10);
+            let connectResolve, connectReject;
+            const connectPromise = new Promise((res, rej) => { connectResolve = res; connectReject = rej; });
+            pendingRequests[connectId] = { resolve: connectResolve, reject: connectReject };
+
+            async function handleMessage(data, wsInstance) {
+                try {
+                    const parsed_outer = JSON.parse(data);
+                    if (parsed_outer[0] === 'EVENT' && parsed_outer[2] && parsed_outer[2].kind === 24133) {
+                        const event = parsed_outer[2];
+                        const senderPubkey = event.pubkey;
+                        let content = event.content;
+                        try {
+                            content = await nip46Decrypt(senderPubkey, content);
+                        } catch (e) { return; } // can't decrypt — not for us
+                        console.log('[NostrLogin] NIP-46 message from', senderPubkey.slice(0,8), ':', content.slice(0, 120));
+                        try {
+                            const parsed = JSON.parse(content);
+                            // nostrconnect:// flow: signer sends a response whose result is our sessionSecret.
+                            // It may arrive with id=connectId (if signer echoes our id) OR as a fresh
+                            // response we identify by result === sessionSecret.
+                            const isConnectResponse =
+                                parsed.result === sessionSecret ||
+                                (parsed.id === connectId && parsed.result !== undefined);
+                            if (isConnectResponse && !settled) {
+                                settled = true;
+                                const remotePubkey = senderPubkey;
+                                _nip46RemotePubkey = remotePubkey;
+                                delete pendingRequests[connectId];
+                                // Ask the signer for the actual user pubkey
+                                sendNip46Request('get_public_key', [], remotePubkey).then(userPubkey => {
+                                    const resolvedPubkey = userPubkey || remotePubkey;
+                                    _pubkeyHex = resolvedPubkey;
+                                    _loginMethod = 'nip46';
+                                    setWindowNostrFromNip46(resolvedPubkey, (method, params) => sendNip46Request(method, params, remotePubkey));
+                                    storeAccount(resolvedPubkey);
+                                    fireNlAuth('login');
+                                    fetchProfileFromRelays(resolvedPubkey);
+                                    resolve(resolvedPubkey);
+                                }).catch(() => {
+                                    // Fallback: use signer pubkey if get_public_key fails
+                                    _pubkeyHex = remotePubkey;
+                                    _loginMethod = 'nip46';
+                                    setWindowNostrFromNip46(remotePubkey, (method, params) => sendNip46Request(method, params, remotePubkey));
+                                    storeAccount(remotePubkey);
+                                    fireNlAuth('login');
+                                    fetchProfileFromRelays(remotePubkey);
+                                    resolve(remotePubkey);
+                                });
+                                return;
+                            }
+                            // Response to a pending request (get_public_key, sign_event, etc.)
+                            const pending = pendingRequests[parsed.id];
+                            if (pending) {
+                                delete pendingRequests[parsed.id];
+                                if (parsed.error) pending.reject(new Error(parsed.error));
+                                else pending.resolve(parsed.result);
+                            }
+                        } catch (e) { /* ignore */ }
+                    }
+                } catch (e) { /* ignore */ }
+            }
+
+            console.log('[NostrLogin] NIP-46 QR session started, pubkey:', pubHex.slice(0,8), 'secret:', sessionSecret);
+            console.log('[NostrLogin] Connecting to relays:', allRelays);
+            allRelays.forEach(relayWss => {
+                try {
+                    const ws = new WebSocket(relayWss);
+                    openSockets.push(ws);
+                    ws.onopen = () => {
+                        connectedCount++;
+                        console.log('[NostrLogin] Relay connected:', relayWss, '(', connectedCount, '/', allRelays.length, ')');
+                        const subId = 'nip46-qr-' + Math.random().toString(36).slice(2, 8);
+                        ws.send(JSON.stringify(['REQ', subId, { kinds: [24133], '#p': [pubHex] }]));
+                        console.log('[NostrLogin] Subscribed on', relayWss, 'subId:', subId);
+                    };
+                    ws.onmessage = (msg) => {
+                        console.log('[NostrLogin] Raw message from', relayWss, ':', msg.data.slice(0, 80));
+                        handleMessage(msg.data, ws);
+                    };
+                    ws.onerror = (e) => {
+                        errorCount++;
+                        console.warn('[NostrLogin] NIP-46 relay error:', relayWss, e);
+                        if (!settled && errorCount === allRelays.length) {
+                            settled = true;
+                            reject(new Error(`Could not connect to any relay (tried: ${allRelays.join(', ')}). Check browser console for details.`));
+                        }
+                    };
+                    ws.onclose = (e) => {
+                        console.warn('[NostrLogin] NIP-46 relay closed:', relayWss, e?.code, e?.reason);
+                        if (!settled && connectedCount === 0 && errorCount === allRelays.length) {
+                            settled = true;
+                            reject(new Error('All relay connections closed'));
+                        }
+                    };
+                } catch (e) {
+                    errorCount++;
+                    console.error('[NostrLogin] Failed to open WebSocket to', relayWss, e);
+                }
+            });
+
+            // Store all sockets for cleanup on cancel/logout
+            _nip46Ws = openSockets.slice();
+
+            // Timeout after 3 minutes
+            _nip46Timeout = setTimeout(() => {
+                if (!settled) {
+                    settled = true;
+                    openSockets.forEach(s => { try { s.close(); } catch (e) { /* ignore */ } });
+                    reject(new Error('QR session timed out'));
+                }
+            }, 180000);
+        });
+
+        return { uri, waitForConnect };
+    }
+
+    // ─── UI: QR code renderer (uses qrcodejs div API) ────────────────
+    function renderQrToCanvas(container, text) {
+        // Clear any previous render
+        container.innerHTML = '';
+        if (window.QRCode) {
+            new window.QRCode(container, { text, width: 240, height: 240, colorDark: '#000', colorLight: '#fff', correctLevel: window.QRCode.CorrectLevel.M });
+            return;
+        }
+        // No QRCode library available — show the raw URI as a copyable fallback
+        // (avoid sending the nostrconnect:// URI to any third-party service)
+        const fallback = document.createElement('div');
+        fallback.style.cssText = 'font-size:11px;word-break:break-all;background:#1e293b;color:#94a3b8;padding:10px;border-radius:8px;';
+        fallback.textContent = text;
+        container.appendChild(fallback);
     }
 
     // ─── UI: create the login dialog ─────────────────────────────
@@ -272,40 +721,112 @@
 
         const overlay = document.createElement('div');
         overlay.id = 'nl-dialog-overlay';
+        // Inject HTML from sub-view modules (if loaded)
+        const signupCardHtml  = window.NostrSignupView  ? window.NostrSignupView.getCardHTML()  : '';
+        const signupStepsHtml = window.NostrSignupView  ? window.NostrSignupView.getStepsHTML() : '';
+        const profileHtml     = window.NostrProfileView ? window.NostrProfileView.getHTML()     : '';
+        const walletHtml      = window.NostrWalletView  ? window.NostrWalletView.getHTML()      : '';
+
         overlay.innerHTML = `
             <div id="nl-dialog">
                 <div id="nl-dialog-header">
-                    <span id="nl-dialog-title">Login with Nostr</span>
-                    <button id="nl-dialog-close">&times;</button>
+                    <span id="nl-dialog-title">Connect to Nostr</span>
+                    <button id="nl-dialog-close" aria-label="Close">&times;</button>
                 </div>
-                <!-- Logged-in view -->
+
+                <!-- Logged-in menu view -->
                 <div id="nl-logged-in" style="display:none;">
                     <div class="nl-profile">
-                        <img id="nl-profile-avatar" class="nl-avatar" src="" alt="" />
+                        <img id="nl-profile-avatar" class="nl-avatar" src="" alt="" style="display:none;" />
                         <div class="nl-profile-info">
                             <div id="nl-profile-name" class="nl-profile-name"></div>
                             <div id="nl-profile-npub" class="nl-profile-npub"></div>
                         </div>
                     </div>
-                    <button id="nl-logout-btn" class="nl-btn nl-btn-danger">Logout</button>
+                    <div class="nl-menu">
+                        <button id="nl-profile-btn" class="nl-menu-item">
+                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+                            Profile
+                        </button>
+                        <button id="nl-wallet-btn" class="nl-menu-item">
+                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="5" width="20" height="14" rx="2"/><line x1="2" y1="10" x2="22" y2="10"/></svg>
+                            Wallet Settings
+                        </button>
+                        <button id="nl-logout-btn" class="nl-menu-item nl-menu-danger">
+                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
+                            Log out
+                        </button>
+                    </div>
                 </div>
-                <!-- Login view -->
+
+                <!-- Profile settings view (from NostrProfileView.js) -->
+                ${profileHtml}
+
+                <!-- Wallet settings view (from NostrWalletView.js) -->
+                ${walletHtml}
+
+                <!-- Sign-up wizard steps (from NostrSignupView.js) -->
+                ${signupStepsHtml}
+
+                <!-- Login / sign-up body -->
                 <div id="nl-dialog-body">
-                    <button id="nl-ext-btn" class="nl-btn nl-btn-primary">
-                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
-                        Login with Extension
-                    </button>
-                    <div id="nl-ext-missing" style="display:none;" class="nl-hint">
-                        No Nostr extension detected. Install <a href="https://github.com/niceforu/niceforu-extension" target="_blank" rel="noopener">nos2x</a> or <a href="https://getalby.com" target="_blank" rel="noopener">Alby</a>.
+                    <p class="nl-subtitle">Choose how you want to connect your Nostr profile</p>
+
+                    <!-- NIP-07 Extension card -->
+                    <div id="nl-ext-card" class="nl-method-card nl-card-purple">
+                        <div class="nl-card-header">
+                            <span class="nl-card-icon nl-icon-purple"><svg width="22" height="22" viewBox="0 0 24 24" fill="currentColor"><path d="M13 2L4.5 13.5H11L10 22L19.5 10.5H13L13 2Z"/></svg></span>
+                            <div><div class="nl-card-title">Browser Extension (NIP-07)</div><div class="nl-card-desc">Connect using Alby, nos2x, or another NIP-07 extension</div></div>
+                        </div>
+                        <div id="nl-ext-error" class="nl-error" style="display:none;margin-top:10px;"></div>
                     </div>
-                    <div class="nl-divider"><span>or</span></div>
-                    <div id="nl-nsec-section">
-                        <label for="nl-nsec-input" class="nl-label">Secret key (nsec)</label>
-                        <input id="nl-nsec-input" type="password" placeholder="nsec1..." autocomplete="off" class="nl-input" />
-                        <div id="nl-nsec-error" class="nl-error" style="display:none;"></div>
-                        <button id="nl-nsec-btn" class="nl-btn nl-btn-secondary">Login with Key</button>
+
+                    <!-- NIP-46 Remote Signer card -->
+                    <div id="nl-nip46-card" class="nl-method-card nl-card-blue">
+                        <div class="nl-card-header" id="nl-nip46-header">
+                            <span class="nl-card-icon nl-icon-blue"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="8" cy="15" r="4"/><line x1="11" y1="12" x2="20" y2="3"/><line x1="17" y1="5" x2="19" y2="7"/></svg></span>
+                            <div><div class="nl-card-title">Remote Signer (NIP-46)</div><div class="nl-card-desc">Connect using Amber, Primal, or another remote signer</div></div>
+                        </div>
+                        <div id="nl-nip46-options" style="display:none;margin-top:12px;">
+                            <div id="nl-qr-option" class="nl-sub-option">
+                                <span class="nl-sub-icon nl-icon-blue"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="5" y="5" width="3" height="3" fill="currentColor" stroke="none"/><rect x="16" y="5" width="3" height="3" fill="currentColor" stroke="none"/><rect x="5" y="16" width="3" height="3" fill="currentColor" stroke="none"/></svg></span>
+                                <div><div class="nl-sub-title">Scan QR Code</div><div class="nl-sub-desc">For Primal mobile and other apps</div></div>
+                            </div>
+                            <!-- Paste Bunker URL hidden until bunker flow is fully tested
+                            <div id="nl-bunker-option" class="nl-sub-option">
+                                <span class="nl-sub-icon nl-icon-blue"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="8" cy="15" r="4"/><line x1="11" y1="12" x2="20" y2="3"/><line x1="17" y1="5" x2="19" y2="7"/></svg></span>
+                                <div><div class="nl-sub-title">Paste Bunker URL</div><div class="nl-sub-desc">For Amber and other signers</div></div>
+                            </div>
+                            -->
+                            <button id="nl-nip46-cancel" class="nl-btn nl-btn-ghost" style="margin-top:8px;">Cancel</button>
+                        </div>
+                        <div id="nl-qr-view" style="display:none;margin-top:12px;">
+                            <div class="nl-card-header" style="margin-bottom:12px;">
+                                <span class="nl-sub-icon nl-icon-blue"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="5" y="5" width="3" height="3" fill="currentColor" stroke="none"/><rect x="16" y="5" width="3" height="3" fill="currentColor" stroke="none"/><rect x="5" y="16" width="3" height="3" fill="currentColor" stroke="none"/></svg></span>
+                                <div class="nl-card-title">Scan with Primal or another app</div>
+                            </div>
+                            <div class="nl-qr-container"><div id="nl-qr-canvas" style="display:flex;justify-content:center;"></div></div>
+                            <div class="nl-uri-row">
+                                <input id="nl-qr-uri" class="nl-input nl-uri-input" readonly value="" />
+                                <button id="nl-qr-copy" class="nl-copy-btn" title="Copy"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg></button>
+                            </div>
+                            <div class="nl-waiting"><span class="nl-spinner"></span>Waiting for connection...</div>
+                            <div id="nl-qr-error" class="nl-error" style="display:none;margin-top:8px;text-align:center;"></div>
+                            <button id="nl-qr-cancel" class="nl-btn nl-btn-ghost" style="margin-top:10px;">Cancel</button>
+                        </div>
+                        <div id="nl-bunker-view" style="display:none;margin-top:12px;">
+                            <input id="nl-bunker-input" class="nl-input" type="text" placeholder="bunker://..." autocomplete="off" />
+                            <div id="nl-bunker-error" class="nl-error" style="display:none;margin-top:6px;"></div>
+                            <div class="nl-btn-row" style="margin-top:10px;">
+                                <button id="nl-bunker-back" class="nl-btn nl-btn-ghost nl-btn-half">Back</button>
+                                <button id="nl-bunker-connect" class="nl-btn nl-btn-blue nl-btn-half">Connect</button>
+                            </div>
+                            <div class="nl-hint" style="margin-top:8px;">Paste a bunker:// URL from Amber or another remote signer</div>
+                        </div>
                     </div>
-                    <div id="nl-status" class="nl-status" style="display:none;"></div>
+
+                    <!-- Sign-up footer link (from NostrSignupView.js) -->
+                    ${signupCardHtml}
                 </div>
             </div>
         `;
@@ -322,60 +843,143 @@
                     position: fixed;
                     inset: 0;
                     z-index: 999999;
-                    background: rgba(0,0,0,0.6);
+                    background: rgba(0,0,0,0.65);
                     backdrop-filter: blur(4px);
                     align-items: center;
                     justify-content: center;
                 }
-                #nl-dialog-overlay.nl-open {
-                    display: flex;
-                }
+                #nl-dialog-overlay.nl-open { display: flex; }
                 #nl-dialog {
-                    background: #1a1a2e;
+                    background: #16213e;
                     color: #e0e0e0;
                     border-radius: 16px;
-                    width: 380px;
-                    max-width: 92vw;
-                    box-shadow: 0 20px 60px rgba(0,0,0,0.5);
-                    overflow: hidden;
+                    width: 420px;
+                    max-width: 94vw;
+                    max-height: 92vh;
+                    overflow-y: auto;
+                    box-shadow: 0 24px 64px rgba(0,0,0,0.6);
                     font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
                     animation: nl-slide-in 0.2s ease-out;
                 }
                 @keyframes nl-slide-in {
-                    from { opacity: 0; transform: translateY(-20px) scale(0.96); }
+                    from { opacity: 0; transform: translateY(-18px) scale(0.97); }
                     to   { opacity: 1; transform: translateY(0) scale(1); }
                 }
                 #nl-dialog-header {
                     display: flex;
                     align-items: center;
                     justify-content: space-between;
-                    padding: 18px 20px 12px;
-                    border-bottom: 1px solid rgba(255,255,255,0.08);
+                    padding: 24px 24px 0;
                 }
                 #nl-dialog-title {
-                    font-size: 18px;
-                    font-weight: 600;
+                    font-size: 22px;
+                    font-weight: 700;
                     color: #fff;
                 }
                 #nl-dialog-close {
                     background: none;
                     border: none;
                     color: #888;
-                    font-size: 24px;
+                    font-size: 26px;
                     cursor: pointer;
-                    padding: 0 4px;
+                    padding: 0 2px;
                     line-height: 1;
                     transition: color 0.15s;
                 }
                 #nl-dialog-close:hover { color: #fff; }
-                #nl-dialog-body {
-                    padding: 20px;
+                .nl-subtitle {
+                    font-size: 15px;
+                    color: #9ca3af;
+                    margin: 10px 0 20px;
+                }
+                #nl-dialog-body { padding: 16px 24px 24px; }
+                #nl-logged-in { padding: 20px 24px 24px; }
+                .nl-method-card {
+                    border-radius: 12px;
+                    padding: 16px;
+                    margin-bottom: 12px;
+                    cursor: pointer;
+                    transition: background 0.15s, border-color 0.15s;
+                    border: 1.5px solid transparent;
+                    background: rgba(255,255,255,0.04);
+                }
+                .nl-method-card:hover { background: rgba(255,255,255,0.07); }
+                .nl-card-purple { border-color: #7c3aed; }
+                .nl-card-purple:hover { border-color: #8b5cf6; }
+                .nl-card-blue { border-color: #2563eb; }
+                .nl-card-blue:hover { border-color: #3b82f6; }
+                .nl-card-header {
+                    display: flex;
+                    align-items: center;
+                    gap: 14px;
+                }
+                .nl-card-icon {
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                    width: 40px;
+                    height: 40px;
+                    border-radius: 10px;
+                    flex-shrink: 0;
+                }
+                .nl-icon-purple {
+                    background: rgba(124,58,237,0.2);
+                    color: #a78bfa;
+                }
+                .nl-icon-blue {
+                    background: rgba(37,99,235,0.2);
+                    color: #60a5fa;
+                }
+                .nl-card-title {
+                    font-size: 16px;
+                    font-weight: 700;
+                    color: #fff;
+                    margin-bottom: 3px;
+                }
+                .nl-card-desc {
+                    font-size: 13px;
+                    color: #9ca3af;
+                }
+                .nl-sub-option {
+                    display: flex;
+                    align-items: center;
+                    gap: 12px;
+                    padding: 12px 14px;
+                    border-radius: 10px;
+                    border: 1px solid rgba(255,255,255,0.1);
+                    background: rgba(255,255,255,0.03);
+                    cursor: pointer;
+                    margin-bottom: 8px;
+                    transition: background 0.15s, border-color 0.15s;
+                }
+                .nl-sub-option:hover {
+                    background: rgba(255,255,255,0.07);
+                    border-color: rgba(96,165,250,0.4);
+                }
+                .nl-sub-icon {
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                    width: 36px;
+                    height: 36px;
+                    border-radius: 8px;
+                    flex-shrink: 0;
+                }
+                .nl-sub-title {
+                    font-size: 15px;
+                    font-weight: 600;
+                    color: #e5e7eb;
+                }
+                .nl-sub-desc {
+                    font-size: 12px;
+                    color: #9ca3af;
+                    margin-top: 2px;
                 }
                 .nl-btn {
                     display: flex;
                     align-items: center;
                     justify-content: center;
-                    gap: 10px;
+                    gap: 8px;
                     width: 100%;
                     padding: 12px 16px;
                     border: none;
@@ -384,49 +988,27 @@
                     font-weight: 500;
                     cursor: pointer;
                     transition: all 0.15s;
+                    box-sizing: border-box;
                 }
-                .nl-btn:disabled {
-                    opacity: 0.6;
-                    cursor: not-allowed;
+                .nl-btn:disabled { opacity: 0.6; cursor: not-allowed; }
+                .nl-btn-ghost {
+                    background: rgba(255,255,255,0.08);
+                    color: #e0e0e0;
+                    border: 1px solid rgba(255,255,255,0.12);
                 }
-                .nl-btn-primary {
-                    background: #6951FA;
+                .nl-btn-ghost:hover:not(:disabled) { background: rgba(255,255,255,0.14); }
+                .nl-btn-blue {
+                    background: #2563eb;
                     color: #fff;
                 }
-                .nl-btn-primary:hover:not(:disabled) {
-                    background: #7c68fb;
-                    transform: translateY(-1px);
-                }
-                .nl-btn-secondary {
-                    background: rgba(255,255,255,0.1);
-                    color: #e0e0e0;
-                    margin-top: 10px;
-                }
-                .nl-btn-secondary:hover:not(:disabled) {
-                    background: rgba(255,255,255,0.18);
-                }
-                .nl-divider {
+                .nl-btn-blue:hover:not(:disabled) { background: #3b82f6; }
+                .nl-btn-danger { background: #dc2626; color: #fff; }
+                .nl-btn-danger:hover:not(:disabled) { background: #ef4444; }
+                .nl-btn-row {
                     display: flex;
-                    align-items: center;
-                    margin: 18px 0;
-                    color: #666;
-                    font-size: 13px;
+                    gap: 10px;
                 }
-                .nl-divider::before, .nl-divider::after {
-                    content: '';
-                    flex: 1;
-                    height: 1px;
-                    background: rgba(255,255,255,0.1);
-                }
-                .nl-divider span {
-                    padding: 0 12px;
-                }
-                .nl-label {
-                    display: block;
-                    font-size: 13px;
-                    color: #aaa;
-                    margin-bottom: 6px;
-                }
+                .nl-btn-half { width: 50%; }
                 .nl-input {
                     width: 100%;
                     padding: 10px 14px;
@@ -439,39 +1021,77 @@
                     transition: border-color 0.15s;
                     box-sizing: border-box;
                 }
-                .nl-input:focus {
-                    border-color: #6951FA;
-                }
-                .nl-input::placeholder {
-                    color: #555;
-                }
+                .nl-input:focus { border-color: #2563eb; }
+                .nl-input::placeholder { color: #555; }
                 .nl-error {
                     color: #ef4444;
                     font-size: 13px;
-                    margin-top: 6px;
                 }
                 .nl-hint {
                     font-size: 13px;
-                    color: #888;
-                    margin-top: 8px;
+                    color: #6b7280;
                     text-align: center;
                 }
-                .nl-hint a {
-                    color: #6951FA;
-                    text-decoration: none;
+                .nl-qr-container {
+                    display: flex;
+                    justify-content: center;
+                    margin: 8px 0 12px;
                 }
-                .nl-hint a:hover {
-                    text-decoration: underline;
+                .nl-qr-container > div {
+                    background: #fff;
+                    border-radius: 10px;
+                    padding: 12px;
+                    line-height: 0;
                 }
-                .nl-status {
-                    text-align: center;
-                    font-size: 14px;
-                    color: #6951FA;
-                    margin-top: 12px;
+                .nl-uri-row {
+                    display: flex;
+                    gap: 8px;
+                    align-items: center;
+                    margin-bottom: 10px;
                 }
-                #nl-logged-in {
-                    padding: 20px;
+                .nl-uri-input {
+                    flex: 1;
+                    font-size: 12px;
+                    color: #9ca3af;
+                    background: rgba(255,255,255,0.05);
+                    border-color: rgba(255,255,255,0.1);
+                    padding: 8px 10px;
                 }
+                .nl-copy-btn {
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                    width: 36px;
+                    height: 36px;
+                    flex-shrink: 0;
+                    background: rgba(255,255,255,0.08);
+                    border: 1px solid rgba(255,255,255,0.12);
+                    border-radius: 8px;
+                    color: #9ca3af;
+                    cursor: pointer;
+                    transition: background 0.15s, color 0.15s;
+                }
+                .nl-copy-btn:hover { background: rgba(255,255,255,0.15); color: #fff; }
+                .nl-waiting {
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                    gap: 8px;
+                    font-size: 13px;
+                    color: #9ca3af;
+                    margin-bottom: 10px;
+                }
+                .nl-spinner {
+                    display: inline-block;
+                    width: 14px;
+                    height: 14px;
+                    border: 2px solid rgba(255,255,255,0.2);
+                    border-top-color: #60a5fa;
+                    border-radius: 50%;
+                    animation: nl-spin 0.8s linear infinite;
+                    flex-shrink: 0;
+                }
+                @keyframes nl-spin { to { transform: rotate(360deg); } }
                 .nl-profile {
                     display: flex;
                     align-items: center;
@@ -489,9 +1109,7 @@
                     background: #333;
                     flex-shrink: 0;
                 }
-                .nl-profile-info {
-                    overflow: hidden;
-                }
+                .nl-profile-info { overflow: hidden; }
                 .nl-profile-name {
                     font-size: 16px;
                     font-weight: 600;
@@ -508,86 +1126,263 @@
                     text-overflow: ellipsis;
                     margin-top: 2px;
                 }
-                .nl-btn-danger {
-                    background: #dc2626;
-                    color: #fff;
+                .nl-menu {
+                    display: flex;
+                    flex-direction: column;
+                    gap: 4px;
                 }
-                .nl-btn-danger:hover:not(:disabled) {
-                    background: #ef4444;
+                .nl-menu-item {
+                    display: flex;
+                    align-items: center;
+                    gap: 12px;
+                    width: 100%;
+                    padding: 12px 14px;
+                    background: rgba(255,255,255,0.04);
+                    border: 1px solid rgba(255,255,255,0.08);
+                    border-radius: 10px;
+                    color: #e0e0e0;
+                    font-size: 15px;
+                    font-weight: 500;
+                    cursor: pointer;
+                    text-align: left;
+                    transition: background 0.15s, border-color 0.15s;
                 }
+                .nl-menu-item:hover {
+                    background: rgba(255,255,255,0.09);
+                    border-color: rgba(255,255,255,0.16);
+                }
+                .nl-menu-item svg { flex-shrink: 0; color: #9ca3af; }
+                .nl-menu-danger { color: #f87171; }
+                .nl-menu-danger svg { color: #f87171; }
+                .nl-menu-danger:hover { background: rgba(239,68,68,0.1); border-color: rgba(239,68,68,0.3); }
             `;
             document.head.appendChild(style);
+
+            // Inject sub-view CSS from loaded modules
+            const subStyles = [
+                window.NostrProfileView && window.NostrProfileView.getCSS(),
+                window.NostrWalletView  && window.NostrWalletView.getCSS(),
+                window.NostrSignupView  && window.NostrSignupView.getCSS(),
+            ].filter(Boolean).join('\n');
+            if (subStyles) {
+                const subStyle = document.createElement('style');
+                subStyle.id = 'nl-subview-styles';
+                subStyle.textContent = subStyles;
+                document.head.appendChild(subStyle);
+            }
+        }
+
+        // ── Helper: reset NIP-46 card to collapsed state ──────────────
+        function resetNip46Card() {
+            overlay.querySelector('#nl-nip46-options').style.display = 'none';
+            overlay.querySelector('#nl-qr-view').style.display = 'none';
+            overlay.querySelector('#nl-bunker-view').style.display = 'none';
+            overlay.querySelector('#nl-bunker-input').value = '';
+            overlay.querySelector('#nl-bunker-error').style.display = 'none';
+            overlay.querySelector('#nl-qr-error').style.display = 'none';
+            // Cancel any active NIP-46 session
+            if (_nip46Timeout) { clearTimeout(_nip46Timeout); _nip46Timeout = null; }
+            _nip46Ws.forEach(s => { try { s.close(); } catch (e) { /* ignore */ } }); _nip46Ws = [];
         }
 
         // Wire up events
-        overlay.querySelector('#nl-dialog-close').addEventListener('click', closeDialog);
+        overlay.querySelector('#nl-dialog-close').addEventListener('click', () => {
+            resetNip46Card();
+            closeDialog();
+        });
         overlay.addEventListener('click', (e) => {
-            if (e.target === overlay) closeDialog();
+            if (e.target === overlay) { resetNip46Card(); closeDialog(); }
         });
 
-        overlay.querySelector('#nl-ext-btn').addEventListener('click', async () => {
-            const btn = overlay.querySelector('#nl-ext-btn');
-            const status = overlay.querySelector('#nl-status');
-            btn.disabled = true;
-            btn.textContent = 'Connecting...';
-            status.style.display = 'none';
+        // ── NIP-07 card click ──────────────────────────────────────────
+        overlay.querySelector('#nl-ext-card').addEventListener('click', async () => {
+            const errEl = overlay.querySelector('#nl-ext-error');
+            errEl.style.display = 'none';
             try {
                 await loginWithExtension();
                 closeDialog();
             } catch (err) {
-                status.textContent = err.message;
-                status.style.display = 'block';
-            } finally {
-                btn.disabled = false;
-                btn.innerHTML = `
-                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
-                    Login with Extension
-                `;
+                errEl.textContent = err.message;
+                errEl.style.display = 'block';
             }
         });
 
-        overlay.querySelector('#nl-nsec-btn').addEventListener('click', () => {
-            const input = overlay.querySelector('#nl-nsec-input');
-            const errEl = overlay.querySelector('#nl-nsec-error');
-            const nsec = input.value.trim();
+        // ── NIP-46 card header click → expand sub-options ─────────────
+        overlay.querySelector('#nl-nip46-header').addEventListener('click', (e) => {
+            e.stopPropagation();
+            const opts = overlay.querySelector('#nl-nip46-options');
+            const qrView = overlay.querySelector('#nl-qr-view');
+            const bunkerView = overlay.querySelector('#nl-bunker-view');
+            // Only expand if no sub-view is open
+            if (qrView.style.display === 'none' && bunkerView.style.display === 'none') {
+                opts.style.display = opts.style.display === 'none' ? 'block' : 'none';
+            }
+        });
+
+        // ── Cancel from sub-options ────────────────────────────────────
+        overlay.querySelector('#nl-nip46-cancel').addEventListener('click', (e) => {
+            e.stopPropagation();
+            resetNip46Card();
+        });
+
+        // ── Scan QR Code option ────────────────────────────────────────
+        overlay.querySelector('#nl-qr-option').addEventListener('click', async (e) => {
+            e.stopPropagation();
+            const opts = overlay.querySelector('#nl-nip46-options');
+            const qrView = overlay.querySelector('#nl-qr-view');
+            const errEl = overlay.querySelector('#nl-qr-error');
+            opts.style.display = 'none';
+            qrView.style.display = 'block';
             errEl.style.display = 'none';
 
-            if (!nsec) {
-                errEl.textContent = 'Please enter your secret key.';
-                errEl.style.display = 'block';
-                return;
-            }
-            if (!/^nsec1[a-zA-Z0-9]{58}$/.test(nsec)) {
-                errEl.textContent = 'Invalid nsec format. Must start with nsec1 and be 63 characters.';
-                errEl.style.display = 'block';
-                return;
-            }
             try {
-                loginWithNsec(nsec);
-                input.value = '';
+                const { uri, waitForConnect } = await startNip46QrSession();
+                const canvas = overlay.querySelector('#nl-qr-canvas');
+                const uriInput = overlay.querySelector('#nl-qr-uri');
+                uriInput.value = uri;
+                renderQrToCanvas(canvas, uri);
+
+                waitForConnect.then(() => {
+                    resetNip46Card();
+                    closeDialog();
+                }).catch(err => {
+                    errEl.textContent = err.message || 'Connection failed';
+                    errEl.style.display = 'block';
+                });
+            } catch (err) {
+                errEl.textContent = err.message || 'Failed to start QR session';
+                errEl.style.display = 'block';
+            }
+        });
+
+        // ── Copy URI button ────────────────────────────────────────────
+        overlay.querySelector('#nl-qr-copy').addEventListener('click', (e) => {
+            e.stopPropagation();
+            const uri = overlay.querySelector('#nl-qr-uri').value;
+            if (uri) navigator.clipboard.writeText(uri).catch(() => {});
+        });
+
+        // ── Cancel QR view ─────────────────────────────────────────────
+        overlay.querySelector('#nl-qr-cancel').addEventListener('click', (e) => {
+            e.stopPropagation();
+            resetNip46Card();
+        });
+
+        // ── Paste Bunker URL option (hidden until tested — see HTML comment) ──────
+        const bunkerOptionEl = overlay.querySelector('#nl-bunker-option');
+        if (bunkerOptionEl) bunkerOptionEl.addEventListener('click', (e) => {
+            e.stopPropagation();
+            overlay.querySelector('#nl-nip46-options').style.display = 'none';
+            overlay.querySelector('#nl-bunker-view').style.display = 'block';
+            overlay.querySelector('#nl-bunker-input').focus();
+        });
+
+        // ── Back from bunker view ──────────────────────────────────────
+        const bunkerBackEl = overlay.querySelector('#nl-bunker-back');
+        if (bunkerBackEl) bunkerBackEl.addEventListener('click', (e) => {
+            e.stopPropagation();
+            overlay.querySelector('#nl-bunker-view').style.display = 'none';
+            overlay.querySelector('#nl-bunker-error').style.display = 'none';
+            overlay.querySelector('#nl-nip46-options').style.display = 'block';
+        });
+
+        // ── Connect bunker URL ─────────────────────────────────────────
+        const bunkerConnectEl = overlay.querySelector('#nl-bunker-connect');
+        if (bunkerConnectEl) bunkerConnectEl.addEventListener('click', async (e) => {
+            e.stopPropagation();
+            const input = overlay.querySelector('#nl-bunker-input');
+            const errEl = overlay.querySelector('#nl-bunker-error');
+            const btn = overlay.querySelector('#nl-bunker-connect');
+            const url = input.value.trim();
+            errEl.style.display = 'none';
+
+            if (!url) {
+                errEl.textContent = 'Please paste a bunker:// URL.';
+                errEl.style.display = 'block';
+                return;
+            }
+            if (!url.startsWith('bunker://')) {
+                errEl.textContent = 'URL must start with bunker://';
+                errEl.style.display = 'block';
+                return;
+            }
+
+            btn.disabled = true;
+            btn.textContent = 'Connecting...';
+            try {
+                await loginWithBunkerUrl(url);
+                resetNip46Card();
                 closeDialog();
             } catch (err) {
-                errEl.textContent = err.message || 'Login failed. Check your key.';
+                errEl.textContent = err.message || 'Connection failed';
                 errEl.style.display = 'block';
+            } finally {
+                btn.disabled = false;
+                btn.textContent = 'Connect';
             }
         });
 
-        // Enter key on nsec input
-        overlay.querySelector('#nl-nsec-input').addEventListener('keydown', (e) => {
-            if (e.key === 'Enter') {
-                overlay.querySelector('#nl-nsec-btn').click();
-            }
+        // Enter key on bunker input
+        const bunkerInputEl = overlay.querySelector('#nl-bunker-input');
+        if (bunkerInputEl) bunkerInputEl.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter') overlay.querySelector('#nl-bunker-connect').click();
         });
 
-        // Logout button
+        // ── Logged-in menu: Logout ─────────────────────────────────────
         overlay.querySelector('#nl-logout-btn').addEventListener('click', () => {
+            const acct = getCurrentAccount();
+            if (acct?.pubkey) window.localStorage.removeItem(`nl_profile_cache_${acct.pubkey}`);
+            window.localStorage.removeItem('nl_profile_cache');
             clearAccount();
             fireNlAuth('logout');
             updateFloatingButton();
             closeDialog();
-            // Reload page to reset state
             window.location.reload();
         });
+
+        // ── Sub-view API passed to view modules ────────────────────────
+        const subViewApi = {
+            loginWithLocalKey,
+            publishProfile,
+            getCurrentAccount,
+            closeDialog,
+        };
+
+        // ── Wire Profile view (NostrProfileView.js) ────────────────────
+        if (window.NostrProfileView && overlay.querySelector('#nl-profile-view')) {
+            _profileViewCtrl = window.NostrProfileView.wire(overlay, subViewApi);
+        }
+
+        // ── Wire Wallet view (NostrWalletView.js) ──────────────────────
+        let _walletViewCtrl = null;
+        if (window.NostrWalletView && overlay.querySelector('#nl-wallet-view')) {
+            _walletViewCtrl = window.NostrWalletView.wire(overlay, subViewApi);
+        }
+
+        // ── Wire Signup view (NostrSignupView.js) ──────────────────────
+        if (window.NostrSignupView && overlay.querySelector('#nl-signup-card')) {
+            window.NostrSignupView.wire(overlay, subViewApi);
+        }
+
+        // ── Logged-in menu: Profile button ─────────────────────────────
+        const profileMenuBtn = overlay.querySelector('#nl-profile-btn');
+        if (profileMenuBtn) {
+            profileMenuBtn.addEventListener('click', () => {
+                if (_profileViewCtrl) {
+                    _profileViewCtrl.show();
+                }
+            });
+        }
+
+        // ── Logged-in menu: Wallet button ──────────────────────────────
+        const walletMenuBtn = overlay.querySelector('#nl-wallet-btn');
+        if (walletMenuBtn) {
+            walletMenuBtn.addEventListener('click', () => {
+                if (_walletViewCtrl) {
+                    _walletViewCtrl.show();
+                }
+            });
+        }
 
         return overlay;
     }
@@ -600,8 +1395,13 @@
         const loginView = dialog.querySelector('#nl-dialog-body');
         const titleEl = dialog.querySelector('#nl-dialog-title');
 
+        // Always hide sub-views on open so we start from a clean state
+        ['#nl-profile-view', '#nl-wallet-view', '#nl-signup-step1', '#nl-signup-step2'].forEach(sel => {
+            const el = dialog.querySelector(sel);
+            if (el) el.style.display = 'none';
+        });
+
         if (account) {
-            // Show logged-in view
             titleEl.textContent = 'Nostr Account';
             loggedInView.style.display = 'block';
             loginView.style.display = 'none';
@@ -621,7 +1421,6 @@
                 avatarEl.style.display = 'none';
             }
 
-            // Show npub
             try {
                 const tools = nt();
                 if (tools && tools.nip19) {
@@ -634,26 +1433,13 @@
                 npubEl.textContent = account.pubkey.slice(0, 12) + '...';
             }
         } else {
-            // Show login view
-            titleEl.textContent = 'Login with Nostr';
+            titleEl.textContent = 'Connect to Nostr';
             loggedInView.style.display = 'none';
             loginView.style.display = 'block';
 
-            // Reset state
-            const errEl = dialog.querySelector('#nl-nsec-error');
-            const status = dialog.querySelector('#nl-status');
-            const input = dialog.querySelector('#nl-nsec-input');
-            const missingHint = dialog.querySelector('#nl-ext-missing');
-            const extBtn = dialog.querySelector('#nl-ext-btn');
-
-            if (errEl) errEl.style.display = 'none';
-            if (status) status.style.display = 'none';
-            if (input) input.value = '';
-
-            // Check for native NIP-07 extension (not our nsec shim)
-            const hasNativeExtension = window.nostr && _loginMethod !== 'nsec';
-            extBtn.style.display = 'flex';
-            missingHint.style.display = hasNativeExtension ? 'none' : 'block';
+            // Reset error states
+            const extErr = dialog.querySelector('#nl-ext-error');
+            if (extErr) extErr.style.display = 'none';
         }
 
         dialog.classList.add('nl-open');
@@ -669,10 +1455,17 @@
     // nlLaunch: open the login dialog (used by Room.js nostrButton click)
     document.addEventListener('nlLaunch', (e) => {
         openDialog();
+        // If detail is 'edit-profile', navigate directly to profile settings view
+        if (e.detail === 'edit-profile' && _profileViewCtrl) {
+            _profileViewCtrl.show();
+        }
     });
 
     // nlLogout: clear account state
     document.addEventListener('nlLogout', () => {
+        const acct = getCurrentAccount();
+        if (acct?.pubkey) window.localStorage.removeItem(`nl_profile_cache_${acct.pubkey}`);
+        window.localStorage.removeItem('nl_profile_cache');
         clearAccount();
         fireNlAuth('logout');
         updateFloatingButton();
@@ -694,9 +1487,8 @@
         }
     }, 3000);
 
-    // ─── Auto-restore: if user was previously logged in via nsec, we
-    //     can't restore the signer (no privkey stored for security).
-    //     Extension logins auto-restore via the extension itself.
+    // ─── Auto-restore: extension logins auto-restore via the extension.
+    //     NIP-46 sessions are not persisted (ephemeral keypair per session).
     //     We just ensure __nostrlogin_accounts is consistent. ─────────
 
     // ─── Auto-fetch profile on page load if account is missing name/picture ─
@@ -718,11 +1510,9 @@
         return true;
     }
 
-    const NOSTR_SVG_ICON = `<svg width="28" height="28" viewBox="0 0 224 224" fill="none" xmlns="http://www.w3.org/2000/svg">
-        <rect width="224" height="224" rx="64" fill="#6951FA"/>
-        <path d="M160.98 105.06c-1.878-14.78-10.658-24.049-22.964-25.786-3.834-.542-11.42-.776-11.42-.776s-14.068-1.116-24.546-.598c-18.186.9-27.26 6.926-27.26 6.926s-12.346 7.646-13.552 28.794c-.15 2.64-.264 5.525-.318 8.652-.282 16.158.326 30.592 2.076 35.24 3.484 9.246 16.866 12.19 16.866 12.19s-.266 5.936.078 9.632c.446 4.794 3.152 5.46 3.152 5.46s1.434 1.25 5.034-1.812l7.67-7.228s11.296.34 18.882-.672c8.646-1.154 12.726-4.09 12.726-4.09s13.462-8.34 14.656-29.49c.152-2.688.254-5.624.29-8.802.124-10.736-.472-21.334-1.37-27.64zm-13.406 34.88c-.616 11.02-6.734 17.446-6.734 17.446s-2.608 2.158-8.89 3.236c-5.5.944-14.382.428-14.382.428l-10.822 10.406-2.07-10.828s-8.854-1.708-11.518-8.788c-1.228-3.262-1.784-13.874-1.578-26.068.04-2.378.112-4.614.218-6.686.83-16.266 7.994-19.748 7.994-19.748s5.558-4.392 20.75-5.148c7.594-.378 17.982.328 17.982.328s8.204.382 10.694 1.486c6.974 3.088 8.674 12.86 8.674 12.86 1.06 8.38 1.2 16.39.682 31.076z" fill="white"/>
-        <ellipse cx="118" cy="124" rx="8" ry="10" fill="white"/>
-        <ellipse cx="148" cy="124" rx="8" ry="10" fill="white"/>
+    const NOSTR_SVG_ICON = `<svg width="28" height="28" viewBox="0 0 28 28" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <rect width="28" height="28" rx="8" fill="#6951FA"/>
+        <text x="14" y="21" font-family="Arial Black, Arial, sans-serif" font-size="18" font-weight="900" fill="white" text-anchor="middle">N</text>
     </svg>`;
 
     function createFloatingButton() {
@@ -805,9 +1595,25 @@
             btn.title = displayName;
 
             if (avatarUrl) {
-                btn.innerHTML = `<img class="nl-fab-avatar" src="${avatarUrl}" alt="${displayName}" onerror="this.style.display='none';this.nextElementSibling.style.display='block'" /><span style="display:none">${NOSTR_SVG_ICON}</span><span class="nl-fab-dot"></span>`;
+                btn.innerHTML = '';
+                const img = document.createElement('img');
+                img.className = 'nl-fab-avatar';
+                img.src = avatarUrl;
+                img.alt = displayName;
+                img.onerror = function() { this.style.display = 'none'; this.nextElementSibling.style.display = 'block'; };
+                const fallback = document.createElement('span');
+                fallback.style.display = 'none';
+                fallback.innerHTML = NOSTR_SVG_ICON; // trusted constant
+                const dot = document.createElement('span');
+                dot.className = 'nl-fab-dot';
+                btn.appendChild(img);
+                btn.appendChild(fallback);
+                btn.appendChild(dot);
             } else {
-                btn.innerHTML = NOSTR_SVG_ICON + '<span class="nl-fab-dot"></span>';
+                btn.innerHTML = NOSTR_SVG_ICON; // trusted constant
+                const dot = document.createElement('span');
+                dot.className = 'nl-fab-dot';
+                btn.appendChild(dot);
             }
         } else {
             btn.title = 'Login with Nostr';
@@ -827,9 +1633,12 @@
         open: openDialog,
         close: closeDialog,
         loginWithExtension,
-        loginWithNsec,
+        loginWithBunkerUrl,
+        loginWithLocalKey,
+        publishProfile,
+        getCurrentAccount,
         logout: clearAccount,
     };
 
-    console.log('[NostrLogin] Lightweight Nostr login loaded (no nsec.app dependency)');
+    console.log('[NostrLogin] Lightweight Nostr login loaded (NIP-07 + NIP-46 support)');
 })();

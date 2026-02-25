@@ -120,7 +120,7 @@
 // async function authNIP98() {
 
 //   const roomName = "TestRoom";
-//   const preferredRelays = ['wss://hivetalk.nostr1.com']
+//   const preferredRelays = ['wss://beeswax.hivetalk.org']
 //   const isModerator = true;
 
 //   try {
