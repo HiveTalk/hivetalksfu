@@ -65,7 +65,7 @@
         "compression": "^1.8.1",
         "cors": "2.8.5",
         "crypto-js": "4.2.0",
-        "dompurify": "^3.1.7",
+        "dompurify": "^3.4.0",
         "dotenv": "^16.4.7",
         "ejs": "^3.1.10",
         "express": "^4.22.1",
