@@ -85,7 +85,7 @@
         "qs": "6.15.2",
         "socket.io": "^4.8.1",
         "swagger-ui-express": "5.0.1",
-        "uuid": "14.0.0"
+        "uuid": "11.1.0"
     },
     "devDependencies": {
         "mocha": "^10.8.2",
