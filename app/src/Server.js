@@ -75,7 +75,15 @@ const mediasoupClient = require('mediasoup-client');
 const http = require('http');
 const path = require('path');
 const axios = require('axios');
-const ngrok = require('ngrok');
+
+// Ngrok is optional due to security vulnerability (CVE-2025-57282) with no patched version available
+let ngrok;
+try {
+    ngrok = require('ngrok');
+} catch (err) {
+    ngrok = null;
+}
+
 const jwt = require('jsonwebtoken');
 const fs = require('fs');
 const config = require('./config');
@@ -1593,6 +1601,10 @@ function startServer() {
     // ####################################################
 
     async function ngrokStart() {
+        if (!ngrok) {
+            log.error('Ngrok not available. Please install with: npm install ngrok');
+            process.exit(1);
+        }
         try {
             await ngrok.authtoken(config.ngrok.authToken);
             await ngrok.connect(config.server.listen.port);
@@ -1633,6 +1645,11 @@ function startServer() {
         );
 
         if (config.ngrok.enabled && config.ngrok.authToken !== '') {
+            if (!ngrok) {
+                log.warn('Ngrok is enabled in config but not installed. Skipping ngrok startup.');
+                log.info('To use ngrok, install with: npm install ngrok (Note: ngrok has known security vulnerabilities)');
+                return log.info('Server config', getServerConfig());
+            }
             return ngrokStart();
         }
         log.info('Server config', getServerConfig());
