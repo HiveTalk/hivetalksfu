@@ -79,7 +79,7 @@
         "jsonwebtoken": "^9.0.2",
         "mediasoup": "3.14.16",
         "mediasoup-client": "3.7.17",
-        "nodemailer": "^8.0.5",
+        "nodemailer": "^9.0.1",
         "openai": "^4.71.1",
         "qs": "6.15.2",
         "socket.io": "^4.8.1",
