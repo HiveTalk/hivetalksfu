@@ -130,7 +130,7 @@ const CryptoJS = require('crypto-js');
 const qS = require('qs');
 const slackEnabled = config.slack.enabled;
 const slackSigningSecret = config.slack.signingSecret;
-
+const cookieParser = require('cookie-parser'), csrf = require('csurf'), csrfProtection = csrf({ cookie: true }); // CSRF protection
 const app = express();
 
 const hbs = exphbs.create({
@@ -483,8 +483,8 @@ function startServer() {
     app.use(compression());
     app.use(express.json({ limit: '50mb' })); // Handles JSON payloads
     app.use(express.urlencoded({ extended: true, limit: '50mb' })); // Handles URL-encoded payloads
-    app.use(express.raw({ type: 'video/webm', limit: '50mb' })); // Handles raw binary data
-    app.use(restApi.basePath + '/docs', swaggerUi.serve, swaggerUi.setup(swaggerDocument)); // api docs
+    app.use(express.raw({ type: 'video/webm', limit: '50mb' })); app.use(cookieParser()); // Handles raw binary data
+    app.use((req, res, next) => (req.path.startsWith(restApi.basePath) || req.path === '/slack' || req.path.endsWith('RTMP') ? next() : csrfProtection(req, res, next))); app.use(restApi.basePath + '/docs', swaggerUi.serve, swaggerUi.setup(swaggerDocument)); // CSRF protection + api docs
 
     // IP Whitelist check ...
     app.use(restrictAccessByIP);
