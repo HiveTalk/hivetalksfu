@@ -1,5 +1,7 @@
 <h1 align="center">Vanilla HiveTalk </h1>
 
+# NOTE: THIS REPO IS DEPRECATED NO LONGER MAINTAINED
+
 ## Vanilla HiveTalk is a Fork of MiroTalk SFU, with **Nostr** and **Bitcoin Lightning** Enhancements.
 
 https://vanilla.hivetalk.org was previously known as https://hivetalk.org
